@@ -75,22 +75,22 @@ class MetadataSuite(unittest.TestCase):
     def test_None(self):
         item = _Invoke("<foo>").items[0]
 
-        self.assertEqual(item.metadata, {})
+        self.assertEqual(item.metadata.Values, {})
 
     # ----------------------------------------------------------------------
     def test_Single(self):
         item = _Invoke("<foo one='two'>").items[0]
 
-        self.assertEqual(list(item.metadata.keys()), [ "one", ])
-        self.assertEqual(item.metadata["one"].Value, "two")
+        self.assertEqual(list(item.metadata.Values.keys()), [ "one", ])
+        self.assertEqual(item.metadata.Values["one"].Value, "two")
 
     # ----------------------------------------------------------------------
     def test_Multiple(self):
         item = _Invoke("<foo one='two' three=4>").items[0]
 
-        self.assertEqual(list(item.metadata.keys()), [ "one", "three", ])
-        self.assertEqual(item.metadata["one"].Value, "two")
-        self.assertEqual(item.metadata["three"].Value, 4)
+        self.assertEqual(list(item.metadata.Values.keys()), [ "one", "three", ])
+        self.assertEqual(item.metadata.Values["one"].Value, "two")
+        self.assertEqual(item.metadata.Values["three"].Value, 4)
 
     # ----------------------------------------------------------------------
     def test_FunkySpacing(self):
@@ -100,10 +100,10 @@ class MetadataSuite(unittest.TestCase):
                             five=    6.5>
                         """)).items[0]
 
-        self.assertEqual(list(item.metadata.keys()), [ "one", "three", "five", ])
-        self.assertEqual(item.metadata["one"].Value, "two")
-        self.assertEqual(item.metadata["three"].Value, 4)
-        self.assertEqual(item.metadata["five"].Value, 6.5)
+        self.assertEqual(list(item.metadata.Values.keys()), [ "one", "three", "five", ])
+        self.assertEqual(item.metadata.Values["one"].Value, "two")
+        self.assertEqual(item.metadata.Values["three"].Value, 4)
+        self.assertEqual(item.metadata.Values["five"].Value, 6.5)
 
 # ----------------------------------------------------------------------
 class AritySuite(unittest.TestCase):
@@ -199,17 +199,6 @@ class ConfigSuite(unittest.TestCase):
                                                                                         ))
 
     # ----------------------------------------------------------------------
-    def test_DuplicateError(self):
-        self.assertRaises(PopulateDuplicateConfigException, lambda: _Invoke(textwrap.dedent(
-                                                                                """\
-                                                                                simple_schema_config("test"):
-                                                                                    one = "two"
-
-                                                                                simple_schema_config("test"):
-                                                                                    three = 4
-                                                                                """)))
-
-    # ----------------------------------------------------------------------
     def test_Invoke(self):
         root = _Invoke(textwrap.dedent(
                     """\
@@ -219,9 +208,9 @@ class ConfigSuite(unittest.TestCase):
                     """))
 
         self.assertEqual(list(root.config.keys()), [ "test", ])
-        self.assertEqual(list(root.config["test"].Values.keys()), [ "one", "three", ])
-        self.assertEqual(root.config["test"].Values["one"].Value, "two")
-        self.assertEqual(root.config["test"].Values["three"].Value, 4)
+        self.assertEqual(list(root.config["test"][0].Values.keys()), [ "one", "three", ])
+        self.assertEqual(root.config["test"][0].Values["one"].Value, "two")
+        self.assertEqual(root.config["test"][0].Values["three"].Value, 4)
         
     # ----------------------------------------------------------------------
     def test_InvokeMultiple(self):
@@ -238,12 +227,12 @@ class ConfigSuite(unittest.TestCase):
 
         self.assertEqual(list(root.config.keys()), [ "test", "another", ])
 
-        self.assertEqual(list(root.config["test"].Values.keys()), [ "one", "three", ])
-        self.assertEqual(root.config["test"].Values["one"].Value, "two")
-        self.assertEqual(root.config["test"].Values["three"].Value, 4)
+        self.assertEqual(list(root.config["test"][0].Values.keys()), [ "one", "three", ])
+        self.assertEqual(root.config["test"][0].Values["one"].Value, "two")
+        self.assertEqual(root.config["test"][0].Values["three"].Value, 4)
 
-        self.assertEqual(list(root.config["another"].Values.keys()), [ "five", ])
-        self.assertEqual(root.config["another"].Values["five"].Value, 6.0)
+        self.assertEqual(list(root.config["another"][0].Values.keys()), [ "five", ])
+        self.assertEqual(root.config["another"][0].Values["five"].Value, 6.0)
 
 # ----------------------------------------------------------------------
 class UnnamedObjSuite(unittest.TestCase):
@@ -303,8 +292,8 @@ class UnnamedObjSuite(unittest.TestCase):
         item = root.items[0]
 
         self.assertEqual(item.name, None)
-        self.assertEqual(list(item.metadata.keys()), [ "one", ])
-        self.assertEqual(item.metadata["one"].Value, "two")
+        self.assertEqual(list(item.metadata.Values.keys()), [ "one", ])
+        self.assertEqual(item.metadata.Values["one"].Value, "two")
         self.assertEqual(item.arity, Arity.FromString('?'))
 
     # ----------------------------------------------------------------------
@@ -315,15 +304,15 @@ class UnnamedObjSuite(unittest.TestCase):
 
             item = root.items[0]
             self.assertEqual(item.name, None)
-            self.assertEqual(list(item.metadata.keys()), [ "one", ])
-            self.assertEqual(item.metadata["one"].Value, "two")
+            self.assertEqual(list(item.metadata.Values.keys()), [ "one", ])
+            self.assertEqual(item.metadata.Values["one"].Value, "two")
             self.assertEqual(len(item.items), 0)
 
             item = root.items[1]
             self.assertEqual(item.name, None)
-            self.assertEqual(list(item.metadata.keys()), [ "one", "three", ])
-            self.assertEqual(item.metadata["one"].Value, "two")
-            self.assertEqual(item.metadata["three"].Value, "four")
+            self.assertEqual(list(item.metadata.Values.keys()), [ "one", "three", ])
+            self.assertEqual(item.metadata.Values["one"].Value, "two")
+            self.assertEqual(item.metadata.Values["three"].Value, "four")
             self.assertEqual(len(item.items), 0)
 
         # ----------------------------------------------------------------------
@@ -428,8 +417,8 @@ class NamedObjSuite(unittest.TestCase):
 
         self.assertEqual(item.name, "foo")
         self.assertEqual(item.reference, None)
-        self.assertEqual(list(item.metadata.keys()), [ "one", ])
-        self.assertEqual(item.metadata["one"].Value, "two")
+        self.assertEqual(list(item.metadata.Values.keys()), [ "one", ])
+        self.assertEqual(item.metadata.Values["one"].Value, "two")
         self.assertEqual(item.arity, None)
 
     # ----------------------------------------------------------------------
@@ -438,7 +427,7 @@ class NamedObjSuite(unittest.TestCase):
 
         self.assertEqual(item.name, "foo")
         self.assertEqual(item.reference, None)
-        self.assertEqual(item.metadata, {})
+        self.assertEqual(item.metadata.Values, {})
         self.assertEqual(item.arity, Arity.FromString('?'))
 
     # ----------------------------------------------------------------------
@@ -447,8 +436,8 @@ class NamedObjSuite(unittest.TestCase):
 
         self.assertEqual(item.name, "foo")
         self.assertEqual(item.reference, None)
-        self.assertEqual(list(item.metadata.keys()), [ "one", ])
-        self.assertEqual(item.metadata["one"].Value, "two")
+        self.assertEqual(list(item.metadata.Values.keys()), [ "one", ])
+        self.assertEqual(item.metadata.Values["one"].Value, "two")
         self.assertEqual(item.arity, Arity.FromString('?'))
 
     # ----------------------------------------------------------------------
@@ -460,16 +449,16 @@ class NamedObjSuite(unittest.TestCase):
             item = root.items[0]
             self.assertEqual(item.name, "foo")
             self.assertEqual(item.reference, None)
-            self.assertEqual(list(item.metadata.keys()), [ "one", ])
-            self.assertEqual(item.metadata["one"].Value, "two")
+            self.assertEqual(list(item.metadata.Values.keys()), [ "one", ])
+            self.assertEqual(item.metadata.Values["one"].Value, "two")
             self.assertEqual(len(item.items), 0)
 
             item = root.items[1]
             self.assertEqual(item.name, "bar")
             self.assertEqual(item.reference, None)
-            self.assertEqual(list(item.metadata.keys()), [ "one", "three", ])
-            self.assertEqual(item.metadata["one"].Value, "two")
-            self.assertEqual(item.metadata["three"].Value, "four")
+            self.assertEqual(list(item.metadata.Values.keys()), [ "one", "three", ])
+            self.assertEqual(item.metadata.Values["one"].Value, "two")
+            self.assertEqual(item.metadata.Values["three"].Value, "four")
             self.assertEqual(len(item.items), 0)
 
         # ----------------------------------------------------------------------
@@ -536,8 +525,8 @@ class NamedObjSuite(unittest.TestCase):
 
         self.assertEqual(item.name, "baz")
         self.assertEqual(item.reference, "biz")
-        self.assertEqual(list(item.metadata.keys()), [ "one", ])
-        self.assertEqual(item.metadata["one"].Value, "two")
+        self.assertEqual(list(item.metadata.Values.keys()), [ "one", ])
+        self.assertEqual(item.metadata.Values["one"].Value, "two")
 
 # ----------------------------------------------------------------------
 class UnnamedDeclarationSuite(unittest.TestCase):
@@ -548,7 +537,7 @@ class UnnamedDeclarationSuite(unittest.TestCase):
 
         self.assertEqual(item.name, None)
         self.assertEqual(item.reference, "string")
-        self.assertFalse(item.metadata)
+        self.assertFalse(item.metadata.Values)
         self.assertFalse(item.arity)
 
     # ----------------------------------------------------------------------
@@ -557,8 +546,8 @@ class UnnamedDeclarationSuite(unittest.TestCase):
 
         self.assertEqual(item.name, None)
         self.assertEqual(item.reference, "string")
-        self.assertEqual(list(item.metadata.keys()), [ "one", ])
-        self.assertEqual(item.metadata["one"].Value, "two")
+        self.assertEqual(list(item.metadata.Values.keys()), [ "one", ])
+        self.assertEqual(item.metadata.Values["one"].Value, "two")
         self.assertFalse(item.arity)
 
     # ----------------------------------------------------------------------
@@ -567,7 +556,7 @@ class UnnamedDeclarationSuite(unittest.TestCase):
 
         self.assertEqual(item.name, None)
         self.assertEqual(item.reference, "string")
-        self.assertEqual(item.metadata, {})
+        self.assertEqual(item.metadata.Values, {})
         self.assertEqual(item.arity, Arity.FromString('?'))
 
     # ----------------------------------------------------------------------
@@ -576,8 +565,8 @@ class UnnamedDeclarationSuite(unittest.TestCase):
 
         self.assertEqual(item.name, None)
         self.assertEqual(item.reference, "string")
-        self.assertEqual(list(item.metadata.keys()), [ "one", ])
-        self.assertEqual(item.metadata["one"].Value, "two")
+        self.assertEqual(list(item.metadata.Values.keys()), [ "one", ])
+        self.assertEqual(item.metadata.Values["one"].Value, "two")
         self.assertEqual(item.arity, Arity.FromString('?'))
 
     # ----------------------------------------------------------------------
@@ -585,8 +574,8 @@ class UnnamedDeclarationSuite(unittest.TestCase):
         item = _Invoke("<(a|b|c)>").items[0]
 
         self.assertEqual(item.name, None)
-        self.assertEqual(item.reference, [ ( "a", [] ), ( "b", [] ), ( "c", [] ), ])
-        self.assertEqual(item.metadata, {})
+        self.assertEqual([ name for name, _ in item.reference ], [ "a", "b", "c", ])
+        self.assertEqual(item.metadata.Values, {})
         self.assertEqual(item.arity, None)
 
     # ----------------------------------------------------------------------
@@ -594,9 +583,9 @@ class UnnamedDeclarationSuite(unittest.TestCase):
         item = _Invoke("<(a|b|c) one='two'>").items[0]
 
         self.assertEqual(item.name, None)
-        self.assertEqual(item.reference, [ ( "a", [] ), ( "b", [] ), ( "c", [] ), ])
-        self.assertEqual(list(item.metadata.keys()), [ "one", ])
-        self.assertEqual(item.metadata["one"].Value, "two")
+        self.assertEqual([ name for name, _ in item.reference ], [ "a", "b", "c", ])
+        self.assertEqual(list(item.metadata.Values.keys()), [ "one", ])
+        self.assertEqual(item.metadata.Values["one"].Value, "two")
         self.assertEqual(item.arity, None)
 
     # ----------------------------------------------------------------------
@@ -605,12 +594,12 @@ class UnnamedDeclarationSuite(unittest.TestCase):
 
         self.assertEqual(item.name, None)
         self.assertEqual([ name for name, _ in item.reference ], [ "a", "b", "c", ])
-        self.assertEqual(item.reference[0], ( "a", [] ))
-        self.assertEqual(len(item.reference[1][1]), 1)
-        self.assertEqual(item.reference[1][1][0][1].Value, 2.0)
-        self.assertEqual(item.reference[2], ( "c", [] ))
-        self.assertEqual(list(item.metadata.keys()), [ "one", ])
-        self.assertEqual(item.metadata["one"].Value, "two")
+        self.assertEqual(item.reference[0][1].Values, {})
+        self.assertEqual(list(item.reference[1][1].Values.keys()), [ "inner", ])
+        self.assertEqual(item.reference[1][1].Values["inner"].Value, 2.0)
+        self.assertEqual(item.reference[2][1].Values, {})
+        self.assertEqual(list(item.metadata.Values.keys()), [ "one", ])
+        self.assertEqual(item.metadata.Values["one"].Value, "two")
         self.assertEqual(item.arity, None)
 
 # ----------------------------------------------------------------------
@@ -622,7 +611,7 @@ class NamedDelcarationSuite(unittest.TestCase):
 
         self.assertEqual(item.name, "foo")
         self.assertEqual(item.reference, "string")
-        self.assertFalse(item.metadata)
+        self.assertFalse(item.metadata.Values)
         self.assertFalse(item.arity)
 
     # ----------------------------------------------------------------------
@@ -631,8 +620,8 @@ class NamedDelcarationSuite(unittest.TestCase):
 
         self.assertEqual(item.name, "foo")
         self.assertEqual(item.reference, "string")
-        self.assertEqual(list(item.metadata.keys()), [ "one", ])
-        self.assertEqual(item.metadata["one"].Value, "two")
+        self.assertEqual(list(item.metadata.Values.keys()), [ "one", ])
+        self.assertEqual(item.metadata.Values["one"].Value, "two")
         self.assertFalse(item.arity)
 
     # ----------------------------------------------------------------------
@@ -641,7 +630,7 @@ class NamedDelcarationSuite(unittest.TestCase):
 
         self.assertEqual(item.name, "foo")
         self.assertEqual(item.reference, "string")
-        self.assertEqual(item.metadata, {})
+        self.assertEqual(item.metadata.Values, {})
         self.assertEqual(item.arity, Arity.FromString('?'))
 
     # ----------------------------------------------------------------------
@@ -650,8 +639,8 @@ class NamedDelcarationSuite(unittest.TestCase):
 
         self.assertEqual(item.name, "foo")
         self.assertEqual(item.reference, "string")
-        self.assertEqual(list(item.metadata.keys()), [ "one", ])
-        self.assertEqual(item.metadata["one"].Value, "two")
+        self.assertEqual(list(item.metadata.Values.keys()), [ "one", ])
+        self.assertEqual(item.metadata.Values["one"].Value, "two")
         self.assertEqual(item.arity, Arity.FromString('?'))
 
     # ----------------------------------------------------------------------
@@ -659,8 +648,8 @@ class NamedDelcarationSuite(unittest.TestCase):
         item = _Invoke("<(a|b|c)>").items[0]
 
         self.assertEqual(item.name, None)
-        self.assertEqual(item.reference, [ ( "a", [] ), ( "b", [] ), ( "c", [] ), ])
-        self.assertEqual(item.metadata, {})
+        self.assertEqual([ name for name, _ in item.reference ], [ "a", "b", "c", ])
+        self.assertEqual(item.metadata.Values, {})
         self.assertEqual(item.arity, None)
 
     # ----------------------------------------------------------------------
@@ -668,9 +657,9 @@ class NamedDelcarationSuite(unittest.TestCase):
         item = _Invoke("<foo (a|b|c) one='two'>").items[0]
 
         self.assertEqual(item.name, "foo")
-        self.assertEqual(item.reference, [ ( "a", [] ), ( "b", [] ), ( "c", [] ), ])
-        self.assertEqual(list(item.metadata.keys()), [ "one", ])
-        self.assertEqual(item.metadata["one"].Value, "two")
+        self.assertEqual([ name for name, _ in item.reference ], [ "a", "b", "c", ])
+        self.assertEqual(list(item.metadata.Values.keys()), [ "one", ])
+        self.assertEqual(item.metadata.Values["one"].Value, "two")
         self.assertEqual(item.arity, None)
 
     # ----------------------------------------------------------------------
@@ -679,12 +668,12 @@ class NamedDelcarationSuite(unittest.TestCase):
 
         self.assertEqual(item.name, "foo")
         self.assertEqual([ name for name, _ in item.reference ], [ "a", "b", "c", ])
-        self.assertEqual(item.reference[0], ( "a", [] ))
-        self.assertEqual(len(item.reference[1][1]), 1)
-        self.assertEqual(item.reference[1][1][0][1].Value, 2.0)
-        self.assertEqual(item.reference[2], ( "c", [] ))
-        self.assertEqual(list(item.metadata.keys()), [ "one", ])
-        self.assertEqual(item.metadata["one"].Value, "two")
+        self.assertEqual(item.reference[0][1].Values, {})
+        self.assertEqual(list(item.reference[1][1].Values.keys()), [ "inner", ])
+        self.assertEqual(item.reference[1][1].Values["inner"].Value, 2.0)
+        self.assertEqual(item.reference[2][1].Values, {})
+        self.assertEqual(list(item.metadata.Values.keys()), [ "one", ])
+        self.assertEqual(item.metadata.Values["one"].Value, "two")
         self.assertEqual(item.arity, None)
 
 # ----------------------------------------------------------------------

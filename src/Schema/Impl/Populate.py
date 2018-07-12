@@ -37,9 +37,9 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 
 sys.path.insert(0, os.path.join(_script_dir, "..", "Grammar", "GeneratedCode"))
 with CallOnExit(lambda: sys.path.pop(0)):
-    from SimpleSchemaLexer import SimpleSchemaLexer
-    from SimpleSchemaParser import SimpleSchemaParser
-    from SimpleSchemaVisitor import SimpleSchemaVisitor
+    from SimpleSchemaLexer import SimpleSchemaLexer                         # <Unable to import> pylint: disable = E0401
+    from SimpleSchemaParser import SimpleSchemaParser                       # <Unable to import> pylint: disable = E0401
+    from SimpleSchemaVisitor import SimpleSchemaVisitor                     # <Unable to import> pylint: disable = E0401
 
 with ApplyRelativePackage():
     from .Item import Item
@@ -67,6 +67,8 @@ def Populate( source_name_content_generators,           # { "name" : def Func() 
 
     # ----------------------------------------------------------------------
     class Visitor(SimpleSchemaVisitor):
+        # <PascalCase naming style> pylint: disable = C0103
+
         # ----------------------------------------------------------------------
         def __init__(self, source_name, is_external):
             self._source_name               = source_name
@@ -193,7 +195,11 @@ def Populate( source_name_content_generators,           # { "name" : def Func() 
         # ----------------------------------------------------------------------
         def visitMetadataList(self, ctx):
             values = self._GetChildValues(ctx)
-            self._stack.append(values)
+            self._stack.append(Item.Metadata( OrderedDict(values),
+                                              self._source_name,
+                                              ctx.start.line,
+                                              ctx.start.column + 1,
+                                            ))
 
         # ----------------------------------------------------------------------
         def visitArityOptional(self, ctx):
@@ -292,24 +298,14 @@ def Populate( source_name_content_generators,           # { "name" : def Func() 
             assert len(values) >= 2, len(values)
 
             name = values.pop(0)
-            metadata = values
-            assert self._IsMetadata(metadata)
 
-            if name in root.config:
-                raise PopulateDuplicateConfigException( self._source_name,
-                                                        ctx.start.line,
-                                                        ctx.start.column + 1,
-                                                        name=name,
-                                                        original_source=root.config[name].Filename,
-                                                        original_line=root.config[name].Line,
-                                                        original_column=root.config[name].Column,
-                                                      )
-
-            root.config[name] = Item.Metadata( OrderedDict([ kvp for kvp in metadata ]),
-                                               self._source_name,
-                                               ctx.start.line,
-                                               ctx.start.column + 1,
-                                             )
+            assert isinstance(values, list) and all(isinstance(v, Item.MetadataValue) for k, v in values)
+            
+            root.config.setdefault(name, []).append(Item.Metadata( OrderedDict(values),
+                                                                   self._source_name,
+                                                                   ctx.start.line,
+                                                                   ctx.start.column + 1,
+                                                                 ))
 
         # ----------------------------------------------------------------------
         def visitUnnamedObj(self, ctx):
@@ -402,9 +398,7 @@ def Populate( source_name_content_generators,           # { "name" : def Func() 
 
             item = self._GetStackParent()
             
-            for k, v in (metadata or []):
-                item.metadata[k] = v
-
+            item.metadata = metadata
             item.arity = arity
 
         # ----------------------------------------------------------------------
@@ -494,9 +488,7 @@ def Populate( source_name_content_generators,           # { "name" : def Func() 
             else:
                 assert False
 
-            for k, v in (metadata or []):
-                item.metadata[k] = v
-
+            item.metadata = metadata
             item.arity = arity
 
         # ----------------------------------------------------------------------
@@ -587,14 +579,7 @@ def Populate( source_name_content_generators,           # { "name" : def Func() 
         # ----------------------------------------------------------------------
         @staticmethod
         def _IsMetadata(value):
-            if not isinstance(value, list):
-                return False
-
-            for item in value:
-                if not isinstance(item, tuple) or len(item) != 2 or not isinstance(item[1], Item.MetadataValue):
-                    return False
-
-            return True
+            return isinstance(value, Item.Metadata)
 
         # ----------------------------------------------------------------------
         @staticmethod

@@ -25,6 +25,7 @@ import six
 
 from CommonEnvironment import Nonlocals
 from CommonEnvironment.CallOnExit import CallOnExit
+from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment.TypeInfo import Arity
 
 from CommonEnvironmentEx.Antlr4Helpers.ErrorListener import ErrorListener
@@ -195,7 +196,23 @@ def Populate( source_name_content_generators,           # { "name" : def Func() 
         # ----------------------------------------------------------------------
         def visitMetadataList(self, ctx):
             values = self._GetChildValues(ctx)
-            self._stack.append(Item.Metadata( OrderedDict(values),
+
+            metadata = OrderedDict()
+
+            for name, value in values:
+                if name in metadata:
+                    raise PopulateDuplicateMetadataException( value.Source,
+                                                              value.Line,
+                                                              value.Column,
+                                                              name=name,
+                                                              original_source=metadata[name].Source,
+                                                              original_line=metadata[name].Line,
+                                                              original_column=metadata[name].Column,
+                                                            )
+
+                metadata[name] = value
+
+            self._stack.append(Item.Metadata( metadata,
                                               self._source_name,
                                               ctx.start.line,
                                               ctx.start.column + 1,
@@ -299,9 +316,7 @@ def Populate( source_name_content_generators,           # { "name" : def Func() 
 
             name = values.pop(0)
 
-            assert isinstance(values, list) and all(isinstance(v, Item.MetadataValue) for k, v in values)
-            
-            root.config.setdefault(name, []).append(Item.Metadata( OrderedDict(values),
+            root.config.setdefault(name, []).append(Item.Metadata( OrderedDict([ ( k, v._replace(Soure=Item.MetadataSource.Config) ) for k, v in values ]),
                                                                    self._source_name,
                                                                    ctx.start.line,
                                                                    ctx.start.column + 1,
@@ -366,6 +381,8 @@ def Populate( source_name_content_generators,           # { "name" : def Func() 
                     reference = None
                 else:
                     assert False, values
+
+                self._ValidateName(item, name)
 
                 item.name = name
                 item.reference = reference
@@ -452,6 +469,8 @@ def Populate( source_name_content_generators,           # { "name" : def Func() 
                 
                 assert len(values) == 1, values
                 name = values[0]
+
+                self._ValidateName(item, name)
 
                 item.name = name
 
@@ -585,6 +604,21 @@ def Populate( source_name_content_generators,           # { "name" : def Func() 
         @staticmethod
         def _IsArity(value):
             return isinstance(value, Arity)
+
+        # ----------------------------------------------------------------------
+        @staticmethod
+        def _ValidateName(item, name):
+            # Validating name here rather than in Validate.py as the name is used
+            # during Resolution (in Resolve.py), which happens before Validate is
+            # called.
+            if name in FUNDAMENTAL_ELEMENTS or name in [ ANY_ELEMENT_NAME,
+                                                         CUSTOM_ELEMENT_NAME,
+                                                       ]:
+                raise PopulateReservedNameException( item.Source,
+                                                     item.Line,
+                                                     item.Column, 
+                                                     name=name,
+                                                   )
 
     # ----------------------------------------------------------------------
     def Impl(name, antlr_stream, is_external):

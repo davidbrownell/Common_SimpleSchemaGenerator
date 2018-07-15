@@ -14,19 +14,105 @@
 # ----------------------------------------------------------------------
 """Contains the Item object"""
 
+import copy
+import itertools
 import os
 import sys
 
 from collections import OrderedDict, namedtuple
 
 from enum import Enum
+import six
 
 import CommonEnvironment
+from CommonEnvironment.Interface import *
+
+from CommonEnvironmentEx.Package import ApplyRelativePackage
 
 # ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
+
+with ApplyRelativePackage():
+    from ..Elements import *
+    from ..Metadata import *
+
+# ----------------------------------------------------------------------
+ANY_ELEMENT_NAME                            = "any"
+CUSTOM_ELEMENT_NAME                         = "custom"
+
+# ----------------------------------------------------------------------
+class MetadataSource(Enum):
+    Explicit = 1
+    Config = 2
+    Default = 3
+        
+# ----------------------------------------------------------------------    
+MetadataValue                               = namedtuple( "MetadataValue",
+                                                          [ "Value",
+                                                            "MetadataSource",
+                                                            "Source",
+                                                            "Line",
+                                                            "Column",
+                                                          ],
+                                                        )
+
+# ----------------------------------------------------------------------
+Metadata                                    = namedtuple( "Metadata",
+                                                          [ "Values",
+                                                            "Source",
+                                                            "Line",
+                                                            "Column",
+                                                          ],
+                                                        )
+    
+# ----------------------------------------------------------------------
+class ResolvedMetadata(object):
+    """Metadata values and metadata info"""
+
+    # ----------------------------------------------------------------------
+    def __init__( self,
+                  values,
+                  required_metadata_items,
+                  optional_metadata_items,
+                ):
+        self.Values                         = values
+        self.RequiredMetadataItems          = required_metadata_items
+        self.OptionalMetadataItems          = optional_metadata_items
+
+    # ----------------------------------------------------------------------
+    def __repr__(self):
+        return CommonEnvironment.ObjectReprImpl(self)
+
+    # ----------------------------------------------------------------------
+    def Clone(self, merge_metadata=None):
+        """Clones the current item, optionally merging it with the provided info"""
+
+        values = copy.deepcopy(self.Values)
+        required_metadata_items = copy.deepcopy(self.RequiredMetadataItems)
+        optional_metadata_items = copy.deepcopy(self.OptionalMetadataItems)
+
+        if merge_metadata:
+            for k, v in six.iteritems(merge_metadata.Values):
+                if k not in values:
+                    values[k] = v
+
+            rmi_names = set(md.Name for md in required_metadata_items)
+            omi_names = set(md.Name for md in optional_metadata_items)
+
+            for md in merge_metadata.RequiredMetadataItems:
+                if md.Name not in rmi_names:
+                    required_metadata_items.append(md)
+
+            for md in merge_metadata.OptionalMetadataItems:
+                if md.Name not in omi_names:
+                    optional_metadata_items.append(md)
+
+        return self.__class__( values,
+                               required_metadata_items,
+                               optional_metadata_items,
+                             )
 
 # ----------------------------------------------------------------------
 class Item(object):
@@ -37,33 +123,12 @@ class Item(object):
     class DeclarationType(Enum):
         Object = 1
         Declaration = 2
+        Extension = 3
 
     class ItemType(Enum):
         Standard = 1
         Attribute = 2
         Definition = 3
-
-    class MetadataSource(Enum):
-        Explicit = 1
-        Default = 2
-        Config = 3
-
-    Metadata                                = namedtuple( "Metadata",
-                                                          [ "Values",
-                                                            "Filename",
-                                                            "Line",
-                                                            "Column",
-                                                          ],
-                                                        )
-
-    MetadataValue                           = namedtuple( "MetadataValue",
-                                                          [ "Value",
-                                                            "Source",
-                                                            "Filename",
-                                                            "Line",
-                                                            "Column",
-                                                          ],
-                                                        )
 
     # ----------------------------------------------------------------------
     def __init__( self,
@@ -75,7 +140,7 @@ class Item(object):
                   column,
                   is_external,              # True if the item is defined in another file
                 ):
-        # Populated during Parse
+        # Populated during Populate
         self.DeclarationType                = declaration_type
         self.ItemType                       = item_type
         self.Parent                         = parent
@@ -86,26 +151,108 @@ class Item(object):
 
         self.name                           = None
         self.reference                      = None
-        self.metadata                       = OrderedDict()
+        
+        self.metadata                       = None
         self.arity                          = None
         self.items                          = []
 
-        self.positional_arguments           = []
-        self.keyword_arguments              = OrderedDict()
+        self.positional_arguments           = []                            # Only used for extensions
+        self.keyword_arguments              = OrderedDict()                 # Only used for extensions
         
-        # BugBug: Validate items below
-
-        # Populated during Validation
+        # Populated during Resolve
         self.referenced_by                  = []
-
-        # Populated during Commit
-        self._is_committed                  = False
         self.element_type                   = None
+        self.original_name                  = None
+
+        # Populated during Transform
         self.key                            = None
-        self.is_new_type                    = None
 
-    # BugBug # ----------------------------------------------------------------------
-    # BugBug def __repr__(self):
-    # BugBug     return CommonEnvironment.ObjectReprImpl(self)
+    # ----------------------------------------------------------------------
+    def Enumerate(self):
+        if self.element_type == VariantElement:
+            for item in self.reference:
+                yield item
+        else:
+            yield self
 
-    # BugBug: More here
+# ----------------------------------------------------------------------
+class ItemVisitor(Interface):
+    """Visitor for Item objects based on element_type"""
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @abstractmethod
+    def OnFundamental(item):
+        raise Exception("Abstract method")
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @abstractmethod
+    def OnCompound(item):
+        raise Exception("Abstract method")
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @abstractmethod
+    def OnSimple(item):
+        raise Exception("Abstract method")
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @abstractmethod
+    def OnAny(item):
+        raise Exception("Abstract method")
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @abstractmethod
+    def OnCustom(item):
+        raise Exception("Abstract method")
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @abstractmethod
+    def OnVariant(item):
+        raise Exception("Abstract method")
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @abstractmethod
+    def OnList(item):
+        raise Exception("Abstract method")
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @abstractmethod
+    def OnExtension(item):
+        raise Exception("Abstract method")
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @abstractmethod
+    def OnReference(item):
+        raise Exception("Abstract method")
+
+    # ----------------------------------------------------------------------
+    @classmethod
+    def Accept(cls, item):
+        if item.element_type == FundamentalElement:
+            return cls.OnFundamental(item)
+        elif item.element_type == CompoundElement:
+            return cls.OnCompound(item)
+        elif item.element_type == SimpleElement:
+            return cls.OnSimple(item)
+        elif item.element_type == AnyElement:
+            return cls.OnAny(item)
+        elif item.element_type == CustomElement:
+            return cls.OnCustom(item)
+        elif item.element_type == VariantElement:
+            return cls.OnVariant(item)
+        elif item.element_type == ListElement:
+            return cls.OnList(item)
+        elif item.element_type == ExtensionElement:
+            return cls.OnExtension(item)
+        elif item.element_type == ReferenceElement:
+            return cls.OnReference(item)
+        else:
+            assert False, item.element_type

@@ -14,10 +14,15 @@
 # ----------------------------------------------------------------------
 """Contains the Plugin object"""
 
+import copy
+import itertools
 import os
 import sys
 
+from collections import namedtuple
+
 from enum import IntFlag, auto
+import six
 
 from CommonEnvironment.BitFlagEnum import BitFlagEnum, auto
 from CommonEnvironment.Interface import *
@@ -30,7 +35,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
 # ----------------------------------------------------------------------
-class ParseFlag(IntFlag):
+class ParseFlag(BigFlagEnum):
     """Flags that communicate the capabilities of a parser"""
 
     SupportAttributes                       = auto()
@@ -47,13 +52,11 @@ class ParseFlag(IntFlag):
     SupportChildDeclarations                = auto()
     SupportChildObjects                     = auto()
 
-    SupportCustomTypes                      = auto()
-
-    SupportAliases                          = auto()
-    SupportLists                            = auto()
-    SupportSimpleObjects                    = auto()
+    SupportCustomElements                   = auto()
     SupportAnyElements                      = auto()
-    SupportVariants                         = auto()
+    SupportAliasElements                    = auto()
+    SupportSimpleObjectElements             = auto()
+    SupportVariantElements                  = auto()
 
     # Parse behavior
     ResolveReferences                       = auto()
@@ -92,24 +95,72 @@ class Plugin(PluginBase):
 
     # ----------------------------------------------------------------------
     @staticmethod
-    @abstractmethod
+    @extensionmethod
     def GetExtensions():
         """Return a list of supported extension names"""
-        raise Exception("Abstract method")
+
+        # No extensions by default
+        return []
 
     # ----------------------------------------------------------------------
     @staticmethod
-    @abstractmethod
-    def GetRequiredMetadata(element_type, name, resolved_element_type):
-        """Returns a list of metadata items for the provided element"""
-        raise Exception("Abstract method")
+    @extensionmethod
+    def BreaksReferenceChain(item):
+        """\
+        Return True to terminate reference chain traversal. Plugins may override
+        this method to terminate reference traversal early (for example, based on
+        the presense of a specific metadata item).
+        """
+
+        # Terminate traversal for collections; this allows N-dimentation tensors.
+        return item.arity and item.arity.IsCollection and ("refines_arity" not in item.metadata.Values or not item.metadata.Values["refines_arity"].Value)
+
+    # BugBug # ----------------------------------------------------------------------
+    # BugBug @staticmethod
+    # BugBug @extensionmethod
+    # BugBug def ResolveReferenceArity(item):
+    # BugBug     """\
+    # BugBug     Returns the arity for the provided reference item. Custom plugins may
+    # BugBug     override this method to influence how references are resolved (for example,
+    # BugBug     a plugin may not want to fully traverse a reference chain if one of those 
+    # BugBug     references contains a special metadata value).
+    # BugBug     """
+    # BugBug 
+    # BugBug     # Use the default behavior - walk the reference chain and return the first
+    # BugBug     # valid arity encountered.
+    # BugBug     return item.ResolveReferenceArity()
+    # BugBug 
+    # BugBug # ----------------------------------------------------------------------
+    # BugBug @staticmethod
+    # BugBug @extensionmethod
+    # BugBug def ResolveReferenceMetadataInfo( item, 
+    # BugBug                                   initial_metadata_info=None,
+    # BugBug                                 ):
+    # BugBug     """\
+    # BugBug     Returns metadata for the provided reference item. Custom plugins may
+    # BugBug     override this method to influence how references are resolved (for example,
+    # BugBug     a plugin may not want to fuly traverse a reference chain if one of those
+    # BugBug     references contains a special metadata value).
+    # BugBug 
+    # BugBug     Returns .Impl.Item.Item.ResolvedMetadata
+    # BugBug     """
+    # BugBug 
+    # BugBug     # Use the default behavior - walk the reference chain and merge all metadata
+    # BugBug     # encountered.
+    # BugBug     return item.ResolveReferenceMetadata(initial_metadata_info)
 
     # ----------------------------------------------------------------------
     @staticmethod
-    @abstractmethod
-    def GetOptionalMetadata(element_type, name, resolved_element_type):
-        """Returns a list of optional metadata items for the provided element"""
-        raise Exception("Abstract method")
+    @extensionmethod
+    def GetRequiredMetadataItems(item):
+        """Returns a list of metadata items for the provided item."""
+        return []
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @extensionmethod
+    def GetOptionalMetadataItems(item):
+        return []
 
     # ----------------------------------------------------------------------
     @staticmethod

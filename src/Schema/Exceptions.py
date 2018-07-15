@@ -64,6 +64,7 @@ class SimpleSchemaException(CompilerImpl.DiagnosticException):
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
+# BugBug: Ensure that all of these are used
 class PopulateUnsupportedIncludeStatementsException(SimpleSchemaException):         Display = "Include statements are not supported"
 class PopulateUnsupportedConfigStatementsException(SimpleSchemaException):          Display = "Config statements are not supported"
 class PopulateUnsupportedUnnamedObjectsException(SimpleSchemaException):            Display = "Unnamed objects are not supported"
@@ -82,4 +83,31 @@ class PopulateInvalidIncludeFilenameException(SimpleSchemaException):           
 class PopulateInvalidArityException(SimpleSchemaException):                         Display = "The arity value '{value}' must be greater than or equal to 1"
 class PopulateInvalidMaxArityException(SimpleSchemaException):                      Display = "The maximum arity value '{max}' must be greater than the minimum value '{min}'"
 
-class PopulateDuplicateConfigException(SimpleSchemaException):                      Display = "Configuration information for '{name}' has already been specified in {original_source} <{original_line} [{original_column}]>"
+class PopulateDuplicateMetadataException(SimpleSchemaException):                    Display = "The metadata value '{name}' has already been provided ({original_source} [{original_line} <{original_column}>])"
+class PopulateReservedNameException(SimpleSchemaException):                         Display = "The name '{name}' is reserved and cannot be used as an element name; consider using the attbute 'name' to explicitly override this value"
+
+class ResolveInvalidReferenceException(SimpleSchemaException):                      Display = "The reference '{name}' could not be resolved"
+class ResolveInvalidCustomNameException(SimpleSchemaException):                     Display = "The value '{name}' is not a valid name"
+
+class ValidateCycleException(SimpleSchemaException):                                Display = "A dependency cycle was detected:\n\n{info}\n"
+
+class ValidateUnsupportedCustomElementsException(SimpleSchemaException):            Display = "Custom elements are not supported"
+class ValidateUnsupportedAnyElementsException(SimpleSchemaException):               Display = "Any elements are not supported"
+class ValidateUnsupportedAliasElementsException(SimpleSchemaException):             Display = "Alias elements are not supported"
+class ValidateUnsupportedSimpleObjectElementsException(SimpleSchemaException):      Display = "Simple object elements are not supported"
+class ValidateUnsupportedVariantElementsException(SimpleSchemaException):           Display = "Variant elements are not supported"
+
+class ValidateDuplicateNameException(SimpleSchemaException):                        Display = "The element name '{name}' has already been defined ({original_source} [{original_line} <{original_column}>])"
+class ValidateInvalidExtensionException(SimpleSchemaException):                     Display = "The extension '{name}' is not a supported extension"
+class ValidateInvalidVariantArityException(SimpleSchemaException):                  Display = "Varaint elements may only reference other elements with an arity of 1 (Index: {index})"
+
+class ValidateMissingMetadataException(SimpleSchemaException):                      Display = "The required metadata value '{name}' was not provided"
+class ValidateExtraneousMetadataException(SimpleSchemaException):                   Display = "The metadata value for '{name}' was not regognized"
+class ValidateInvalidMetadataException(SimpleSchemaException):                      Display = "The metadata value '{value}' for '{name}' is not valid: '{reason}'"
+
+class ValidateInvalidSuppressPolymorphicException(SimpleSchemaException):           Display = "The metadata value 'supress_polymorphic' can only be used on elements that reference an element with 'polymorphic' set to true"
+class ValidateMissingUniqueKeyException(SimpleSchemaException):                     Display = "The 'unique_key' value '{name}' does not match the name of a child element"
+class ValidateInvalidUniqueKeyException(SimpleSchemaException):                     Display = "Elements named by 'unique_key' must be fundamental, not definitions, and have an arity of 1"
+class ValidateInvalidRefinesArityException(SimpleSchemaException):                  Display = "The metadata value 'refines_arity' can only be used when referencing another element"
+
+class InvalidAttributeNameException(SimpleSchemaException):                         Display = "The metadata name '{name}' is reserved and cannot be used"

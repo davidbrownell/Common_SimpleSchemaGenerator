@@ -37,10 +37,11 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 
 with ApplyRelativePackage():
     from .Item import *
+    
     from ..Elements import *
     from ..Exceptions import *
-    from ..Metadata import *
-    from ...Plugin import PluginFlag
+    
+    from ...Plugin import ParseFlag
 
 # ----------------------------------------------------------------------
 def Transform(root, plugin):
@@ -67,9 +68,10 @@ def Transform(root, plugin):
                 # ----------------------------------------------------------------------
                 @staticmethod
                 def OnFundamental(item):
-                    return FundamentalElement( is_attribute=item.ItemType == Item.ItemType.Attribute and (plugin.Flags & PluginFlag.SupportAttributes),
+                    return FundamentalElement( is_attribute=item.ItemType == Item.ItemType.Attribute and (plugin.Flags & ParseFlag.SupportAttributes),
                                                
                                                name=item.name,
+                                               original_name=item.original_name,
                                                source=item.Source,
                                                line=item.Line,
                                                column=item.Column,
@@ -88,6 +90,7 @@ def Transform(root, plugin):
                                             base=Create(item.reference) if item.reference else None,
 
                                             name=item.name,
+                                            original_name=item.original_name,
                                             source=item.Source,
                                             line=item.Line,
                                             column=item.Column,
@@ -109,6 +112,7 @@ def Transform(root, plugin):
                 @staticmethod
                 def OnAny(item):
                     return AnyElement( name=item.Name,
+                                       original_name=item.original_name,
                                        source=item.Source,
                                        line=item.Line,
                                        column=item.Column,
@@ -123,6 +127,7 @@ def Transform(root, plugin):
                 @staticmethod
                 def OnCustom(item):
                     return CustomElement( name=item.Name,
+                                          original_name=item.original_name,
                                           source=item.Source,
                                           line=item.Line,
                                           column=item.Column,
@@ -136,11 +141,8 @@ def Transform(root, plugin):
                 # ----------------------------------------------------------------------
                 @staticmethod
                 def OnVariant(item):
-                    raise Exception("BugBug: Abstract method")
-            
-                # ----------------------------------------------------------------------
-                @staticmethod
-                def OnList(item):
+                    # BugBug: Validate that items are unique... somehow
+
                     raise Exception("BugBug: Abstract method")
             
                 # ----------------------------------------------------------------------
@@ -202,8 +204,8 @@ def Transform(root, plugin):
                 kwargs = { "arity" : element._item.arity,
                          }
 
-                for md in itertools.chain( element._item.reference.RequiredMetadataItems,
-                                           element._item.reference.OptionalMetadataItems,
+                for md in itertools.chain( element._item.reference.RequiredItems,
+                                           element._item.reference.OptionalItems,
                                          ):
                     if md.Name in element._item.metadata.Values:
                         kwargs[md.Name] = element._item.metadata.Values[md.Name].Value
@@ -270,10 +272,45 @@ def Transform(root, plugin):
 
     # ----------------------------------------------------------------------
     def ApplyMetadata(element):
-        element.ApplyMetadata(element._item.metadata.Values)
+        element.Metadata = element._item.metadata
+        element.AttributeNames = list(six.iterkeys(element._item.metadata.Values))
+
+        for k, v in six.iteritems(element._item.metadata.Values):
+            if hasattr(element, k):
+                raise InvalidAttributeNameException( source,
+                                                     line,
+                                                     column,
+                                                     name=k,
+                                                   )
+
+            setattr(element, k, v.Value)
 
         for child in getattr(element, "Children", []):
             ApplyMetadata(child)
+
+    # ----------------------------------------------------------------------
+    def ValidateMetadata(element):
+        for md in itertools.chain( element._item.metadata.RequiredItems,
+                                   element._item.metadata.OptionalItems,
+                                 ):
+            result = None
+
+            if md.Name in element._item.metadata.Values:
+                if md.ValidateFunc is not None:
+                    result = md.ValidateFunc(plugin, element)
+            elif md.Name not in element._item.metadata.Values:
+                if md.MissingValidateFunc is not None:
+                    result = md.MissingValidateFunc(plugin, element)
+
+            if result is not None:
+                raise InvalidAttributeException( element._item.metadata.Values[md.Name].Source,
+                                                 element._item.metadata.Values[md.Name].Line,
+                                                 element._item.metadata.Values[md.Name].Column,
+                                                 desc=result,
+                                               )
+
+        for child in getattr(element, "Children", []):
+            ValidateMetadata(child)
 
     # ----------------------------------------------------------------------
     def Cleanup(element):
@@ -289,7 +326,12 @@ def Transform(root, plugin):
     ResolveParents(root_element, None)
     SecondaryPass(root_element)
     ApplyTypeInfo(root_element)
+
+    # Note that we apply the metadata before we validate it, so any custom validation logic
+    # can operate on fully initialized elements.
     ApplyMetadata(root_element)
+    ValidateMetadata(root_element)
+    
     Cleanup(root_element)
 
     return root_element
@@ -300,7 +342,6 @@ def Transform(root, plugin):
 def _CreateKey(item):
     names = []
 
-    item = self
     while item:
         names.append(item.name)
         item = item.Parent

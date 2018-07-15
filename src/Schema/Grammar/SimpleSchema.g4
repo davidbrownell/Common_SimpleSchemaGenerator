@@ -97,7 +97,7 @@ arityFixed:                                 LBRACE intRule RBRACE;
 arityVariable:                              LBRACE intRule COMMA intRule RBRACE;
 
 // Entry point, not decorated
-statements:                                 headerStatement__* standardStatement__* EOF;
+statements:                                 headerStatement__* standardStatement__* NEWLINE* EOF;
 
 headerStatement__:                          (includeStatement | configStatement) NEWLINE+;
 standardStatement__:                        (unnamedObj | obj | unnamedDeclaration | declaration | extension) NEWLINE+;

@@ -25,6 +25,8 @@ import six
 import CommonEnvironment
 from CommonEnvironment.Interface import *
 
+from CommonEnvironmentEx.Package import ApplyRelativePackage
+
 # ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
 _script_dir, _script_name = os.path.split(_script_fullpath)
@@ -39,6 +41,7 @@ class Element(Interface):
 
     # ----------------------------------------------------------------------
     def __init__( self,
+                  original_name,
                   name,
                   parent,
                   source,
@@ -47,16 +50,20 @@ class Element(Interface):
                   is_definition_only,
                   is_external,
                 ):
-        self.GivenName                      = name
-        self.Name                           = metadata.get("plural", name)
+        self.GivenName                      = original_name
+        self.Name                           = name
         self.Parent                         = parent
         self.Source                         = source
         self.Line                           = line
         self.Column                         = column
         self.IsDefinitionOnly               = is_definition_only
         self.IsExternal                     = is_external
-        self.Metadata                       = None                          # Set in SetMetadata
-        
+
+        # This will be the metadata associated with the original item (including Source, Line, and Column info).
+        # Individual values will be placed in Attributes and each key-value-pair will be made members of the class.
+        self.Metadata                       = None                          
+        self.AttributeNames                 = None
+
         self._cached_dotted_name            = None
         self._cached_dotted_type_name       = None
 
@@ -78,26 +85,6 @@ class Element(Interface):
             self._cached_dotted_type_name = self._DottedNameImpl(lambda e: e.GivenName)
 
         return self._cached_dotted_type_name
-
-    # ----------------------------------------------------------------------
-    def ApplyMetadata(self, metadata):
-        """Sets the metadata for this Element"""
-
-        metadata = OrderedDict([ ( k, getattr(v, "Value", v) ) for k, v in six.iteritems(metadata) ])
-
-        # As a convenience, make all of the metadata available on the object
-        for k, v in six.iteritems(metadata):
-            if hasattr(self, k):
-                raise InvalidAttributeNameException( source,
-                                                     line,
-                                                     column,
-                                                     name=k,
-                                                   )
-
-            setattr(self, k, v)
-        
-        self.Metadata = metadata
-        return self
 
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
@@ -252,69 +239,69 @@ class ElementVisitor(Interface):
     # ----------------------------------------------------------------------
     @staticmethod
     @abstractmethod
-    def OnFundamental(element):
+    def OnFundamental(element, *args, **kwargs):
         raise Exception("Abstract property")
 
     # ----------------------------------------------------------------------
     @staticmethod
     @abstractmethod
-    def OnCompound(element):
+    def OnCompound(element, *args, **kwargs):
         raise Exception("Abstract property")
 
     # ----------------------------------------------------------------------
     @staticmethod
     @abstractmethod
-    def OnSimple(element):
+    def OnSimple(element, *args, **kwargs):
         raise Exception("Abstract property")
 
     # ----------------------------------------------------------------------
     @staticmethod
     @abstractmethod
-    def OnAny(element):
+    def OnAny(element, *args, **kwargs):
         raise Exception("Abstract property")
 
     # ----------------------------------------------------------------------
     @staticmethod
     @abstractmethod
-    def OnCustom(element):
+    def OnCustom(element, *args, **kwargs):
         raise Exception("Abstract property")
 
     # ----------------------------------------------------------------------
     @staticmethod
     @abstractmethod
-    def OnExtension(element):
+    def OnExtension(element, *args, **kwargs):
         raise Exception("Abstract property")
 
     # ----------------------------------------------------------------------
     @staticmethod
     @abstractmethod
-    def OnVariant(element):
+    def OnVariant(element, *args, **kwargs):
         raise Exception("Abstract property")
 
     # ----------------------------------------------------------------------
     @staticmethod
     @abstractmethod
-    def OnReference(element):
+    def OnReference(element, *args, **kwargs):
         raise Exception("Abstract property")
 
     # ----------------------------------------------------------------------
     @classmethod
-    def Accept(cls, element):
-        if isinstance(element, FundamentalElement):
-            return cls.OnFundamental(element)
-        elif isinstance(element, CompoundElement):
-            return cls.OnCompound(element)
-        elif isinstance(element, SimpleElement):
-            return cls.OnSimple(element)
-        elif isinstance(element, AnyElement):
-            return cls.OnAny(element)
-        elif isinstance(element, CustomElement):
-            return cls.OnCustom(element)
-        elif isinstance(element, VariantElement):
-            return cls.OnVariant(element)
-        elif isinstance(element, ExtensionElement):
-            return cls.OnExtension(element)
-        elif isinstance(element, ReferenceElement):
-            return cls.OnReference(element)
-        else:
-            assert False, element
+    def Accept(cls, element, *args, **kwargs):
+        """Calls the appropriate On___ method based on the element type"""
+
+        lookup = { FundamentalElement       : cls.OnFundamental,
+                   CompoundElement          : cls.OnCompound,
+                   SimpleElement            : cls.OnSimple,
+                   AnyElement               : cls.OnAny,
+                   CustomElement            : cls.OnCustom,
+                   VariantElement           : cls.OnVariant,
+                   ExtensionElement         : cls.OnExtension,
+                   ReferenceElement         : cls.OnReference,
+                 }
+
+        typ = type(element)
+
+        if typ not in lookup:
+            raise Exception("'{}' was not expected".format(typ))
+
+        return lookup[typ](element, *args, **kwargs)

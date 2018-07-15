@@ -43,8 +43,11 @@ with CallOnExit(lambda: sys.path.pop(0)):
     from SimpleSchemaVisitor import SimpleSchemaVisitor                     # <Unable to import> pylint: disable = E0401
 
 with ApplyRelativePackage():
-    from .Item import Item
+    from .Item import *
+    
+    from ..Attributes import FUNDAMENTAL_ATTRIBUTE_INFO_MAP
     from ..Exceptions import *
+    
     from ...Plugin import ParseFlag
 
 # ----------------------------------------------------------------------
@@ -63,7 +66,9 @@ def Populate( source_name_content_generators,           # { "name" : def Func() 
                )
 
     root.name = "<root>"
-    root.declaration_type = -SimpleSchemaParser.RULE_obj
+    root.declaration_type = None
+    root.metadata = ResolvedMetadata({}, [], [])
+
     root.config = OrderedDict()
 
     # ----------------------------------------------------------------------
@@ -185,12 +190,12 @@ def Populate( source_name_content_generators,           # { "name" : def Func() 
             name, value = values
 
             self._stack.append(( name,
-                                 Item.MetadataValue( value,
-                                                     Item.MetadataSource.Explicit,
-                                                     self._source_name,
-                                                     ctx.start.line,
-                                                     ctx.start.column + 1,
-                                                   ),
+                                 MetadataValue( value,
+                                                MetadataSource.Explicit,
+                                                self._source_name,
+                                                ctx.start.line,
+                                                ctx.start.column + 1,
+                                              ),
                                ))
 
         # ----------------------------------------------------------------------
@@ -212,11 +217,11 @@ def Populate( source_name_content_generators,           # { "name" : def Func() 
 
                 metadata[name] = value
 
-            self._stack.append(Item.Metadata( metadata,
-                                              self._source_name,
-                                              ctx.start.line,
-                                              ctx.start.column + 1,
-                                            ))
+            self._stack.append(Metadata( metadata,
+                                         self._source_name,
+                                         ctx.start.line,
+                                         ctx.start.column + 1,
+                                       ))
 
         # ----------------------------------------------------------------------
         def visitArityOptional(self, ctx):
@@ -316,11 +321,11 @@ def Populate( source_name_content_generators,           # { "name" : def Func() 
 
             name = values.pop(0)
 
-            root.config.setdefault(name, []).append(Item.Metadata( OrderedDict([ ( k, v._replace(Soure=Item.MetadataSource.Config) ) for k, v in values ]),
-                                                                   self._source_name,
-                                                                   ctx.start.line,
-                                                                   ctx.start.column + 1,
-                                                                 ))
+            root.config.setdefault(name, []).append(Metadata( OrderedDict([ ( k, v._replace(Soure=MetadataSource.Config) ) for k, v in values ]),
+                                                              self._source_name,
+                                                              ctx.start.line,
+                                                              ctx.start.column + 1,
+                                                            ))
 
         # ----------------------------------------------------------------------
         def visitUnnamedObj(self, ctx):
@@ -598,7 +603,7 @@ def Populate( source_name_content_generators,           # { "name" : def Func() 
         # ----------------------------------------------------------------------
         @staticmethod
         def _IsMetadata(value):
-            return isinstance(value, Item.Metadata)
+            return isinstance(value, Metadata)
 
         # ----------------------------------------------------------------------
         @staticmethod
@@ -611,9 +616,7 @@ def Populate( source_name_content_generators,           # { "name" : def Func() 
             # Validating name here rather than in Validate.py as the name is used
             # during Resolution (in Resolve.py), which happens before Validate is
             # called.
-            if name in FUNDAMENTAL_ELEMENTS or name in [ ANY_ELEMENT_NAME,
-                                                         CUSTOM_ELEMENT_NAME,
-                                                       ]:
+            if name in FUNDAMENTAL_ATTRIBUTE_INFO_MAP or name in [ "any", "custom", ]:
                 raise PopulateReservedNameException( item.Source,
                                                      item.Line,
                                                      item.Column, 

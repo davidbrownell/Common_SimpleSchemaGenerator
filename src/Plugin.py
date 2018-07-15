@@ -35,7 +35,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
 # ----------------------------------------------------------------------
-class ParseFlag(BigFlagEnum):
+class ParseFlag(BitFlagEnum):
     """Flags that communicate the capabilities of a parser"""
 
     SupportAttributes                       = auto()
@@ -54,7 +54,7 @@ class ParseFlag(BigFlagEnum):
 
     SupportCustomElements                   = auto()
     SupportAnyElements                      = auto()
-    SupportAliasElements                    = auto()
+    SupportRefereceElements                 = auto()
     SupportSimpleObjectElements             = auto()
     SupportVariantElements                  = auto()
 
@@ -89,8 +89,8 @@ class Plugin(PluginBase):
     # ----------------------------------------------------------------------
     def VerifyFlags(self):
         flags = self.Flags
-
-        if flags & ParseFlag.SupportSimpleObjects and not flags & ParseFlag.SupportAttributes:
+        
+        if flags & ParseFlag.SupportSimpleObjectElements and not flags & ParseFlag.SupportAttributes:
             raise Exception("Attributes are required by SimpleObjects")
 
     # ----------------------------------------------------------------------

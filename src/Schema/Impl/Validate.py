@@ -34,9 +34,12 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
     
 with ApplyRelativePackage():
+    from .Item import Item
+    
+    from ..Elements import *
     from ..Exceptions import *
-    from ..Metadata import *
-    from ...Plugin import PluginFlag
+    
+    from ...Plugin import ParseFlag
 
 # ----------------------------------------------------------------------
 def Validate( root,
@@ -62,8 +65,7 @@ def Validate( root,
     Impl(root, _ValidateUniqueNames)
     Impl(root, _ValidateVariantArity)
     Impl(root, lambda item: _ValidateMetadata(filter_unsupported_metadata, item))
-    Impl(root, _ValidateCustomMetadata)
-
+    
     return root
 
 # ----------------------------------------------------------------------
@@ -102,21 +104,21 @@ def _ValidateAcyclic(visited, item, stack=None):
 
 # ----------------------------------------------------------------------
 def _ValidateSupported(plugin_flags, item):
-    for item in Item.Enumerate():
-        if item.element_type == CustomElement and not plugin_flags & PluginFlag.SupportCustomElements:
+    for item in item.Enumerate():
+        if item.element_type == CustomElement and not plugin_flags & ParseFlag.SupportCustomElements:
             raise ValidateUnsupportedCustomElementsException(item.Source, item.Line, item.Column)
 
-        if item.element_type == AnyElement and not plugin_flags & PluginFlag.SupportAnyElements:
+        if item.element_type == AnyElement and not plugin_flags & ParseFlag.SupportAnyElements:
             raise ValidateUnsupportedAnyElementsException(item.Source, item.Line, item.Column)
 
-        if item.element_type == AliasElement and not plugin_flags & PluginFlag.SupportAliasElements:
+        if item.element_type == ReferenceElement and not plugin_flags & ParseFlag.SupportReferenceElements:
             raise ValidateUnsupportedAliasElementsException(item.Source, item.Line, item.Column)
 
         # BugBug: Convert simple?
-        if item.element_type == SimpleElement and not plugin_flags & PluginFlag.SupportSimpleObjectElements:
+        if item.element_type == SimpleElement and not plugin_flags & ParseFlag.SupportSimpleObjectElements:
             raise ValidateUnsupportedSimpleObjectElementsException(item.Source, item.Line, item.Column)
 
-        if item.element_type == VariantElement and not plugin_flags & PluginFlag.SupportVariantElements:
+        if item.element_type == VariantElement and not plugin_flags & ParseFlag.SupportVariantElements:
             raise ValidateUnsupportedVariantElementsException(item.Source, item.Line, item.Column)
 
 # ----------------------------------------------------------------------
@@ -160,10 +162,8 @@ def _ValidateUniqueNames(item, names=None):
 
 # ----------------------------------------------------------------------
 def _ValidateVariantArity(item):
-    if Item.element_type != VariantElement:
+    if item.element_type != VariantElement:
         return
-
-    original_item = item
 
     for index, item in enumerate(item.Enumerate()):
         if not item.arity.IsSingle:
@@ -177,17 +177,17 @@ def _ValidateVariantArity(item):
 def _ValidateMetadata(filter_unsupported_metadata, item):
     for item in item.Enumerate():
         # Ensure that required values are present
-        for md in item.metadata.RequiredMetadataItems:
+        for md in item.metadata.RequiredItems:
             if md.Name not in item.metadata.Values:
-                raise ValidateMissingMetadataException( item.Source,
-                                                        item.Line,
-                                                        item.Column,
-                                                        name=md.Name,
-                                                      )
+                raise ValidateMissingAttributeaException( item.Source,
+                                                          item.Line,
+                                                          item.Column,
+                                                          name=md.Name,
+                                                        )
 
         # Verify / eliminate / Convert extra metadata
-        md_lookup = { md.Name : md for md in itertools.chain( item.metadata.RequiredMetadataItems,
-                                                              item.metadata.OptionalMetadataItems,
+        md_lookup = { md.Name : md for md in itertools.chain( item.metadata.RequiredItems,
+                                                              item.metadata.OptionalItems,
                                                             ) }
 
         md_keys = list(six.iterkeys(item.metadata.Values))
@@ -198,14 +198,14 @@ def _ValidateMetadata(filter_unsupported_metadata, item):
                     del item.metadata.Values[k]
                     continue
 
-                raise ValidateExtraneousMetadataException( item.Source,
-                                                           item.Line,
-                                                           item.Column,
-                                                           name=k,
-                                                         )
+                raise ValidateExtraneousAttributeException( item.Source,
+                                                            item.Line,
+                                                            item.Column,
+                                                            name=k,
+                                                          )
 
             md = md_lookup[k]
-            value = item.metadata.Values[k]
+            value = item.metadata.Values[k].Value
 
             try:
                 if isinstance(value, six.string_types):
@@ -214,62 +214,12 @@ def _ValidateMetadata(filter_unsupported_metadata, item):
                     md.TypeInfo.ValidateItem(value)
 
             except ValidationException as ex:
-                raise ValidateInvalidMetadataException( item.Source, 
-                                                        item.Line,
-                                                        item.Column,
-                                                        name=k,
-                                                        value=value,
-                                                        reason=str(ex),
-                                                      )
+                raise ValidateInvalidAttributeException( item.Source, 
+                                                         item.Line,
+                                                         item.Column,
+                                                         name=k,
+                                                         reason=str(ex),
+                                                       )
 
-            item.metadata.Values[k] = value
-
-# ----------------------------------------------------------------------
-def _ValidateCustomMetadata(item):
-    # 'suppress_polymorphic' is only valid for use on items with a parent that has 'polymorphic' defined as true
-    if item.element_type == CompoundElement and "suppress_polymorphic" in item.metadata.Values and item.metadata.Values["suppression_polymorphic"].Value:
-        ref = item.reference
-        while ref:
-            if "polymorphic" in ref.metadata.Values and ref.metadata.Values["polymorphic"].Value:
-                break
-
-            ref = ref.reference
-
-        if not ref:
-            raise ValidateInvalidSuppressPolymorphicException( item.Source,
-                                                               item.Line,
-                                                               item.Column,
-                                                             )
-
-    # 'unique_key' must be the name of a fundamental, defined child with an arity of 1
-    if item.arity.IsCollection and "unique_key" in item.metadata.Values:
-        unique_key = item.metadata.Values["unique_key"].Value
-        unique_key_element = None
-
-        for child in item.items:
-            if child.name == unique_key:
-                unique_key_element = child
-                break
-
-        if unique_key_element is None:
-            raise ValidateMissingUniqueKeyException( item.Source,
-                                                     item.Line,
-                                                     item.Column,
-                                                     name=unique_key,
-                                                   )
-
-        if ( unique_key_element.element_type != FundamentalElement or
-             not unique_key_element.arity.IsSingle or
-             unique_key_element.ItemType == Item.ItemType.Definition
-           ):
-            raise ValidateInvalidUniqueKeyException( item.Source,
-                                                     item.Line,
-                                                     item.Column,
-                                                   )
-
-    # 'refines_arity' is only valid on references
-    if item.arity.IsCollection and "refines_arity" in item.metadata.Values and item.metadata.Values["refines_arity"] and item.element_type != ReferenceElement:
-        raise ValidateInvalidRefinesArityException( item.Source,
-                                                    item.Line,
-                                                    item.Column,
-                                                  )
+            item.metadata.Values[k] = item.metadata.Values[k]._replace( Value=value,
+                                                                      )

@@ -36,9 +36,9 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 
 with ApplyRelativePackage():
     from .Item import *
+    from ..Attributes import *
     from ..Elements import *
     from ..Exceptions import *
-    from ..Metadata import *
 
 # ----------------------------------------------------------------------
 inflect                                     = inflect_mod.engine()
@@ -89,9 +89,7 @@ def _ResolveReference(item):
     def Impl(ref):
         assert isinstance(ref, six.string_types), ref
     
-        if ref in FUNDAMENTAL_TYPE_INFO_MAP or ref in [ ANY_ELEMENT_NAME,
-                                                        CUSTOM_ELEMENT_NAME,
-                                                      ]:
+        if ref in FUNDAMENTAL_ATTRIBUTE_INFO_MAP or ref in [ "any", "custom", ]:
             return ref
     
         name_parts = ref.split('.')
@@ -167,7 +165,7 @@ def _ResolveElementType(item):
                 while isinstance(ref, Item):
                     ref = ref.reference
 
-                return isinstance(ref, FundamentalTypeInfo)
+                return isinstance(ref, FundamentalAttributeInfo)
 
             # ----------------------------------------------------------------------
 
@@ -180,17 +178,17 @@ def _ResolveElementType(item):
                 element_type = ReferenceElement
             
             elif isinstance(item.reference, six.string_types):
-                if item.reference in FUNDAMENTAL_TYPE_INFO_MAP:
+                if item.reference in FUNDAMENTAL_ATTRIBUTE_INFO_MAP:
                     element_type = FundamentalElement
-                    item.reference = FUNDAMENTAL_TYPE_INFO_MAP[item.reference]
+                    item.reference = FUNDAMENTAL_ATTRIBUTE_INFO_MAP[item.reference]
 
-                elif item.reference == ANY_ELEMENT_NAME:
+                elif item.reference == "any":
                     element_type = AnyElement
-                    item.reference = ANY_METADATA_INFO
+                    item.reference = ANY_ATTRIBUTE_INFO
 
-                elif item.reference == CUSTOM_ELEMENT_NAME:
+                elif item.reference == "custom":
                     element_type = CustomElement
-                    item.reference = CUSTOM_METADATA_INFO
+                    item.reference = CUSTOM_ATTRIBUTE_INFO
 
                 else:
                     assert False, item.reference
@@ -212,7 +210,7 @@ def _ResolveArity(plugin, item):
         _ResolveArity(plugin, item.reference)
         item.arity = item.reference.arity
     else:
-        item.arity = Arity(1)
+        item.arity = Arity(1, 1)
 
         if item.element_type == VariantElement:
             for var_item in item.reference:
@@ -229,8 +227,8 @@ def _ResolveName(item):
 
     # ----------------------------------------------------------------------
     
-    if NAME_OVERRIDE_METADATA_NAME in item.metadata.Values:
-        metadata_value = item.metadata.Values[NAME_OVERRIDE_METADATA_NAME]
+    if NAME_OVERRIDE_ATTRIBUTE_NAME in item.metadata.Values:
+        metadata_value = item.metadata.Values[NAME_OVERRIDE_ATTRIBUTE_NAME]
         if not IsValidName(metadata_value.Value):
             raise ResolveInvalidCustomNameException( metadata_value.Source,
                                                      metadata_value.Line,
@@ -239,13 +237,13 @@ def _ResolveName(item):
                                                    )
 
         item.name = metadata_value.Value
-        del item.metadata.Values[NAME_OVERRIDE_METADATA_NAME]
+        del item.metadata.Values[NAME_OVERRIDE_ATTRIBUTE_NAME]
 
     item.original_name = item.name
 
     if item.arity.IsCollection:
-        if PLURAL_METADATA_NAME in item.metadata.Values:
-            metadata_value = item.metadata.Values[PLURAL_METADATA_NAME]
+        if PLURAL_ATTRIBUTE_NAME in item.metadata.Values:
+            metadata_value = item.metadata.Values[PLURAL_ATTRIBUTE_NAME]
             if not IsValidName(metadata_value.Value):
                 raise ResolveInvalidCustomNameException( metadata_value.Source,
                                                          metadata_value.Line,
@@ -254,45 +252,10 @@ def _ResolveName(item):
                                                        )
 
             item.name = metadata_value.Value
-            del item.metadata.Values[PLURAL_METADATA_NAME]
+            del item.metadata.Values[PLURAL_ATTRIBUTE_NAME]
 
         else:
             item.name = inflect.plural(item.name)
-
-# BugBug: Move functionality to validate
-# BugBug # ----------------------------------------------------------------------
-# BugBug def _ValidateVariant(item):
-# BugBug     """Ensure that variants are constructed as expected"""
-# BugBug 
-# BugBug     if item.element_type != VariantElement:
-# BugBug         return
-# BugBug 
-# BugBug     for var_item in item.reference:
-# BugBug         while True:
-# BugBug             if not var_item.Arity.IsSingle:
-# BugBug                 raise ResolveInvalidVariantReferenceArityException( item.Source,
-# BugBug                                                                     item.Line,
-# BugBug                                                                     item.Column,
-# BugBug                                                                     ref_source=var_item.Source,
-# BugBug                                                                     ref_line=var_item.Line,
-# BugBug                                                                     ref_column=var_item.Column,
-# BugBug                                                                   )
-# BugBug 
-# BugBug             if var_item.element_type in [ FundamentalElement,
-# BugBug                                           VariantElement,
-# BugBug                                         ]:
-# BugBug                 break
-# BugBug 
-# BugBug             if var_item.element_type == ReferenceElement:
-# BugBug                 var_item = var_item.reference
-# BugBug             else:
-# BugBug                 raise ResolveInvalidVariantReferenceTypeException( item.Source,
-# BugBug                                                                    item.Line,
-# BugBug                                                                    item.Column,
-# BugBug                                                                    ref_source=var_item.Source,
-# BugBug                                                                    ref_line=var_item.Line,
-# BugBug                                                                    ref_column=var_item.Column,
-# BugBug                                                                  )
 
 # ----------------------------------------------------------------------
 def _ResolveMetadata_NonArity(plugin, config_values, item):
@@ -319,12 +282,12 @@ def _ResolveMetadata_NonArity(plugin, config_values, item):
         # ----------------------------------------------------------------------
         @staticmethod
         def OnCompound(item):
-            return COMPOUND_METADATA_INFO
+            return COMPOUND_ATTRIBUTE_INFO
 
         # ----------------------------------------------------------------------
         @staticmethod
         def OnSimple(item):
-            return SIMPLE_METADATA_INFO
+            return SIMPLE_ATTRIBUTE_INFO
 
         # ----------------------------------------------------------------------
         @staticmethod
@@ -339,30 +302,25 @@ def _ResolveMetadata_NonArity(plugin, config_values, item):
         # ----------------------------------------------------------------------
         @staticmethod
         def OnVariant(item):
-            return VARIANT_METADATA_INFO
-
-        # ----------------------------------------------------------------------
-        @staticmethod
-        def OnList(item):
-            return LIST_METADATA_INFO
+            return VARIANT_ATTRIBUTE_INFO
 
         # ----------------------------------------------------------------------
         @staticmethod
         def OnExtension(item):
-            return EXTENSION_METADATA_INFO
+            return EXTENSION_ATTRIBUTE_INFO
 
         # ----------------------------------------------------------------------
         @staticmethod
         def OnReference(item):
-            return REFERENCE_METADATA_INFO
+            return REFERENCE_ATTRIBUTE_INFO
         
     # ----------------------------------------------------------------------
 
     metadata_info = MetadataInfoVisitor.Accept(item)
 
     item.metadata = ResolvedMetadata( metadata,
-                                      UNIVERSAL_METADATA_INFO.RequiredMetadataItems + metadata_info.RequiredMetadataItems,
-                                      UNIVERSAL_METADATA_INFO.OptionalMetadataItems + metadata_info.OptionalMetadataItems,
+                                      UNIVERSAL_ATTRIBUTE_INFO.RequiredItems + metadata_info.RequiredItems,
+                                      UNIVERSAL_ATTRIBUTE_INFO.OptionalItems + metadata_info.OptionalItems,
                                     )
 
     for item in item.Enumerate():
@@ -376,25 +334,30 @@ def _ResolveMetadata_Arity(item):
     for item in item.Enumerate():
         if item.arity.IsOptional:
             item.metadata.Clone(ResolvedMetadata( {},
-                                                  OPTIONAL_METADATA_INFO.RequiredMetadataItems,
-                                                  OPTIONAL_METADATA_INFO.OptionalMetadataItems,
+                                                  OPTIONAL_ATTRIBUTE_INFO.RequiredItems,
+                                                  OPTIONAL_ATTRIBUTE_INFO.OptionalItems,
                                                 ))
         elif item.arity.IsCollection:
             item.metadata.Clone(ResolvedMetadata( {},
-                                                  COLLECTION_METADATA_INFO.RequiredMetadataItems,
-                                                  COLLECTION_METADATA_INFO.OptionalMetadataItems,
+                                                  COLLECTION_ATTRIBUTE_INFO.RequiredItems,
+                                                  COLLECTION_ATTRIBUTE_INFO.OptionalItems,
                                                 ))
 
 # ----------------------------------------------------------------------
 def _ResolveMetadata_Defaults(item):
     for item in item.Enumerate():
-        for md in itertools.chain( item.metadata.RequiredMetadataItems,
-                                   item.metadata.OptionalMetadataItems,
+        for md in itertools.chain( item.metadata.RequiredItems,
+                                   item.metadata.OptionalItems,
                                  ):
-            if md.Name not in item.metadata.Values and md.DefaultValueFunc:
-                item.metadata.Values[md.Name] = Item.MetadataValue( md.DefaultValueFunc(item),
-                                                                    Item.MetadataSource.Default,
-                                                                    item.Source,
-                                                                    item.Line,
-                                                                    item.Column
-                                                                  )
+            if md.Name not in item.metadata.Values and md.DefaultValue != Attribute.DoesNotExist:
+                if callable(md.DefaultValue):
+                    value = md.DefaultValue(item)
+                else:
+                    value = md.DefaultValue
+
+                item.metadata.Values[md.Name] = ItemMetadataValue( value,
+                                                                   ItemMetadataSource.Default,
+                                                                   item.Source,
+                                                                   item.Line,
+                                                                   item.Column
+                                                                 )

@@ -101,13 +101,9 @@ class ValidateDuplicateNameException(SimpleSchemaException):                    
 class ValidateInvalidExtensionException(SimpleSchemaException):                     Display = "The extension '{name}' is not a supported extension"
 class ValidateInvalidVariantArityException(SimpleSchemaException):                  Display = "Varaint elements may only reference other elements with an arity of 1 (Index: {index})"
 
-class ValidateMissingMetadataException(SimpleSchemaException):                      Display = "The required metadata value '{name}' was not provided"
-class ValidateExtraneousMetadataException(SimpleSchemaException):                   Display = "The metadata value for '{name}' was not regognized"
-class ValidateInvalidMetadataException(SimpleSchemaException):                      Display = "The metadata value '{value}' for '{name}' is not valid: '{reason}'"
-
-class ValidateInvalidSuppressPolymorphicException(SimpleSchemaException):           Display = "The metadata value 'supress_polymorphic' can only be used on elements that reference an element with 'polymorphic' set to true"
-class ValidateMissingUniqueKeyException(SimpleSchemaException):                     Display = "The 'unique_key' value '{name}' does not match the name of a child element"
-class ValidateInvalidUniqueKeyException(SimpleSchemaException):                     Display = "Elements named by 'unique_key' must be fundamental, not definitions, and have an arity of 1"
-class ValidateInvalidRefinesArityException(SimpleSchemaException):                  Display = "The metadata value 'refines_arity' can only be used when referencing another element"
+class ValidateMissingAttributeException(SimpleSchemaException):                     Display = "The required attribute '{name}' was not provided"
+class ValidateExtraneousAttributeException(SimpleSchemaException):                  Display = "The attribute '{name}' was not regognized"
+class ValidateInvalidAttributeException(SimpleSchemaException):                     Display = "The attribute value for '{name}' is not valid: {reason}"
 
 class InvalidAttributeNameException(SimpleSchemaException):                         Display = "The metadata name '{name}' is reserved and cannot be used"
+class InvalidAttributeException(SimpleSchemaException):                             Display = "{desc}"

@@ -15,22 +15,30 @@
 """Process a SimpleSchema file using the specified generator."""
 
 import os
+import re
 import sys
 import textwrap
 
 import six
+from six.moves import cPickle as pickle
 
 from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import CommandLine
 from CommonEnvironment.StreamDecorator import StreamDecorator
 
 from CommonEnvironmentEx.CompilerImpl.GeneratorPluginFrameworkImpl import GeneratorFactory
+from CommonEnvironmentEx.Package import ApplyRelativePackage
 
 # ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
+with ApplyRelativePackage():
+    from .Schema.Parse import ParseFiles
+    from .Plugin import Plugin as PluginBase
+
+# ----------------------------------------------------------------------
 PLUGINS                                     = GeneratorFactory.CreatePluginMap( "DEVELOPMENT_ENVIRONMENT_SIMPLE_SCHEMA_PLUGINS",
                                                                                 os.path.join(_script_dir, "Plugins"),
                                                                                 sys.stdout,
@@ -78,6 +86,8 @@ def Generate( plugin,
               output_stream=sys.stdout,
               verbose=False,
             ):
+    """BugBug"""
+
     return GeneratorFactory.CommandLineGenerate( CodeGenerator,
                                                  input,
                                                  output_stream,
@@ -97,6 +107,15 @@ def Generate( plugin,
                                                  filter_unsupported_attributes=filter_unsupported_attributes,
                                                  output_data_filename_prefix=output_data_filename_prefix,
                                                )
+
+# ----------------------------------------------------------------------
+@CommandLine.EntryPoint # BugBug
+@CommandLine.Constraints( output_stream=None,
+                        )
+def Clean( output_stream=sys.stdout,
+         ):
+    """BugBug"""
+    pass # BugBug
 
 # ----------------------------------------------------------------------
 def CommandLineSuffix():
@@ -125,7 +144,36 @@ def __GetOptionalMetadata():
 
 # ----------------------------------------------------------------------
 def __CreateContext(context, plugin):
-    return context # BugBug
+    elements = ParseFiles( context["inputs"],
+                           plugin,
+                           context["filter_unsupported_extensions"],
+                           context["filter_unsupported_attributes"],
+                         )
+
+    # Calculate the include indexes
+    includes = [ re.compile("^{}$".format(include)) for include in context["includes"] ]
+    excludes = [ re.compile("^{}$".format(exclude)) for exclude in context["excludes"] ]
+
+    del context["includes"]
+    del context["excludes"]
+
+    include_indexes = range(len(elements))
+
+    if excludes:
+        include_indexes = [ index for index in include_indexes if not any(exclude for exclude in excludes if exclude.match(elements[index].Name)) ]
+
+    if includes:
+        include_indexes = [ index for index in include_indexes if any(include for include in includes if include.match(elements[index].Name)) ]
+
+    # This is a bit strange, but to detect changes, we need to compare the data in the elements rather
+    # than the elements themselves (as the elements will be different object instances during each invocation).
+    # Therefore, sae the data (via pickling) and remove the elements. During the invocation below, we will
+    # deserialize the elements from the pickled data before invoking the plugin's Generate method.
+
+    context["pickled_elements"] = pickle.dumps(elements)
+    context["include_indexes"] = include_indexes
+
+    return context
 
 # ----------------------------------------------------------------------
 def __Invoke( code_generator,
@@ -136,9 +184,21 @@ def __Invoke( code_generator,
               verbose,
               plugin,
             ):
-    print("BugBug", code_generator, invoke_reason, context, status_stream, verbose_stream, verbose, plugin)
-    pass # BugBug
+    elements = pickle.loads(context["pickled_elements"])
 
+    return plugin.Generate( code_generator,
+                            invoke_reason,
+                            context["inputs"],
+                            context["output_filenames"],
+                            context["output_name"],
+                            elements,
+                            context["include_indexes"],
+                            status_stream,
+                            verbose_stream,
+                            verbose,
+                            **context["plugin_settings"],
+                          )
+    
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------

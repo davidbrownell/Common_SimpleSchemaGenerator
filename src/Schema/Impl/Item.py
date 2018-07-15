@@ -36,7 +36,6 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 
 with ApplyRelativePackage():
     from ..Elements import *
-    from ..Metadata import *
 
 # ----------------------------------------------------------------------
 ANY_ELEMENT_NAME                            = "any"
@@ -74,12 +73,12 @@ class ResolvedMetadata(object):
     # ----------------------------------------------------------------------
     def __init__( self,
                   values,
-                  required_metadata_items,
-                  optional_metadata_items,
+                  required_items,
+                  optional_items,
                 ):
         self.Values                         = values
-        self.RequiredMetadataItems          = required_metadata_items
-        self.OptionalMetadataItems          = optional_metadata_items
+        self.RequiredItems                  = required_items
+        self.OptionalItems                  = optional_items
 
     # ----------------------------------------------------------------------
     def __repr__(self):
@@ -90,28 +89,28 @@ class ResolvedMetadata(object):
         """Clones the current item, optionally merging it with the provided info"""
 
         values = copy.deepcopy(self.Values)
-        required_metadata_items = copy.deepcopy(self.RequiredMetadataItems)
-        optional_metadata_items = copy.deepcopy(self.OptionalMetadataItems)
+        required_items = copy.deepcopy(self.RequiredItems)
+        optional_items = copy.deepcopy(self.OptionalItems)
 
         if merge_metadata:
             for k, v in six.iteritems(merge_metadata.Values):
                 if k not in values:
                     values[k] = v
 
-            rmi_names = set(md.Name for md in required_metadata_items)
-            omi_names = set(md.Name for md in optional_metadata_items)
+            ri_names = set(md.Name for md in required_items)
+            oi_names = set(md.Name for md in optional_items)
 
-            for md in merge_metadata.RequiredMetadataItems:
-                if md.Name not in rmi_names:
-                    required_metadata_items.append(md)
+            for md in merge_metadata.RequiredItems:
+                if md.Name not in ri_names:
+                    required_items.append(md)
 
-            for md in merge_metadata.OptionalMetadataItems:
-                if md.Name not in omi_names:
-                    optional_metadata_items.append(md)
+            for md in merge_metadata.OptionalItems:
+                if md.Name not in oi_names:
+                    optional_items.append(md)
 
         return self.__class__( values,
-                               required_metadata_items,
-                               optional_metadata_items,
+                               required_items,
+                               optional_items,
                              )
 
 # ----------------------------------------------------------------------
@@ -168,6 +167,10 @@ class Item(object):
         self.key                            = None
 
     # ----------------------------------------------------------------------
+    def __repr__(self):
+        return CommonEnvironment.ObjectReprImpl(self)
+
+    # ----------------------------------------------------------------------
     def Enumerate(self):
         if self.element_type == VariantElement:
             for item in self.reference:
@@ -182,77 +185,67 @@ class ItemVisitor(Interface):
     # ----------------------------------------------------------------------
     @staticmethod
     @abstractmethod
-    def OnFundamental(item):
+    def OnFundamental(item, *args, **kwargs):
         raise Exception("Abstract method")
 
     # ----------------------------------------------------------------------
     @staticmethod
     @abstractmethod
-    def OnCompound(item):
+    def OnCompound(item, *args, **kwargs):
         raise Exception("Abstract method")
 
     # ----------------------------------------------------------------------
     @staticmethod
     @abstractmethod
-    def OnSimple(item):
+    def OnSimple(item, *args, **kwargs):
         raise Exception("Abstract method")
 
     # ----------------------------------------------------------------------
     @staticmethod
     @abstractmethod
-    def OnAny(item):
+    def OnAny(item, *args, **kwargs):
         raise Exception("Abstract method")
 
     # ----------------------------------------------------------------------
     @staticmethod
     @abstractmethod
-    def OnCustom(item):
+    def OnCustom(item, *args, **kwargs):
         raise Exception("Abstract method")
 
     # ----------------------------------------------------------------------
     @staticmethod
     @abstractmethod
-    def OnVariant(item):
+    def OnVariant(item, *args, **kwargs):
         raise Exception("Abstract method")
 
     # ----------------------------------------------------------------------
     @staticmethod
     @abstractmethod
-    def OnList(item):
+    def OnExtension(item, *args, **kwargs):
         raise Exception("Abstract method")
 
     # ----------------------------------------------------------------------
     @staticmethod
     @abstractmethod
-    def OnExtension(item):
-        raise Exception("Abstract method")
-
-    # ----------------------------------------------------------------------
-    @staticmethod
-    @abstractmethod
-    def OnReference(item):
+    def OnReference(item, *args, **kwargs):
         raise Exception("Abstract method")
 
     # ----------------------------------------------------------------------
     @classmethod
-    def Accept(cls, item):
-        if item.element_type == FundamentalElement:
-            return cls.OnFundamental(item)
-        elif item.element_type == CompoundElement:
-            return cls.OnCompound(item)
-        elif item.element_type == SimpleElement:
-            return cls.OnSimple(item)
-        elif item.element_type == AnyElement:
-            return cls.OnAny(item)
-        elif item.element_type == CustomElement:
-            return cls.OnCustom(item)
-        elif item.element_type == VariantElement:
-            return cls.OnVariant(item)
-        elif item.element_type == ListElement:
-            return cls.OnList(item)
-        elif item.element_type == ExtensionElement:
-            return cls.OnExtension(item)
-        elif item.element_type == ReferenceElement:
-            return cls.OnReference(item)
-        else:
-            assert False, item.element_type
+    def Accept(cls, item, *args, **kwargs):
+        """Calls the appropriate On___ method based on the item's element_type value"""
+
+        lookup = { FundamentalElement       : cls.OnFundamental,
+                   CompoundElement          : cls.OnCompound,
+                   SimpleElement            : cls.OnSimple,
+                   AnyElement               : cls.OnAny,
+                   CustomElement            : cls.OnCustom,
+                   VariantElement           : cls.OnVariant,
+                   ExtensionElement         : cls.OnExtension,
+                   ReferenceElement         : cls.OnReference,
+                 }
+
+        if item.element_type not in lookup:
+            raise Exception("'{}' was not expected".format(item.element_type))
+
+        return lookup[item.element_type](item, *args, **kwargs)

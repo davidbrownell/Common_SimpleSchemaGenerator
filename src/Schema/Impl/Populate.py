@@ -172,11 +172,6 @@ def Populate( source_name_content_generators,           # { "name" : def Func() 
             self._stack.append(value)
 
         # ----------------------------------------------------------------------
-        def visitStringList(self, ctx):
-            values = self._GetChildValues(ctx)
-            self._stack.append(values)
-
-        # ----------------------------------------------------------------------
         def visitArgList(self, ctx):
             values = self._GetChildValues(ctx)
             self._stack.append(values)
@@ -394,25 +389,19 @@ def Populate( source_name_content_generators,           # { "name" : def Func() 
         # ----------------------------------------------------------------------
         def visitObjAttributes(self, ctx):
             values = self._GetChildValues(ctx)
-            if not values:
-                return
+            assert values, "Metadata is always present"
 
             if len(values) == 2:
                 metadata, arity = values
-
+                
                 assert self._IsMetadata(metadata), metadata
                 assert self._IsArity(arity), arity
 
             elif len(values) == 1:
-                metadata = None
+                metadata = values[0]
+                assert self._IsMetadata(values[0]), values[0]
+                
                 arity = None
-
-                if self._IsMetadata(values[0]):
-                    metadata = values[0]
-                elif self._IsArity(values[0]):
-                    arity = values[0]
-                else:
-                    assert False, values[0]
 
             else:
                 assert False, values
@@ -488,19 +477,13 @@ def Populate( source_name_content_generators,           # { "name" : def Func() 
             # First item will always be the id or attributes list
             item.reference = values.pop(0)
             
-            if not values:
-                return
-
+            assert values, "Metadata is always present"
+            
             if len(values) == 1:
-                metadata = None
-                arity = None
+                metadata = values[0]
+                assert self._IsMetadata(metadata), metadata
 
-                if self._IsMetadata(values[0]):
-                    metadata = values[0]
-                elif self._IsArity(values[0]):
-                    arity = values[0]
-                else:
-                    assert False, values[0]
+                arity = None
 
             elif len(values) == 2:
                 metadata, arity = values

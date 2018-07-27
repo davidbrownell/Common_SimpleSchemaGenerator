@@ -224,6 +224,13 @@ class MetadataSuite(unittest.TestCase):
         self.assertEqual(item.metadata.Values["three"].Value, 4)
         self.assertEqual(item.metadata.Values["five"].Value, 6.5)
 
+    # ----------------------------------------------------------------------
+    def test_DuplicateError(self):
+        self.assertRaises(Exceptions.PopulateDuplicateMetadataException, lambda: _Invoke(textwrap.dedent(
+                                                                                            """\
+                                                                                            <foo one="two" one=3>
+                                                                                            """)))
+
 # ----------------------------------------------------------------------
 class AritySuite(unittest.TestCase):
     # Use unnamed declarations to test metadata
@@ -478,7 +485,18 @@ class UnnamedObjSuite(unittest.TestCase):
                     <one="two">: pass
                     <one='two' three="four">: pass
                     """)))
-                                                                                                
+
+    # ----------------------------------------------------------------------
+    def test_OnlyArity(self):
+        content = _Invoke(textwrap.dedent(
+                        """\
+                        <?>: pass
+                        """))
+        
+        self.assertEqual(len(content.items), 1)
+        self.assertEqual(content.items[0].name, None)
+        self.assertEqual(content.items[0].arity, Arity.FromString('?'))
+
 # ----------------------------------------------------------------------
 class NamedObjSuite(unittest.TestCase):
 
@@ -723,6 +741,15 @@ class UnnamedDeclarationSuite(unittest.TestCase):
         self.assertEqual(item.arity, None)
 
     # ----------------------------------------------------------------------
+    def test_Unsupported(self):
+        self.assertRaises(Exceptions.PopulateUnsupportedUnnamedDeclarationsException, lambda: Populate( { _script_fullpath: lambda: textwrap.dedent(
+                                                                                                                                    """\
+                                                                                                                                    <string>
+                                                                                                                                    """), },
+                                                                                                        0,
+                                                                                                      ))
+
+    # ----------------------------------------------------------------------
     def test_UnsupportedRoot(self):
         self.assertRaises(Exceptions.PopulateUnsupportedRootDeclarationsException, lambda: Populate( { _script_fullpath: lambda: textwrap.dedent(
                                                                                                                                     """\
@@ -816,6 +843,15 @@ class NamedDeclarationSuite(unittest.TestCase):
         self.assertEqual(item.arity, None)
 
     # ----------------------------------------------------------------------
+    def test_Unsupported(self):
+        self.assertRaises(Exceptions.PopulateUnsupportedNamedDeclarationsException, lambda: Populate( { _script_fullpath: lambda: textwrap.dedent(
+                                                                                                                                    """\
+                                                                                                                                    <a string>
+                                                                                                                                    """), },
+                                                                                                      0,
+                                                                                                    ))
+
+    # ----------------------------------------------------------------------
     def test_UnsupportedRoot(self):
         self.assertRaises(Exceptions.PopulateUnsupportedRootDeclarationsException, lambda: Populate( { _script_fullpath: lambda: textwrap.dedent(
                                                                                                                                     """\
@@ -884,6 +920,56 @@ class ExtensionSuite(unittest.TestCase):
         self.assertEqual(content.items[0].positional_arguments, [ 1, 2, ])
         self.assertEqual(content.items[0].keyword_arguments, { "three" : 3, "four" : 4, })
         self.assertEqual(content.items[0].arity, Arity.FromString('?'))
+
+    # ----------------------------------------------------------------------
+    def test_Unsupported(self):
+        self.assertRaises(Exceptions.PopulateUnsupportedExtensionStatementException, lambda: _Invoke(textwrap.dedent(
+                                                                                                """\
+                                                                                                an_extension(1, 2)
+                                                                                                """), 0))
+
+    # ----------------------------------------------------------------------
+    def test_DuplicateKeyword(self):
+        self.assertRaises(Exceptions.PopulateDuplicateKeywordArgumentException, lambda: _Invoke(textwrap.dedent(
+                                                                                                """\
+                                                                                                an_extension(one=1, one=2)
+                                                                                                """)))
+
+# ----------------------------------------------------------------------
+class MiscSuite(unittest.TestCase):
+
+    # ----------------------------------------------------------------------
+    def test_Attributes(self):
+        content = _Invoke(textwrap.dedent(
+                    """\
+                    <obj>:
+                        [a string]
+                    """))
+
+        self.assertEqual(len(content.items), 1)
+        self.assertEqual(len(content.items[0].items), 1)
+        self.assertEqual(content.items[0].items[0].name, "a")
+        self.assertEqual(content.items[0].items[0].ItemType, Item.ItemType.Attribute)
+
+    # ----------------------------------------------------------------------
+    def test_Definitions(self):
+        content = _Invoke(textwrap.dedent(
+                    """\
+                    <obj>:
+                        (a string)
+                    """))
+
+        self.assertEqual(len(content.items), 1)
+        self.assertEqual(len(content.items[0].items), 1)
+        self.assertEqual(content.items[0].items[0].name, "a")
+        self.assertEqual(content.items[0].items[0].ItemType, Item.ItemType.Definition)
+
+    # ----------------------------------------------------------------------
+    def test_InvalidName(self):
+        self.assertRaises(Exceptions.PopulateReservedNameException, lambda: _Invoke(textwrap.dedent(
+                                                                                """\
+                                                                                <string string>
+                                                                                """)))
 
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------

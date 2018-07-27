@@ -34,11 +34,6 @@ class SimpleSchemaVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by SimpleSchemaParser#stringList.
-    def visitStringList(self, ctx:SimpleSchemaParser.StringListContext):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by SimpleSchemaParser#arg__.
     def visitArg__(self, ctx:SimpleSchemaParser.Arg__Context):
         return self.visitChildren(ctx)

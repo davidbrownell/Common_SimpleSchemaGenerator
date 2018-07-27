@@ -81,7 +81,6 @@ number:                                     NUMBER;
 
 string:                                     DOUBLE_QUOTE_STRING | SINGLE_QUOTE_STRING;
 enhancedString:                             string | TRIPLE_DOUBLE_QUOTE_STRING | TRIPLE_SINGLE_QUOTE_STRING;
-stringList:                                 LBRACK string (COMMA string)* COMMA? RBRACK;
 
 arg__:                                      idRule | intRule | number | enhancedString | argList;
 argList:                                    LBRACK arg__ (COMMA arg__)* COMMA? RBRACK;

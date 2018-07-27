@@ -22,17 +22,17 @@ import unittest
 from CommonEnvironment.Shell.All import CurrentShell
 from CommonEnvironment.TypeInfo import Arity
 
-from CommonEnvironmentEx.Package import ApplyRelativePackage
+from CommonEnvironmentEx.Package import InitRelativeImports
 
 # ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
-with ApplyRelativePackage():
+with InitRelativeImports():
     # TODO from .. import Populate
     from ..Populate import *
-    from ...Exceptions import *
+    from ... import Exceptions
     from ....Plugin import ParseFlag
 
 # ----------------------------------------------------------------------
@@ -53,19 +53,138 @@ class StringSuite(unittest.TestCase):
 
 # ----------------------------------------------------------------------
 class EnhancedStringSuite(unittest.TestCase):
-    pass # BugBug: Neext extension to test
+    # The config statement is a simple way to test enhanced strings
+
+    # ----------------------------------------------------------------------
+    def test_StandardTriple(self):
+        content = _Invoke(textwrap.dedent(
+                            '''
+                            simple_schema_config("config_name"):
+                                one = """
+                                      This is
+                                        a
+                                      multi-
+                                      line
+                                      test.
+                                      """
+                            '''))
+        self.assertTrue("config_name" in content.config)
+        self.assertEqual(len(content.config["config_name"]), 1)
+        self.assertTrue("one" in content.config["config_name"][0].Values)
+        self.assertEqual(content.config["config_name"][0].Values["one"].Value, "This is\n  a\nmulti-\nline\ntest.")
+
+    # ----------------------------------------------------------------------
+    def test_StandardDouble(self):
+        content = _Invoke(textwrap.dedent(
+                            """
+                            simple_schema_config("config_name"):
+                                one = '''
+                                      This is
+                                        a
+                                      multi-
+                                      line
+                                      test.
+                                      '''
+                            """))
+        self.assertTrue("config_name" in content.config)
+        self.assertEqual(len(content.config["config_name"]), 1)
+        self.assertTrue("one" in content.config["config_name"][0].Values)
+        self.assertEqual(content.config["config_name"][0].Values["one"].Value, "This is\n  a\nmulti-\nline\ntest.")
+
+    # ----------------------------------------------------------------------
+    def test_InvalidHeader(self):
+        self.assertRaises(Exceptions.PopulateInvalidTripleStringHeaderException, lambda: _Invoke(textwrap.dedent(
+                                                                                            """\
+                                                                                            simple_schema_config("test"):
+                                                                                                one = '''Must be an initial newline'''
+                                                                                            """)))
+
+    # ----------------------------------------------------------------------
+    def test_InvalidFooter(self):
+        self.assertRaises(Exceptions.PopulateInvalidTripleStringFooterException, lambda: _Invoke(textwrap.dedent(
+                                                                                            """\
+                                                                                            simple_schema_config("test"):
+                                                                                                one = '''
+                                                                                                      Must be trailing newline'''
+                                                                                            """)))
+
+    # ----------------------------------------------------------------------
+    def test_InvalidWhitespace(self):
+        self.assertRaises(Exceptions.PopulateInvalidTripleStringPrefixException, lambda: _Invoke(textwrap.dedent(
+                                                                                            """\
+                                                                                            simple_schema_config("test"):
+                                                                                                one = '''
+                                                                                                      Misaligned footer
+                                                                                                '''
+                                                                                            """)))
+
+        self.assertRaises(Exceptions.PopulateInvalidTripleStringPrefixException, lambda: _Invoke(textwrap.dedent(
+                                                                                            """\
+                                                                                            simple_schema_config("test"):
+                                                                                                one = '''
+                                                                                                      Misaligned 
+                                                                                                    prefix
+                                                                                                      '''
+                                                                                            """)))
+
+    # ----------------------------------------------------------------------
+    def test_Tabs(self):
+        content = _Invoke(textwrap.dedent(
+                            """
+                            simple_schema_config("config_name"):
+                                one = '''
+                                      Line 1
+                              \t\tLine 2
+                                      '''
+                            """))
+        self.assertTrue("config_name" in content.config)
+        self.assertEqual(len(content.config["config_name"]), 1)
+        self.assertTrue("one" in content.config["config_name"][0].Values)
+        self.assertEqual(content.config["config_name"][0].Values["one"].Value, "Line 1\nLine 2")
+
+    # ----------------------------------------------------------------------
+    def test_LineFeed(self):
+        content = _Invoke(textwrap.dedent(
+                            """
+                            simple_schema_config("config_name"):
+                                one = '''
+                                      Line 1
+                                \r\n
+                                      Line 2
+                                      '''
+                            """))
+        self.assertTrue("config_name" in content.config)
+        self.assertEqual(len(content.config["config_name"]), 1)
+        self.assertTrue("one" in content.config["config_name"][0].Values)
+        self.assertEqual(content.config["config_name"][0].Values["one"].Value, "Line 1\n\r\n\nLine 2")
 
 # ----------------------------------------------------------------------
 class StringListSuite(unittest.TestCase):
-    pass # BugBug: Need metadata to test
+    # The config statement is a simple way to test enhanced strings
 
-# ----------------------------------------------------------------------
-class ArgSuite(unittest.TestCase):
-    pass # BugBug
+    # ----------------------------------------------------------------------
+    def test_Standard(self):
+        content = _Invoke(textwrap.dedent(
+                            """\
+                            simple_schema_config("test"):
+                                one = [ 'a', 'b', 'c', ]
+                            """))
+        
+        self.assertTrue("test" in content.config)
+        self.assertEqual(len(content.config["test"]), 1)
+        self.assertTrue("one" in content.config["test"][0].Values)
+        self.assertEqual(content.config["test"][0].Values["one"].Value, [ 'a', 'b', 'c', ])
 
-# ----------------------------------------------------------------------
-class ArgListSuite(unittest.TestCase):
-    pass # BugBug: Need extension to test
+        content = _Invoke(textwrap.dedent(
+                            """\
+                            simple_schema_config("test"):
+                                one = [ "one", "two", "three", ]
+                            """))
+        
+        self.assertTrue("test" in content.config)
+        self.assertEqual(len(content.config["test"]), 1)
+        self.assertTrue("one" in content.config["test"][0].Values)
+        self.assertEqual(content.config["test"][0].Values["one"].Value, [ 'one', 'two', 'three', ])
 
 # ----------------------------------------------------------------------
 class MetadataSuite(unittest.TestCase):
@@ -119,24 +238,25 @@ class AritySuite(unittest.TestCase):
 
     # ----------------------------------------------------------------------
     def test_Errors(self):
-        self.assertRaises(PopulateInvalidArityException, lambda: _Invoke("<foo {-10}>"))
-        self.assertRaises(PopulateInvalidArityException, lambda: _Invoke("<foo {10,-10}>"))
-        self.assertRaises(PopulateInvalidMaxArityException, lambda: _Invoke("<foo {10,5}>"))
+        self.assertRaises(Exceptions.PopulateInvalidArityException, lambda: _Invoke("<foo {-10}>"))
+        self.assertRaises(Exceptions.PopulateInvalidArityException, lambda: _Invoke("<foo {-10,10}>"))
+        self.assertRaises(Exceptions.PopulateInvalidArityException, lambda: _Invoke("<foo {10,-10}>"))
+        self.assertRaises(Exceptions.PopulateInvalidMaxArityException, lambda: _Invoke("<foo {10,5}>"))
 
 # ----------------------------------------------------------------------
 class IncludeSuite(unittest.TestCase):
 
     # ----------------------------------------------------------------------
     def test_UnsupportedError(self):
-        self.assertRaises(PopulateUnsupportedIncludeStatementsException, lambda: Populate( { _script_fullpath : lambda: "simple_schema_include('{}')".format(_script_name), },
-                                                                                           0,
-                                                                                         ))
+        self.assertRaises(Exceptions.PopulateUnsupportedIncludeStatementsException, lambda: Populate( { _script_fullpath : lambda: "simple_schema_include('{}')".format(_script_name), },
+                                                                                                      0,
+                                                                                                    ))
 
     # ----------------------------------------------------------------------
     def test_InvalidError(self):
-        self.assertRaises(PopulateInvalidIncludeFilenameException, lambda: Populate( { _script_fullpath : lambda: "simple_schema_include('Does not exist')", },
-                                                                                     ParseFlag.AllFlags,
-                                                                                   ))
+        self.assertRaises(Exceptions.PopulateInvalidIncludeFilenameException, lambda: Populate( { _script_fullpath : lambda: "simple_schema_include('Does not exist')", },
+                                                                                                ParseFlag.AllFlags,
+                                                                                              ))
 
     # ----------------------------------------------------------------------
     def test_Invoke(self):
@@ -189,14 +309,14 @@ class ConfigSuite(unittest.TestCase):
 
     # ----------------------------------------------------------------------
     def test_UnsupportedError(self):
-        self.assertRaises(PopulateUnsupportedConfigStatementsException, lambda: Populate( { _script_fullpath : lambda: textwrap.dedent(
-                                                                                                                            """\
-                                                                                                                            simple_schema_config("AConfiguration"):
-                                                                                                                                one = 'two' 
-                                                                                                                                three = '4'
-                                                                                                                            """), },
-                                                                                          0,
-                                                                                        ))
+        self.assertRaises(Exceptions.PopulateUnsupportedConfigStatementsException, lambda: Populate( { _script_fullpath : lambda: textwrap.dedent(
+                                                                                                                                       """\
+                                                                                                                                       simple_schema_config("AConfiguration"):
+                                                                                                                                           one = 'two' 
+                                                                                                                                           three = '4'
+                                                                                                                                       """), },
+                                                                                                     0,
+                                                                                                   ))
 
     # ----------------------------------------------------------------------
     def test_Invoke(self):
@@ -239,32 +359,32 @@ class UnnamedObjSuite(unittest.TestCase):
 
     # ----------------------------------------------------------------------
     def test_UnsupportedError(self):
-        self.assertRaises(PopulateUnsupportedUnnamedObjectsException, lambda: Populate( { _script_fullpath: lambda: textwrap.dedent(
-                                                                                                                        """\
-                                                                                                                        <>: pass
-                                                                                                                        """), },
-                                                                                        0,
-                                                                                      ))
+        self.assertRaises(Exceptions.PopulateUnsupportedUnnamedObjectsException, lambda: Populate( { _script_fullpath: lambda: textwrap.dedent(
+                                                                                                                                   """\
+                                                                                                                                   <>: pass
+                                                                                                                                   """), },
+                                                                                                   0,
+                                                                                                 ))
 
     # ----------------------------------------------------------------------
     def test_UnsupportedRootError(self):
-        self.assertRaises(PopulateUnsupportedRootObjectsException, lambda: Populate( { _script_fullpath: lambda: textwrap.dedent(
-                                                                                                                        """\
-                                                                                                                        <>: pass
-                                                                                                                        """), },
-                                                                                     ParseFlag.SupportUnnamedObjects,
-                                                                                   ))
+        self.assertRaises(Exceptions.PopulateUnsupportedRootObjectsException, lambda: Populate( { _script_fullpath: lambda: textwrap.dedent(
+                                                                                                                                   """\
+                                                                                                                                   <>: pass
+                                                                                                                                   """), },
+                                                                                                ParseFlag.SupportUnnamedObjects,
+                                                                                              ))
 
     # ----------------------------------------------------------------------
     def test_UnsupportedChildError(self):
-        self.assertRaises(PopulateUnsupportedChildObjectsException, lambda: Populate( { _script_fullpath: lambda: textwrap.dedent(
-                                                                                                                        """\
-                                                                                                                        <>:
-                                                                                                                            <>: 
-                                                                                                                                pass
-                                                                                                                        """), },
-                                                                                      ParseFlag.SupportUnnamedObjects | ParseFlag.SupportRootObjects,
-                                                                                    ))
+        self.assertRaises(Exceptions.PopulateUnsupportedChildObjectsException, lambda: Populate( { _script_fullpath: lambda: textwrap.dedent(
+                                                                                                                                   """\
+                                                                                                                                   <>:
+                                                                                                                                       <>: 
+                                                                                                                                           pass
+                                                                                                                                   """), },
+                                                                                                 ParseFlag.SupportUnnamedObjects | ParseFlag.SupportRootObjects,
+                                                                                               ))
 
     # ----------------------------------------------------------------------
     def test_Standard(self):
@@ -358,38 +478,38 @@ class UnnamedObjSuite(unittest.TestCase):
                     <one="two">: pass
                     <one='two' three="four">: pass
                     """)))
-            
+                                                                                                
 # ----------------------------------------------------------------------
 class NamedObjSuite(unittest.TestCase):
 
     # ----------------------------------------------------------------------
     def test_UnsupportedError(self):
-        self.assertRaises(PopulateUnsupportedNamedObjectsException, lambda: Populate( { _script_fullpath: lambda: textwrap.dedent(
-                                                                                                                      """\
-                                                                                                                      <foo>: pass
-                                                                                                                      """), },
-                                                                                      0,
-                                                                                    ))
+        self.assertRaises(Exceptions.PopulateUnsupportedNamedObjectsException, lambda: Populate( { _script_fullpath: lambda: textwrap.dedent(
+                                                                                                                                 """\
+                                                                                                                                 <foo>: pass
+                                                                                                                                 """), },
+                                                                                                 0,
+                                                                                               ))
 
     # ----------------------------------------------------------------------
     def test_UnsupportedRootError(self):
-        self.assertRaises(PopulateUnsupportedRootObjectsException, lambda: Populate( { _script_fullpath: lambda: textwrap.dedent(
-                                                                                                                        """\
-                                                                                                                        <foo>: pass
-                                                                                                                        """), },
-                                                                                     ParseFlag.SupportNamedObjects,
-                                                                                   ))
+        self.assertRaises(Exceptions.PopulateUnsupportedRootObjectsException, lambda: Populate( { _script_fullpath: lambda: textwrap.dedent(
+                                                                                                                                   """\
+                                                                                                                                   <foo>: pass
+                                                                                                                                   """), },
+                                                                                                ParseFlag.SupportNamedObjects,
+                                                                                              ))
 
     # ----------------------------------------------------------------------
     def test_UnsupportedChildError(self):
-        self.assertRaises(PopulateUnsupportedChildObjectsException, lambda: Populate( { _script_fullpath: lambda: textwrap.dedent(
-                                                                                                                        """\
-                                                                                                                        <foo>:
-                                                                                                                            <bar>: 
-                                                                                                                                pass
-                                                                                                                        """), },
-                                                                                      ParseFlag.SupportNamedObjects | ParseFlag.SupportRootObjects,
-                                                                                    ))
+        self.assertRaises(Exceptions.PopulateUnsupportedChildObjectsException, lambda: Populate( { _script_fullpath: lambda: textwrap.dedent(
+                                                                                                                                   """\
+                                                                                                                                   <foo>:
+                                                                                                                                       <bar>: 
+                                                                                                                                           pass
+                                                                                                                                   """), },
+                                                                                                 ParseFlag.SupportNamedObjects | ParseFlag.SupportRootObjects,
+                                                                                               ))
 
     # ----------------------------------------------------------------------
     def test_Standard(self):
@@ -602,8 +722,27 @@ class UnnamedDeclarationSuite(unittest.TestCase):
         self.assertEqual(item.metadata.Values["one"].Value, "two")
         self.assertEqual(item.arity, None)
 
+    # ----------------------------------------------------------------------
+    def test_UnsupportedRoot(self):
+        self.assertRaises(Exceptions.PopulateUnsupportedRootDeclarationsException, lambda: Populate( { _script_fullpath: lambda: textwrap.dedent(
+                                                                                                                                    """\
+                                                                                                                                    <string>
+                                                                                                                                    """), },
+                                                                                                     ParseFlag.SupportUnnamedDeclarations,
+                                                                                                   ))
+
+    # ----------------------------------------------------------------------
+    def test_UnsupportedChild(self):
+        self.assertRaises(Exceptions.PopulateUnsupportedChildDeclarationsException, lambda: Populate( { _script_fullpath: lambda: textwrap.dedent(
+                                                                                                                                    """\
+                                                                                                                                    <object>:
+                                                                                                                                        <string>
+                                                                                                                                    """), },
+                                                                                                      ParseFlag.SupportUnnamedDeclarations | ParseFlag.SupportNamedObjects | ParseFlag.SupportRootObjects,
+                                                                                                    ))
+
 # ----------------------------------------------------------------------
-class NamedDelcarationSuite(unittest.TestCase):
+class NamedDeclarationSuite(unittest.TestCase):
 
     # ----------------------------------------------------------------------
     def test_Standard(self):
@@ -675,6 +814,76 @@ class NamedDelcarationSuite(unittest.TestCase):
         self.assertEqual(list(item.metadata.Values.keys()), [ "one", ])
         self.assertEqual(item.metadata.Values["one"].Value, "two")
         self.assertEqual(item.arity, None)
+
+    # ----------------------------------------------------------------------
+    def test_UnsupportedRoot(self):
+        self.assertRaises(Exceptions.PopulateUnsupportedRootDeclarationsException, lambda: Populate( { _script_fullpath: lambda: textwrap.dedent(
+                                                                                                                                    """\
+                                                                                                                                    <a string>
+                                                                                                                                    """), },
+                                                                                                     ParseFlag.SupportNamedDeclarations,
+                                                                                                   ))
+
+    # ----------------------------------------------------------------------
+    def test_UnsupportedChild(self):
+        self.assertRaises(Exceptions.PopulateUnsupportedChildDeclarationsException, lambda: Populate( { _script_fullpath: lambda: textwrap.dedent(
+                                                                                                                                    """\
+                                                                                                                                    <object>:
+                                                                                                                                        <a string>
+                                                                                                                                    """), },
+                                                                                                      ParseFlag.SupportNamedDeclarations | ParseFlag.SupportNamedObjects | ParseFlag.SupportRootObjects,
+                                                                                                    ))
+
+# ----------------------------------------------------------------------
+class ExtensionSuite(unittest.TestCase):
+
+    # ----------------------------------------------------------------------
+    def test_Positional(self):
+        content = _Invoke(textwrap.dedent(
+                            """\
+                            an_extension(1, 2, 3)
+                            """))
+        self.assertEqual(len(content.items), 1)
+        self.assertEqual(content.items[0].name, "an_extension")
+        self.assertEqual(content.items[0].positional_arguments, [ 1, 2, 3, ])
+        self.assertTrue(not content.items[0].keyword_arguments)
+        self.assertTrue(not content.items[0].arity)
+
+    # ----------------------------------------------------------------------
+    def test_Keywords(self):
+        content = _Invoke(textwrap.dedent(
+                            """\
+                            an_extension(one=1, two=2, three=3)
+                            """))
+        self.assertEqual(len(content.items), 1)
+        self.assertEqual(content.items[0].name, "an_extension")
+        self.assertTrue(not content.items[0].positional_arguments)
+        self.assertEqual(content.items[0].keyword_arguments, { "one" : 1, "two" : 2, "three" : 3, })
+        self.assertTrue(not content.items[0].arity)
+
+    # ----------------------------------------------------------------------
+    def test_PositionalAndKeywords(self):
+        content = _Invoke(textwrap.dedent(
+                            """\
+                            an_extension(1, 2, three=3, four=4)
+                            """))
+        self.assertEqual(len(content.items), 1)
+        self.assertEqual(content.items[0].name, "an_extension")
+        self.assertEqual(content.items[0].positional_arguments, [ 1, 2, ])
+        self.assertEqual(content.items[0].keyword_arguments, { "three" : 3, "four" : 4, })
+        self.assertTrue(not content.items[0].arity)
+
+    # ----------------------------------------------------------------------
+    def test_WithArity(self):
+        content = _Invoke(textwrap.dedent(
+                            """\
+                            an_extension(1, 2, three=3, four=4)?
+                            """))
+        self.assertEqual(len(content.items), 1)
+        self.assertEqual(content.items[0].name, "an_extension")
+        self.assertEqual(content.items[0].positional_arguments, [ 1, 2, ])
+        self.assertEqual(content.items[0].keyword_arguments, { "three" : 3, "four" : 4, })
+        self.assertEqual(content.items[0].arity, Arity.FromString('?'))
 
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------

@@ -35,8 +35,8 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
 with ApplyRelativePackage():
-    from .Schema.Parse import ParseFiles
     from .Plugin import Plugin as PluginBase
+    from .Schema.Parse import ParseFiles
 
 # ----------------------------------------------------------------------
 PLUGINS                                     = GeneratorFactory.CreatePluginMap( "DEVELOPMENT_ENVIRONMENT_SIMPLE_SCHEMA_PLUGINS",
@@ -167,7 +167,7 @@ def __CreateContext(context, plugin):
 
     # This is a bit strange, but to detect changes, we need to compare the data in the elements rather
     # than the elements themselves (as the elements will be different object instances during each invocation).
-    # Therefore, sae the data (via pickling) and remove the elements. During the invocation below, we will
+    # Therefore, save the data (via pickling) and remove the elements. During the invocation below, we will
     # deserialize the elements from the pickled data before invoking the plugin's Generate method.
 
     context["pickled_elements"] = pickle.dumps(elements)

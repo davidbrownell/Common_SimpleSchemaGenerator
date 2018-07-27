@@ -211,7 +211,7 @@ def _ValidateMetadata(filter_unsupported_metadata, item):
                 if isinstance(value, six.string_types):
                     value = StringSerialization.DeserializeItem(md.TypeInfo, value)
                 else:
-                    md.TypeInfo.ValidateItem(value)
+                    md.TypeInfo.Validate(value)
 
             except ValidationException as ex:
                 raise ValidateInvalidAttributeException( item.Source, 

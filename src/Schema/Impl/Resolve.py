@@ -12,7 +12,7 @@
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 # |  
 # ----------------------------------------------------------------------
-"""Functionality that resolves references information assocaited with Items"""
+"""Functionality that resolves references information associated with Items"""
 
 import itertools
 import os
@@ -24,7 +24,7 @@ import six
 import inflect as inflect_mod
 
 from CommonEnvironment.CallOnExit import CallOnExit
-from CommonEnvironment.Interface import staticderived
+from CommonEnvironment.Interface import staticderived, override
 from CommonEnvironment.TypeInfo import Arity
 
 from CommonEnvironmentEx.Package import ApplyRelativePackage
@@ -50,7 +50,7 @@ def Resolve(root, plugin):
         functor(item)
 
         for child in item.items:
-            functor(child)
+            Impl(child, functor)
 
     # ----------------------------------------------------------------------
 
@@ -99,7 +99,13 @@ def _ResolveReference(item):
             query = i
     
             for name_part in name_parts:
-                query = next((qi for qi in query.items if qi.name == name_part), None)
+                # The second clause prevents self references. This can help in situations such as:
+                #   (foo string)
+                #
+                #   <obj>:
+                #       <foo foo> # Foo should not reference itself
+                #
+                query = next((qi for qi in query.items if qi.name == name_part and qi != item), None)
                 if query is None:
                     break
     
@@ -206,7 +212,7 @@ def _ResolveArity(plugin, item):
     if item.arity is not None:
         return
 
-    if item.element_type == ReferenceElement and not plugin.BreakReferenceChain(item):
+    if item.element_type == ReferenceElement and not plugin.BreaksReferenceChain(item):
         _ResolveArity(plugin, item.reference)
         item.arity = item.reference.arity
     else:
@@ -270,53 +276,7 @@ def _ResolveMetadata_NonArity(plugin, config_values, item):
             metadata[k] = v
 
     # Get the metadata info
-
-    # ----------------------------------------------------------------------
-    @staticderived
-    class MetadataInfoVisitor(ItemVisitor):
-        # ----------------------------------------------------------------------
-        @staticmethod
-        def OnFundamental(item):
-            return item.reference
-
-        # ----------------------------------------------------------------------
-        @staticmethod
-        def OnCompound(item):
-            return COMPOUND_ATTRIBUTE_INFO
-
-        # ----------------------------------------------------------------------
-        @staticmethod
-        def OnSimple(item):
-            return SIMPLE_ATTRIBUTE_INFO
-
-        # ----------------------------------------------------------------------
-        @staticmethod
-        def OnAny(item):
-            return item.reference
-
-        # ----------------------------------------------------------------------
-        @staticmethod
-        def OnCustom(item):
-            return item.reference
-
-        # ----------------------------------------------------------------------
-        @staticmethod
-        def OnVariant(item):
-            return VARIANT_ATTRIBUTE_INFO
-
-        # ----------------------------------------------------------------------
-        @staticmethod
-        def OnExtension(item):
-            return EXTENSION_ATTRIBUTE_INFO
-
-        # ----------------------------------------------------------------------
-        @staticmethod
-        def OnReference(item):
-            return REFERENCE_ATTRIBUTE_INFO
-        
-    # ----------------------------------------------------------------------
-
-    metadata_info = MetadataInfoVisitor.Accept(item)
+    metadata_info = _MetadataInfoVisitor.Accept(item)
 
     item.metadata = ResolvedMetadata( metadata,
                                       UNIVERSAL_ATTRIBUTE_INFO.RequiredItems + metadata_info.RequiredItems,
@@ -333,15 +293,15 @@ def _ResolveMetadata_NonArity(plugin, config_values, item):
 def _ResolveMetadata_Arity(item):
     for item in item.Enumerate():
         if item.arity.IsOptional:
-            item.metadata.Clone(ResolvedMetadata( {},
-                                                  OPTIONAL_ATTRIBUTE_INFO.RequiredItems,
-                                                  OPTIONAL_ATTRIBUTE_INFO.OptionalItems,
-                                                ))
+            item.metadata = item.metadata.Clone(ResolvedMetadata( {},
+                                                                  OPTIONAL_ATTRIBUTE_INFO.RequiredItems,
+                                                                  OPTIONAL_ATTRIBUTE_INFO.OptionalItems,
+                                                                ))
         elif item.arity.IsCollection:
-            item.metadata.Clone(ResolvedMetadata( {},
-                                                  COLLECTION_ATTRIBUTE_INFO.RequiredItems,
-                                                  COLLECTION_ATTRIBUTE_INFO.OptionalItems,
-                                                ))
+            item.metadata = item.metadata.Clone(ResolvedMetadata( {},
+                                                                  COLLECTION_ATTRIBUTE_INFO.RequiredItems,
+                                                                  COLLECTION_ATTRIBUTE_INFO.OptionalItems,
+                                                                ))
 
 # ----------------------------------------------------------------------
 def _ResolveMetadata_Defaults(item):
@@ -355,9 +315,68 @@ def _ResolveMetadata_Defaults(item):
                 else:
                     value = md.DefaultValue
 
-                item.metadata.Values[md.Name] = ItemMetadataValue( value,
-                                                                   ItemMetadataSource.Default,
-                                                                   item.Source,
-                                                                   item.Line,
-                                                                   item.Column
-                                                                 )
+                item.metadata.Values[md.Name] = MetadataValue( value,
+                                                               MetadataSource.Default,
+                                                               item.Source,
+                                                               item.Line,
+                                                               item.Column
+                                                             )
+
+# ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
+@staticderived
+class _MetadataInfoVisitor(ItemVisitor):
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @override
+    def OnFundamental(item):
+        assert isinstance(item.reference, FundamentalAttributeInfo), item.reference
+        return item.reference
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @override
+    def OnCompound(item):
+        return COMPOUND_ATTRIBUTE_INFO
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @override
+    def OnSimple(item):
+        return SIMPLE_ATTRIBUTE_INFO
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @override
+    def OnAny(item):
+        assert isinstance(item, AttributeInfo), item.reference
+        return item.reference
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @override
+    def OnCustom(item):
+        assert isinstance(item, AttributeInfo), item.reference
+        return item.reference
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @override
+    def OnVariant(item):
+        return VARIANT_ATTRIBUTE_INFO
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @override
+    def OnExtension(item):
+        return EXTENSION_ATTRIBUTE_INFO
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @override
+    def OnReference(item):
+        return REFERENCE_ATTRIBUTE_INFO
+        
+# ----------------------------------------------------------------------

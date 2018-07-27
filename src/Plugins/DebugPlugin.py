@@ -17,7 +17,7 @@
 import os
 import sys
 
-from CommonEnvironment.Interface import staticderived
+from CommonEnvironment.Interface import staticderived, override, DerivedProperty
 
 from CommonEnvironmentEx.Package import ApplyRelativePackage
 
@@ -35,23 +35,26 @@ class Plugin(PluginBase):
 
     # ----------------------------------------------------------------------
     # |  Public Properties
-    Name                                    = "Debug"
-    Description                             = "Displays diagnostic information about each element"
-    Flags                                   = ParseFlag.AllFlags
+    Name                                    = DerivedProperty("Debug")
+    Description                             = DerivedProperty("Displays diagnostic information about each element")
+    Flags                                   = DerivedProperty(ParseFlag.AllFlags)
 
     # ----------------------------------------------------------------------
     # |  Public Methods
     @staticmethod
+    @override
     def IsValidEnvironment():
         return True
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def GenerateCustomSettingsAndDefaults():
         return [ ( "foo", 'BugBug' ), ]
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def GenerateOutputFilenames(context):
         # Return a single item (that will never be used), as an empty lists
         # aren't supported.
@@ -59,6 +62,7 @@ class Plugin(PluginBase):
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def Generate( simple_schema_code_generator,
                   invoke_reason,
                   input_filenames,

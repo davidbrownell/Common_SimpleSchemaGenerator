@@ -33,7 +33,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
 with ApplyRelativePackage():
-    from .Exceptions import *
+    pass # BugBug from .Exceptions import *
 
 # ----------------------------------------------------------------------
 class Element(Interface):
@@ -69,7 +69,9 @@ class Element(Interface):
 
     # ----------------------------------------------------------------------
     def __repr__(self):
-        return CommonEnvironment.ObjectReprImpl(self)
+        return CommonEnvironment.ObjectReprImpl( self, 
+                                                 Parent=lambda e: e.Name if e else "None",
+                                               )
 
     # ----------------------------------------------------------------------
     @property

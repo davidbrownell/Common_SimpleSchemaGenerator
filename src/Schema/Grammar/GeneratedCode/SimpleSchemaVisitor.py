@@ -169,13 +169,13 @@ class SimpleSchemaVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by SimpleSchemaParser#extensionContent.
-    def visitExtensionContent(self, ctx:SimpleSchemaParser.ExtensionContentContext):
+    # Visit a parse tree produced by SimpleSchemaParser#extensionContent__.
+    def visitExtensionContent__(self, ctx:SimpleSchemaParser.ExtensionContent__Context):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by SimpleSchemaParser#extensionContentStandard.
-    def visitExtensionContentStandard(self, ctx:SimpleSchemaParser.ExtensionContentStandardContext):
+    # Visit a parse tree produced by SimpleSchemaParser#extensionContentStandard__.
+    def visitExtensionContentStandard__(self, ctx:SimpleSchemaParser.ExtensionContentStandard__Context):
         return self.visitChildren(ctx)
 
 
@@ -184,8 +184,8 @@ class SimpleSchemaVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by SimpleSchemaParser#extensionContentKeywords.
-    def visitExtensionContentKeywords(self, ctx:SimpleSchemaParser.ExtensionContentKeywordsContext):
+    # Visit a parse tree produced by SimpleSchemaParser#extensionContentKeywords__.
+    def visitExtensionContentKeywords__(self, ctx:SimpleSchemaParser.ExtensionContentKeywords__Context):
         return self.visitChildren(ctx)
 
 

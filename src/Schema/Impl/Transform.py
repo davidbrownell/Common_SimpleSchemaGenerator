@@ -23,7 +23,7 @@ from collections import OrderedDict
 
 import six
 
-from CommonEnvironment.Interface import staticderived
+from CommonEnvironment.Interface import staticderived, override
 from CommonEnvironment.TypeInfo.AnyOfTypeInfo import AnyOfTypeInfo
 from CommonEnvironment.TypeInfo.ClassTypeInfo import ClassTypeInfo
 from CommonEnvironment.TypeInfo.DictTypeInfo import DictTypeInfo
@@ -62,102 +62,11 @@ def Transform(root, plugin):
             # Create the element
             is_definition_only = item.ItemType == Item.ItemType.Definition
 
-            # ----------------------------------------------------------------------
-            @staticderived
-            class CreateElementVisitor(ItemVisitor):
-                # ----------------------------------------------------------------------
-                @staticmethod
-                def OnFundamental(item):
-                    return FundamentalElement( is_attribute=item.ItemType == Item.ItemType.Attribute and (plugin.Flags & ParseFlag.SupportAttributes),
-                                               
-                                               name=item.name,
-                                               original_name=item.original_name,
-                                               source=item.Source,
-                                               line=item.Line,
-                                               column=item.Column,
-                                               is_definition_only=is_definition_only,
-                                               is_external=item.IsExternal,
-                                               
-                                               # Secondary pass
-                                               parent=None,
-                                               type_info=None,
-                                             )
-            
-                # ----------------------------------------------------------------------
-                @staticmethod
-                def OnCompound(item):
-                    return CompoundElement( children=[ Create(child) for child in item.items ],
-                                            base=Create(item.reference) if item.reference else None,
-
-                                            name=item.name,
-                                            original_name=item.original_name,
-                                            source=item.Source,
-                                            line=item.Line,
-                                            column=item.Column,
-                                            is_definition_only=is_definition_only,
-                                            is_external=item.IsExternal,
-                                            
-                                            # Secondary pass
-                                            parent=None,
-                                            type_info=None,
-                                            derived_elements=[],
-                                          )
-
-                # ----------------------------------------------------------------------
-                @staticmethod
-                def OnSimple(item):
-                    raise Exception("BugBug: Abstract method")
-            
-                # ----------------------------------------------------------------------
-                @staticmethod
-                def OnAny(item):
-                    return AnyElement( name=item.Name,
-                                       original_name=item.original_name,
-                                       source=item.Source,
-                                       line=item.Line,
-                                       column=item.Column,
-                                       is_definition_only=is_definition_only,
-                                       is_external=item.IsExternal,
-                                       
-                                       # Secondary pass
-                                       parent=None,
-                                     )
-            
-                # ----------------------------------------------------------------------
-                @staticmethod
-                def OnCustom(item):
-                    return CustomElement( name=item.Name,
-                                          original_name=item.original_name,
-                                          source=item.Source,
-                                          line=item.Line,
-                                          column=item.Column,
-                                          is_definition_only=is_definition_only,
-                                          is_external=item.IsExternal,
-                                          
-                                          # Secondary pass
-                                          parent=None,
-                                        )
-            
-                # ----------------------------------------------------------------------
-                @staticmethod
-                def OnVariant(item):
-                    # BugBug: Validate that items are unique... somehow
-
-                    raise Exception("BugBug: Abstract method")
-            
-                # ----------------------------------------------------------------------
-                @staticmethod
-                def OnExtension(item):
-                    raise Exception("BugBug: Abstract method")
-            
-                # ----------------------------------------------------------------------
-                @staticmethod
-                def OnReference(item):
-                    raise Exception("BugBug: Abstract method")
-
-            # ----------------------------------------------------------------------
-
-            element = CreateElementVisitor().Accept(item)
+            element = _CreateElementVisitor().Accept( item, 
+                                                      plugin, 
+                                                      Create, 
+                                                      is_definition_only,
+                                                    )
             element._item = item
 
             if not use_cache:
@@ -200,6 +109,7 @@ def Transform(root, plugin):
         class ApplyVisitor(ElementVisitor):
             # ----------------------------------------------------------------------
             @staticmethod
+            @override
             def OnFundamental(element):
                 kwargs = { "arity" : element._item.arity,
                          }
@@ -215,6 +125,7 @@ def Transform(root, plugin):
         
             # ----------------------------------------------------------------------
             @staticmethod
+            @override
             def OnCompound(element):
                 child_type_info = OrderedDict()
 
@@ -232,31 +143,37 @@ def Transform(root, plugin):
         
             # ----------------------------------------------------------------------
             @staticmethod
+            @override
             def OnSimple(element):
                 raise Exception("BugBug: Abstract property")
         
             # ----------------------------------------------------------------------
             @staticmethod
+            @override
             def OnAny(element):
                 assert False, "AnyElement doesn't have TypeInfo"
         
             # ----------------------------------------------------------------------
             @staticmethod
+            @override
             def OnCustom(element):
                 assert False, "CustomElement doesn't have TypeInfo"
         
             # ----------------------------------------------------------------------
             @staticmethod
+            @override
             def OnExtension(element):
                 assert False, "ExtensionElement doesn't have TypeInfo"
         
             # ----------------------------------------------------------------------
             @staticmethod
+            @override
             def OnVariant(element):
                 raise Exception("BugBug: Abstract property")
         
             # ----------------------------------------------------------------------
             @staticmethod
+            @override
             def OnReference(element):
                 ApplyTypeInfo(element.Reference)
 
@@ -277,9 +194,9 @@ def Transform(root, plugin):
 
         for k, v in six.iteritems(element._item.metadata.Values):
             if hasattr(element, k):
-                raise InvalidAttributeNameException( source,
-                                                     line,
-                                                     column,
+                raise InvalidAttributeNameException( v.Source,
+                                                     v.Line,
+                                                     v.Column,
                                                      name=k,
                                                    )
 
@@ -335,6 +252,119 @@ def Transform(root, plugin):
     Cleanup(root_element)
 
     return root_element
+
+# ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
+class _CreateElementVisitor(ItemVisitor):
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @override
+    def OnFundamental(item, plugin, create_element_func, is_definition_only):
+        return FundamentalElement( is_attribute=item.ItemType == Item.ItemType.Attribute and (plugin.Flags & ParseFlag.SupportAttributes),
+                                   
+                                   name=item.name,
+                                   original_name=item.original_name,
+                                   source=item.Source,
+                                   line=item.Line,
+                                   column=item.Column,
+                                   is_definition_only=is_definition_only,
+                                   is_external=item.IsExternal,
+                                   
+                                   # Secondary pass
+                                   parent=None,
+                                   type_info=None,
+                                 )
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @override
+    def OnCompound(item, plugin, create_element_func, is_definition_only):
+        return CompoundElement( children=[ create_element_func(child) for child in item.items ],
+                                base=create_element_func(item.reference) if item.reference else None,
+
+                                name=item.name,
+                                original_name=item.original_name,
+                                source=item.Source,
+                                line=item.Line,
+                                column=item.Column,
+                                is_definition_only=is_definition_only,
+                                is_external=item.IsExternal,
+                                
+                                # Secondary pass
+                                parent=None,
+                                type_info=None,
+                                derived_elements=[],
+                              )
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @override
+    def OnSimple(item, plugin, create_element_func, is_definition_only):
+        raise Exception("BugBug: Abstract method")
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @override
+    def OnAny(item, plugin, create_element_func, is_definition_only):
+        return AnyElement( name=item.Name,
+                           original_name=item.original_name,
+                           source=item.Source,
+                           line=item.Line,
+                           column=item.Column,
+                           is_definition_only=is_definition_only,
+                           is_external=item.IsExternal,
+                           
+                           # Secondary pass
+                           parent=None,
+                         )
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @override
+    def OnCustom(item, plugin, create_element_func, is_definition_only):
+        return CustomElement( name=item.Name,
+                              original_name=item.original_name,
+                              source=item.Source,
+                              line=item.Line,
+                              column=item.Column,
+                              is_definition_only=is_definition_only,
+                              is_external=item.IsExternal,
+                              
+                              # Secondary pass
+                              parent=None,
+                            )
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @override
+    def OnVariant(item, plugin, create_element_func, is_definition_only):
+        # BugBug: Validate that items are unique... somehow
+
+        raise Exception("BugBug: Abstract method")
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @override
+    def OnExtension(item, plugin, create_element_func, is_definition_only):
+        raise Exception("BugBug: Abstract method")
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @override
+    def OnReference(item, plugin, create_element_func, is_definition_only):
+        return ReferenceElement( name=item.name,
+                                 original_name=item.original_name,
+                                 source=item.Source,
+                                 line=item.Line,
+                                 column=item.Column,
+                                 is_definition_only=is_definition_only,
+                                 is_external=item.IsExternal,
+
+                                 # Secondary pass
+                                 parent=None,
+                                 reference=None,
+                               )
 
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------

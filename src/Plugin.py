@@ -41,7 +41,8 @@ class ParseFlag(BitFlagEnum):
     SupportAttributes                       = auto()
     SupportIncludeStatements                = auto()
     SupportConfigStatements                 = auto()
-
+    SupportExtensionsStatements             = auto()
+    
     SupportUnnamedDeclarations              = auto()
     SupportUnnamedObjects                   = auto()
     SupportNamedDeclarations                = auto()
@@ -54,10 +55,10 @@ class ParseFlag(BitFlagEnum):
 
     SupportCustomElements                   = auto()
     SupportAnyElements                      = auto()
-    SupportRefereceElements                 = auto()
+    SupportReferenceElements                = auto()
     SupportSimpleObjectElements             = auto()
     SupportVariantElements                  = auto()
-
+    
     # Parse behavior
     ResolveReferences                       = auto()
 

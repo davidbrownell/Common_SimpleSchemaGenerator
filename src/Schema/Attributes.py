@@ -20,7 +20,7 @@ import sys
 from collections import OrderedDict, namedtuple
 
 import CommonEnvironment
-from CommonEnvironment.Interface import staticderived
+from CommonEnvironment.Interface import staticderived, override
 from CommonEnvironment.TypeInfo.FundamentalTypes.All import *
 from CommonEnvironment.TypeInfo.FundamentalTypes.Visitor import Visitor as FundamentalTypesVisitor
 
@@ -34,7 +34,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 with ApplyRelativePackage():
     from .Elements import *
     from ..Plugin import ParseFlag
-
+    
 # ----------------------------------------------------------------------
 # |  
 # |  Public Types
@@ -173,21 +173,25 @@ class _InitializeFundamentalTypesVisitor(FundamentalTypesVisitor):
     
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def OnBool(type_info):
         return "bool", FundamentalAttributeInfo(BoolTypeInfo)
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def OnDateTime(type_info):
         return "datetime", FundamentalAttributeInfo(DateTimeTypeInfo)
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def OnDate(type_info):
         return "date", FundamentalAttributeInfo(DateTypeInfo)
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def OnDirectory(type_info):
         return "directory", FundamentalAttributeInfo( DirectoryTypeInfo,
                                                       optional_items=[ Attribute("ensure_exists", BoolTypeInfo(), default_value=True),
@@ -197,11 +201,13 @@ class _InitializeFundamentalTypesVisitor(FundamentalTypesVisitor):
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def OnDuration(type_info):
         return "duration", FundamentalAttributeInfo(DurationTypeInfo)
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def OnEnum(type_info):
         return "enum", FundamentalAttributeInfo( EnumTypeInfo,
                                                  required_items=[ Attribute("values", StringTypeInfo(arity='+')),
@@ -212,6 +218,7 @@ class _InitializeFundamentalTypesVisitor(FundamentalTypesVisitor):
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def OnFilename(type_info):
         return "filename", FundamentalAttributeInfo( FilenameTypeInfo,
                                                      optional_items=[ Attribute("ensure_exists", BoolTypeInfo(), default_value=True),
@@ -222,6 +229,7 @@ class _InitializeFundamentalTypesVisitor(FundamentalTypesVisitor):
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def OnFloat(type_info):
         return "number", FundamentalAttributeInfo( FloatTypeInfo,
                                                    optional_items=[ Attribute("min", FloatTypeInfo()),
@@ -231,11 +239,13 @@ class _InitializeFundamentalTypesVisitor(FundamentalTypesVisitor):
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def OnGuid(type_info):
         return "guid", FundamentalAttributeInfo(GuidTypeInfo)
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def OnInt(type_info):
         return "int", FundamentalAttributeInfo( IntTypeInfo,
                                                 optional_items=[ Attribute("min", IntTypeInfo()),
@@ -247,6 +257,7 @@ class _InitializeFundamentalTypesVisitor(FundamentalTypesVisitor):
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def OnString(type_info):
         return "string", FundamentalAttributeInfo( StringTypeInfo,
                                                    optional_items=[ Attribute("min_length", IntTypeInfo(min=0)),
@@ -257,11 +268,13 @@ class _InitializeFundamentalTypesVisitor(FundamentalTypesVisitor):
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def OnTime(type_info):
         return "time", FundamentalAttributeInfo(TimeTypeInfo)
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @override
     def OnUri(type_info):
         return "uri", FundamentalAttributeInfo(UriTypeInfo)
 
@@ -312,7 +325,7 @@ def __ValidateFundamentalName(plugin, element):
 
 # ----------------------------------------------------------------------
 def __ValidateUniqueKey(plugin, element):
-    unique_key = element.Attributes["unique_key"].Value
+    unique_key = element.unique_key
     unique_child = None
 
     for child in element.Children:
@@ -326,7 +339,7 @@ def __ValidateUniqueKey(plugin, element):
     if not isinstance(unique_child, FundamentalElement):
         return "The unique child '{}' is not a fundamental element".format(unique_key)
 
-    if not unique_child.Arity.IsSingle:
+    if not unique_child.TypeInfo.Arity.IsSingle:
         return "The unique child '{}' does not have an arity of 1".format(unique_key)
 
     if unique_child.IsDefinitionOnly:

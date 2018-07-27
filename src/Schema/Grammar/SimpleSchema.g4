@@ -106,9 +106,9 @@ includeStatement:                           INCLUDE LPAREN string RPAREN;
 
 configStatement:                            CONFIG LPAREN string RPAREN SCOPE_DELIMITER configStatementContent__;
 configStatementContent__:                   ( PASS |
-                                              NEWLINE INDENT NEWLINE* ( PASS NEWLINE |
-                                                                        (metadata NEWLINE+)+
-                                                                      ) DEDENT
+                                              NEWLINE INDENT ( PASS NEWLINE+ |
+                                                               (metadata NEWLINE+)+
+                                                             ) DEDENT
                                             );
 
 unnamedObj:                                 ( LPAREN objAttributes RPAREN |
@@ -141,12 +141,11 @@ declarationAttributes:                      ( idRule | declarationAttributesItem
 declarationAttributesItems:                 LPAREN declarationAttributesItem__ (OR declarationAttributesItem__)* RPAREN;
 declarationAttributesItem__:                idRule metadataList;
 
-// BugBug: Refine this
-extension:                                  idRule LPAREN extensionContent? RPAREN arity__?;
-extensionContent:                           extensionContentStandard | extensionContentKeywords;
-extensionContentStandard:                   extensionContentPositional (COMMA extensionContentPositional)* ( COMMA |
-                                                                                                             COMMA extensionContentKeywords
+extension:                                  idRule LPAREN extensionContent__? RPAREN arity__?;
+extensionContent__:                         extensionContentStandard__ | extensionContentKeywords__;
+extensionContentStandard__:                 extensionContentPositional (COMMA extensionContentPositional)* ( COMMA |
+                                                                                                             COMMA extensionContentKeywords__
                                                                                                            )?;
 extensionContentPositional:                 arg__;
-extensionContentKeywords:                   extensionContentKeyword (COMMA metadata)* COMMA?;
+extensionContentKeywords__:                 extensionContentKeyword (COMMA extensionContentKeyword)* COMMA?;
 extensionContentKeyword:                    idRule ASSIGNMENT arg__;

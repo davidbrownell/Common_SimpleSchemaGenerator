@@ -18,27 +18,24 @@ import itertools
 import os
 import sys
 
-from collections import OrderedDict
-
 import six
 import inflect as inflect_mod
 
-from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment.Interface import staticderived, override
 from CommonEnvironment.TypeInfo import Arity
 
-from CommonEnvironmentEx.Package import ApplyRelativePackage
+from CommonEnvironmentEx.Package import InitRelativeImports
 
 # ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
-with ApplyRelativePackage():
-    from .Item import *
-    from ..Attributes import *
-    from ..Elements import *
-    from ..Exceptions import *
+with InitRelativeImports():
+    from .Item import Item, MetadataValue, MetadataSource, ResolvedMetadata, ItemVisitor
+    from .. import Attributes
+    from .. import Elements
+    from .. import Exceptions
 
 # ----------------------------------------------------------------------
 inflect                                     = inflect_mod.engine()
@@ -64,6 +61,7 @@ def Resolve(root, plugin):
                 if k not in dest_metadata:
                     dest_metadata[k] = v
 
+    assert config_metadata
     config_metadata = config_metadata[0]
     
     Impl(root, _ResolveReference)
@@ -89,7 +87,7 @@ def _ResolveReference(item):
     def Impl(ref):
         assert isinstance(ref, six.string_types), ref
     
-        if ref in FUNDAMENTAL_ATTRIBUTE_INFO_MAP or ref in [ "any", "custom", ]:
+        if ref in Attributes.FUNDAMENTAL_ATTRIBUTE_INFO_MAP or ref in [ "any", "custom", ]:
             return ref
     
         name_parts = ref.split('.')
@@ -99,7 +97,9 @@ def _ResolveReference(item):
             query = i
     
             for name_part in name_parts:
-                # The second clause prevents self references. This can help in situations such as:
+                # The second clause in the statement below prevents self references. This
+                # can help in situations such as:
+                #
                 #   (foo string)
                 #
                 #   <obj>:
@@ -116,11 +116,11 @@ def _ResolveReference(item):
             # Try again at a higher level
             i = i .Parent
     
-        raise ResolveInvalidReferenceException( item.Source,
-                                                item.Line,
-                                                item.Column,
-                                                name=ref,
-                                             )
+        raise Exceptions.ResolveInvalidReferenceException( item.Source,
+                                                           item.Line,
+                                                           item.Column,
+                                                           name=ref,
+                                                         )
     
     # ----------------------------------------------------------------------
     
@@ -139,10 +139,9 @@ def _ResolveReference(item):
 
             new_item.reference = Impl(var)
             new_item.metadata = var_metadata
-            new_item.arity = Arity(1)
-
-            items.append(new_item)
-
+            
+            new_items.append(new_item)
+        
         item.reference = new_items
     else:
         item.reference = Impl(item.reference)
@@ -152,14 +151,14 @@ def _ResolveElementType(item):
     """Assign an element type for the item"""
 
     if isinstance(item.reference, list):
-        item.element_type = VariantElement
+        item.element_type = Elements.VariantElement
         items = item.reference
     else:
         items = [ item, ]
 
     for item in items:
         if item.DeclarationType == Item.DeclarationType.Extension:
-            element_type = ExtensionElement
+            element_type = Elements.ExtensionElement
 
         elif item.DeclarationType == Item.DeclarationType.Object:
             # If here, we are looking at a Compound or a Simple object. A Simple
@@ -171,30 +170,30 @@ def _ResolveElementType(item):
                 while isinstance(ref, Item):
                     ref = ref.reference
 
-                return isinstance(ref, FundamentalAttributeInfo)
+                return isinstance(ref, Attributes.FundamentalAttributeInfo)
 
             # ----------------------------------------------------------------------
 
-            element_type = SimpleElement if IsSimple() else CompoundElement
+            element_type = Elements.SimpleElement if IsSimple() else Elements.CompoundElement
 
         elif item.DeclarationType == Item.DeclarationType.Declaration:
             assert item.reference is not None
 
             if isinstance(item.reference, Item):
-                element_type = ReferenceElement
+                element_type = Elements.ReferenceElement
             
             elif isinstance(item.reference, six.string_types):
-                if item.reference in FUNDAMENTAL_ATTRIBUTE_INFO_MAP:
-                    element_type = FundamentalElement
-                    item.reference = FUNDAMENTAL_ATTRIBUTE_INFO_MAP[item.reference]
+                if item.reference in Attributes.FUNDAMENTAL_ATTRIBUTE_INFO_MAP:
+                    element_type = Elements.FundamentalElement
+                    item.reference = Attributes.FUNDAMENTAL_ATTRIBUTE_INFO_MAP[item.reference]
 
                 elif item.reference == "any":
-                    element_type = AnyElement
-                    item.reference = ANY_ATTRIBUTE_INFO
+                    element_type = Elements.AnyElement
+                    item.reference = Attributes.ANY_ATTRIBUTE_INFO
 
                 elif item.reference == "custom":
-                    element_type = CustomElement
-                    item.reference = CUSTOM_ATTRIBUTE_INFO
+                    element_type = Elements.CustomElement
+                    item.reference = Attributes.CUSTOM_ATTRIBUTE_INFO
 
                 else:
                     assert False, item.reference
@@ -212,13 +211,13 @@ def _ResolveArity(plugin, item):
     if item.arity is not None:
         return
 
-    if item.element_type == ReferenceElement and not plugin.BreaksReferenceChain(item):
+    if item.element_type == Elements.ReferenceElement and not plugin.BreaksReferenceChain(item):
         _ResolveArity(plugin, item.reference)
         item.arity = item.reference.arity
     else:
         item.arity = Arity(1, 1)
 
-        if item.element_type == VariantElement:
+        if item.element_type == Elements.VariantElement:
             for var_item in item.reference:
                 assert var_item.arity is None, var_item.arity
                 var_item.arity = item.arity
@@ -233,32 +232,32 @@ def _ResolveName(item):
 
     # ----------------------------------------------------------------------
     
-    if NAME_OVERRIDE_ATTRIBUTE_NAME in item.metadata.Values:
-        metadata_value = item.metadata.Values[NAME_OVERRIDE_ATTRIBUTE_NAME]
+    if Attributes.NAME_OVERRIDE_ATTRIBUTE_NAME in item.metadata.Values:
+        metadata_value = item.metadata.Values[Attributes.NAME_OVERRIDE_ATTRIBUTE_NAME]
         if not IsValidName(metadata_value.Value):
-            raise ResolveInvalidCustomNameException( metadata_value.Source,
-                                                     metadata_value.Line,
-                                                     metadata_value.Column,
-                                                     name=metadata_value.Value,
-                                                   )
+            raise Exceptions.ResolveInvalidCustomNameException( metadata_value.Source,
+                                                                metadata_value.Line,
+                                                                metadata_value.Column,
+                                                                name=metadata_value.Value,
+                                                              )
 
         item.name = metadata_value.Value
-        del item.metadata.Values[NAME_OVERRIDE_ATTRIBUTE_NAME]
+        del item.metadata.Values[Attributes.NAME_OVERRIDE_ATTRIBUTE_NAME]
 
     item.original_name = item.name
 
     if item.arity.IsCollection:
-        if PLURAL_ATTRIBUTE_NAME in item.metadata.Values:
-            metadata_value = item.metadata.Values[PLURAL_ATTRIBUTE_NAME]
+        if Attributes.PLURAL_ATTRIBUTE_NAME in item.metadata.Values:
+            metadata_value = item.metadata.Values[Attributes.PLURAL_ATTRIBUTE_NAME]
             if not IsValidName(metadata_value.Value):
-                raise ResolveInvalidCustomNameException( metadata_value.Source,
-                                                         metadata_value.Line,
-                                                         metadata_value.Column,
-                                                         name=metadata_value.Value,
-                                                       )
+                raise Exceptions.ResolveInvalidCustomNameException( metadata_value.Source,
+                                                                    metadata_value.Line,
+                                                                    metadata_value.Column,
+                                                                    name=metadata_value.Value,
+                                                                  )
 
             item.name = metadata_value.Value
-            del item.metadata.Values[PLURAL_ATTRIBUTE_NAME]
+            del item.metadata.Values[Attributes.PLURAL_ATTRIBUTE_NAME]
 
         else:
             item.name = inflect.plural(item.name)
@@ -279,12 +278,14 @@ def _ResolveMetadata_NonArity(plugin, config_values, item):
     metadata_info = _MetadataInfoVisitor.Accept(item)
 
     item.metadata = ResolvedMetadata( metadata,
-                                      UNIVERSAL_ATTRIBUTE_INFO.RequiredItems + metadata_info.RequiredItems,
-                                      UNIVERSAL_ATTRIBUTE_INFO.OptionalItems + metadata_info.OptionalItems,
+                                      Attributes.UNIVERSAL_ATTRIBUTE_INFO.RequiredItems + metadata_info.RequiredItems,
+                                      Attributes.UNIVERSAL_ATTRIBUTE_INFO.OptionalItems + metadata_info.OptionalItems,
                                     )
 
     for item in item.Enumerate():
-        if item.element_type == ReferenceElement and not plugin.BreaksReferenceChain(item):
+        _ResolveMetadata_NonArity(plugin, config_values, item)
+
+        if item.element_type == Elements.ReferenceElement and not plugin.BreaksReferenceChain(item):
             _ResolveMetadata_NonArity(plugin, config_values, item.reference)
 
             item.metadata = item.metadata.Clone(item.reference.metadata)
@@ -294,13 +295,13 @@ def _ResolveMetadata_Arity(item):
     for item in item.Enumerate():
         if item.arity.IsOptional:
             item.metadata = item.metadata.Clone(ResolvedMetadata( {},
-                                                                  OPTIONAL_ATTRIBUTE_INFO.RequiredItems,
-                                                                  OPTIONAL_ATTRIBUTE_INFO.OptionalItems,
+                                                                  Attributes.OPTIONAL_ATTRIBUTE_INFO.RequiredItems,
+                                                                  Attributes.OPTIONAL_ATTRIBUTE_INFO.OptionalItems,
                                                                 ))
         elif item.arity.IsCollection:
             item.metadata = item.metadata.Clone(ResolvedMetadata( {},
-                                                                  COLLECTION_ATTRIBUTE_INFO.RequiredItems,
-                                                                  COLLECTION_ATTRIBUTE_INFO.OptionalItems,
+                                                                  Attributes.COLLECTION_ATTRIBUTE_INFO.RequiredItems,
+                                                                  Attributes.COLLECTION_ATTRIBUTE_INFO.OptionalItems,
                                                                 ))
 
 # ----------------------------------------------------------------------
@@ -309,7 +310,7 @@ def _ResolveMetadata_Defaults(item):
         for md in itertools.chain( item.metadata.RequiredItems,
                                    item.metadata.OptionalItems,
                                  ):
-            if md.Name not in item.metadata.Values and md.DefaultValue != Attribute.DoesNotExist:
+            if md.Name not in item.metadata.Values and md.DefaultValue != Attributes.Attribute.DoesNotExist:
                 if callable(md.DefaultValue):
                     value = md.DefaultValue(item)
                 else:
@@ -331,52 +332,50 @@ class _MetadataInfoVisitor(ItemVisitor):
     # ----------------------------------------------------------------------
     @staticmethod
     @override
-    def OnFundamental(item):
-        assert isinstance(item.reference, FundamentalAttributeInfo), item.reference
+    def OnFundamental(item, *args, **kwargs):
+        assert isinstance(item.reference, Attributes.FundamentalAttributeInfo), item.reference
         return item.reference
 
     # ----------------------------------------------------------------------
     @staticmethod
     @override
-    def OnCompound(item):
-        return COMPOUND_ATTRIBUTE_INFO
+    def OnCompound(item, *args, **kwargs):
+        return Attributes.COMPOUND_ATTRIBUTE_INFO
 
     # ----------------------------------------------------------------------
     @staticmethod
     @override
-    def OnSimple(item):
-        return SIMPLE_ATTRIBUTE_INFO
+    def OnSimple(item, *args, **kwargs):
+        return Attributes.SIMPLE_ATTRIBUTE_INFO
 
     # ----------------------------------------------------------------------
     @staticmethod
     @override
-    def OnAny(item):
-        assert isinstance(item, AttributeInfo), item.reference
+    def OnAny(item, *args, **kwargs):
+        assert isinstance(item.reference, Attributes.AttributeInfo), item.reference
         return item.reference
 
     # ----------------------------------------------------------------------
     @staticmethod
     @override
-    def OnCustom(item):
-        assert isinstance(item, AttributeInfo), item.reference
+    def OnCustom(item, *args, **kwargs):
+        assert isinstance(item.reference, Attributes.AttributeInfo), item.reference
         return item.reference
 
     # ----------------------------------------------------------------------
     @staticmethod
     @override
-    def OnVariant(item):
-        return VARIANT_ATTRIBUTE_INFO
+    def OnVariant(item, *args, **kwargs):
+        return Attributes.VARIANT_ATTRIBUTE_INFO
 
     # ----------------------------------------------------------------------
     @staticmethod
     @override
-    def OnExtension(item):
-        return EXTENSION_ATTRIBUTE_INFO
+    def OnExtension(item, *args, **kwargs):
+        return Attributes.EXTENSION_ATTRIBUTE_INFO
 
     # ----------------------------------------------------------------------
     @staticmethod
     @override
-    def OnReference(item):
-        return REFERENCE_ATTRIBUTE_INFO
-        
-# ----------------------------------------------------------------------
+    def OnReference(item, *args, **kwargs):
+        return Attributes.REFERENCE_ATTRIBUTE_INFO

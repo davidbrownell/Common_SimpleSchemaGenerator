@@ -24,15 +24,15 @@ from CommonEnvironment.Interface import staticderived, override
 from CommonEnvironment.TypeInfo.FundamentalTypes.All import *
 from CommonEnvironment.TypeInfo.FundamentalTypes.Visitor import Visitor as FundamentalTypesVisitor
 
-from CommonEnvironmentEx.Package import ApplyRelativePackage
+from CommonEnvironmentEx.Package import InitRelativeImports
 
 # ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
-with ApplyRelativePackage():
-    from .Elements import *
+with InitRelativeImports():
+    from . import Elements
     from ..Plugin import ParseFlag
     
 # ----------------------------------------------------------------------

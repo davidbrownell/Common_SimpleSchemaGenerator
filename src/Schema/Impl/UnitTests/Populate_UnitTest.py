@@ -30,7 +30,6 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
 with InitRelativeImports():
-    # TODO from .. import Populate
     from ..Populate import *
     from ... import Exceptions
     from ....Plugin import ParseFlag

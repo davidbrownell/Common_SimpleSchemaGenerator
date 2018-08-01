@@ -110,45 +110,11 @@ class Plugin(PluginBase):
         """\
         Return True to terminate reference chain traversal. Plugins may override
         this method to terminate reference traversal early (for example, based on
-        the presense of a specific metadata item).
+        the presence of a specific metadata item).
         """
 
-        # Terminate traversal for collections; this allows N-dimentation tensors.
+        # Terminate traversal for collections; this allows N-dimension tensors.
         return item.arity and item.arity.IsCollection and ("refines_arity" not in item.metadata.Values or not item.metadata.Values["refines_arity"].Value)
-
-    # BugBug # ----------------------------------------------------------------------
-    # BugBug @staticmethod
-    # BugBug @extensionmethod
-    # BugBug def ResolveReferenceArity(item):
-    # BugBug     """\
-    # BugBug     Returns the arity for the provided reference item. Custom plugins may
-    # BugBug     override this method to influence how references are resolved (for example,
-    # BugBug     a plugin may not want to fully traverse a reference chain if one of those 
-    # BugBug     references contains a special metadata value).
-    # BugBug     """
-    # BugBug 
-    # BugBug     # Use the default behavior - walk the reference chain and return the first
-    # BugBug     # valid arity encountered.
-    # BugBug     return item.ResolveReferenceArity()
-    # BugBug 
-    # BugBug # ----------------------------------------------------------------------
-    # BugBug @staticmethod
-    # BugBug @extensionmethod
-    # BugBug def ResolveReferenceMetadataInfo( item, 
-    # BugBug                                   initial_metadata_info=None,
-    # BugBug                                 ):
-    # BugBug     """\
-    # BugBug     Returns metadata for the provided reference item. Custom plugins may
-    # BugBug     override this method to influence how references are resolved (for example,
-    # BugBug     a plugin may not want to fuly traverse a reference chain if one of those
-    # BugBug     references contains a special metadata value).
-    # BugBug 
-    # BugBug     Returns .Impl.Item.Item.ResolvedMetadata
-    # BugBug     """
-    # BugBug 
-    # BugBug     # Use the default behavior - walk the reference chain and merge all metadata
-    # BugBug     # encountered.
-    # BugBug     return item.ResolveReferenceMetadata(initial_metadata_info)
 
     # ----------------------------------------------------------------------
     @staticmethod
@@ -180,10 +146,3 @@ class Plugin(PluginBase):
                   **custom_settings
                 ):
         raise Exception("Abstract method")
-
-    # ----------------------------------------------------------------------
-    # |  
-    # |  Protected Methods
-    # |  
-    # ----------------------------------------------------------------------
-    # BugBug

@@ -342,7 +342,7 @@ def Populate( source_name_content_generators,           # { "name" : def Func() 
                                                                                ctx.start.column + 1,
                                                                              )
 
-            with self._PushNewStackItem(ctx, Item.DeclarationType.Object) as item:
+            with self._PushNewStackItem(ctx, Item.DeclarationType.Object):
                 values = self._GetChildValues(ctx)
                 assert not values, values
 
@@ -432,7 +432,7 @@ def Populate( source_name_content_generators,           # { "name" : def Func() 
                                                                                     ctx.start.column + 1,
                                                                                   )
 
-            with self._PushNewStackItem(ctx, Item.DeclarationType.Declaration) as item:
+            with self._PushNewStackItem(ctx, Item.DeclarationType.Declaration):
                 values = self._GetChildValues(ctx)
                 assert not values, values
 

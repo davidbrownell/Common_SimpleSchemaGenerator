@@ -99,8 +99,21 @@ class FundamentalAttributeInfo(AttributeInfo):
 # |  Public Data
 # |  
 # ----------------------------------------------------------------------
-NAME_OVERRIDE_ATTRIBUTE_NAME                = "name"
-PLURAL_ATTRIBUTE_NAME                       = "plural"
+UNIVERSAL_NAME_OVERRIDE_ATTRIBUTE_NAME                  = "name"
+UNIVERSAL_DESCRIPTION_ATTRIBUTE_NAME                    = "description"
+
+COMPOUND_POLYMORPHIC_ATTRIBUTE_NAME                     = "polymorphic"
+COMPOUND_SUPPRESS_POLYMORPHIC_ATTRIBUTE_NAME            = "suppress_polymorphic"
+
+SIMPLE_FUNDAMENTAL_NAME_ATTRIBUTE_NAME                  = "fundamental_name"
+
+CUSTOM_TYPE_ATTRIBUTE_NAME                              = "type"
+
+COLLECTION_PLURAL_ATTRIBUTE_NAME                        = "plural"
+COLLECTION_UNIQUE_KEY_ATTRIBUTE_NAME                    = "unique_key"
+COLLECTION_REFINES_ARITY_ATTRIBUTE_NAME                 = "refines_arity"
+
+OPTIONAL_DEFAULT_ATTRIBUTE_NAME                         = "default"
 
 # ----------------------------------------------------------------------
 def _ValidateSuppressPolymorphic(plugin, element):      return __ValidateSuppressPolymorphic(plugin, element)
@@ -113,30 +126,30 @@ UNIVERSAL_ATTRIBUTE_INFO                    = AttributeInfo( optional_items=[ # 
                                                                               # be reserved by the system (date, string, filename, etc.)
                                                                               #
                                                                               # Note that this attribute value is processed during Parsing and not made available within an Element.
-                                                                              Attribute(NAME_OVERRIDE_ATTRIBUTE_NAME, StringTypeInfo()),
+                                                                              Attribute(UNIVERSAL_NAME_OVERRIDE_ATTRIBUTE_NAME, StringTypeInfo()),
                                                                               
-                                                                              Attribute("description", StringTypeInfo(min_length=0), default_value=''),
+                                                                              Attribute(UNIVERSAL_DESCRIPTION_ATTRIBUTE_NAME, StringTypeInfo(min_length=0), default_value=''),
                                                                             ],
                                                            )
 
 COMPOUND_ATTRIBUTE_INFO                     = AttributeInfo( optional_items=[ # By default, compound objects referencing other compound objects will aggregate the compound element's 
                                                                               # data. Set this value to True if polymorphic behavior is desired instead.
-                                                                              Attribute("polymorphic", BoolTypeInfo()),
+                                                                              Attribute(COMPOUND_POLYMORPHIC_ATTRIBUTE_NAME, BoolTypeInfo()),
                                                         
                                                                               # Compound elements that reference polymorphic elements will be polymorphic as well unless this value
                                                                               # is provided and set to True
-                                                                              Attribute("suppress_polymorphic", BoolTypeInfo(), validate_func=_ValidateSuppressPolymorphic),
+                                                                              Attribute(COMPOUND_SUPPRESS_POLYMORPHIC_ATTRIBUTE_NAME, BoolTypeInfo(), validate_func=_ValidateSuppressPolymorphic),
                                                                             ],
                                                            )
 
 SIMPLE_ATTRIBUTE_INFO                       = AttributeInfo( optional_items=[ # Create a named child with this name for plugins that don't support simple objects
-                                                                              Attribute("fundamental_name", StringTypeInfo(), missing_validate_func=_ValidateFundamentalName),
+                                                                              Attribute(SIMPLE_FUNDAMENTAL_NAME_ATTRIBUTE_NAME, StringTypeInfo(), missing_validate_func=_ValidateFundamentalName),
                                                                             ],
                                                            )
 
 ANY_ATTRIBUTE_INFO                          = AttributeInfo()
 
-CUSTOM_ATTRIBUTE_INFO                       = AttributeInfo( required_items=[ Attribute("type", StringTypeInfo()),
+CUSTOM_ATTRIBUTE_INFO                       = AttributeInfo( required_items=[ Attribute(CUSTOM_TYPE_ATTRIBUTE_NAME, StringTypeInfo()),
                                                                             ],
                                                            )
 
@@ -147,18 +160,18 @@ EXTENSION_ATTRIBUTE_INFO                    = AttributeInfo()
 COLLECTION_ATTRIBUTE_INFO                   = AttributeInfo( optional_items=[ # Override automatic calculation of a plural name with this value
                                                                               #
                                                                               # Note that this attribute value is processed during Parsing and not made available within an Element.
-                                                                              Attribute(PLURAL_ATTRIBUTE_NAME, StringTypeInfo()),
+                                                                              Attribute(COLLECTION_PLURAL_ATTRIBUTE_NAME, StringTypeInfo()),
                                                         
                                                                               # Name of child element whose value should be unique across all children
-                                                                              Attribute("unique_key", StringTypeInfo(), validate_func=_ValidateUniqueKey),
+                                                                              Attribute(COLLECTION_UNIQUE_KEY_ATTRIBUTE_NAME, StringTypeInfo(), validate_func=_ValidateUniqueKey),
                                                         
                                                                               # Normally, a reference that is also a collection will break reference traversal and create a new dimension
                                                                               # in a N-dimension array. However, sometimes we just want to refine the arity of a referenced collection.
-                                                                              Attribute("refines_arity", BoolTypeInfo(), validate_func=_ValidateRefinesArity),
+                                                                              Attribute(COLLECTION_REFINES_ARITY_ATTRIBUTE_NAME, BoolTypeInfo(), validate_func=_ValidateRefinesArity),
                                                                             ],
                                                            )
 
-OPTIONAL_ATTRIBUTE_INFO                     = AttributeInfo( optional_items=[ Attribute("default", StringTypeInfo()),
+OPTIONAL_ATTRIBUTE_INFO                     = AttributeInfo( optional_items=[ Attribute(OPTIONAL_DEFAULT_ATTRIBUTE_NAME, StringTypeInfo()),
                                                                             ],
                                                            )
 
@@ -308,18 +321,20 @@ del _InitializeFundamentalTypesVisitor
 def __ValidateSuppressPolymorphic(plugin, element):
     # The attribute 'polymorphic' must appear somewhere in the hierarchy and be set to true
     
-    while isinstance(element, Element):
-        if "polymorphic" in element.Attributes and element.Attributes["polymorphic"].Value:
+    while isinstance(element, Elements.Element):
+        if COMPOUND_POLYMORPHIC_ATTRIBUTE_NAME in element.Attributes and element.Attributes[COMPOUND_POLYMORPHIC_ATTRIBUTE_NAME].Value:
             return None
 
         element = element.Reference
 
-    return "'suppress_polymorphic' can only be used on elements that references another element with 'polymorphic' set to true"
+    return "'{}' can only be used on elements that references another element with '{}' set to true".format( COMPOUND_SUPPRESS_POLYMORPHIC_ATTRIBUTE_NAME,
+                                                                                                             COMPOUND_POLYMORPHIC_ATTRIBUTE_NAME,
+                                                                                                           )
 
 # ----------------------------------------------------------------------
 def __ValidateFundamentalName(plugin, element):
     if not plugin.Flags & ParseFlag.SupportSimpleObjectElements:
-        return "The attribute 'fundamental_name' must be provided for plugins that do not support simple objects"
+        return "The attribute '{}' must be provided for plugins that do not support simple objects".format(SIMPLE_FUNDAMENTAL_NAME_ATTRIBUTE_NAME)
 
     return None
 
@@ -336,7 +351,7 @@ def __ValidateUniqueKey(plugin, element):
     if unique_child is None:
         return "The unique child '{}' does not exist".format(unique_key)
 
-    if not isinstance(unique_child, FundamentalElement):
+    if not isinstance(unique_child, Elements.FundamentalElement):
         return "The unique child '{}' is not a fundamental element".format(unique_key)
 
     if not unique_child.TypeInfo.Arity.IsSingle:
@@ -349,7 +364,7 @@ def __ValidateUniqueKey(plugin, element):
 
 # ----------------------------------------------------------------------
 def __ValidateRefinesArity(plugin, element):
-    if not isinstance(element, ReferenceElement):
-        return "'refines_arity' may only be used with reference elements"
+    if not isinstance(element, Elements.ReferenceElement):
+        return "'{}' may only be used with reference elements".format(COLLECTION_REFINES_ARITY_ATTRIBUTE_NAME)
 
     return None

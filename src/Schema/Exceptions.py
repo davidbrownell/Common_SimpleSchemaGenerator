@@ -20,6 +20,8 @@ import sys
 import six
 
 import CommonEnvironment
+from CommonEnvironment.Interface import abstractproperty, Interface
+
 from CommonEnvironment.CompilerImpl import CompilerImpl
 
 # ----------------------------------------------------------------------
@@ -28,8 +30,15 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
 # ----------------------------------------------------------------------
-class SimpleSchemaException(CompilerImpl.DiagnosticException):
+class SimpleSchemaException( CompilerImpl.DiagnosticException, 
+                             Interface,
+                           ):
     """Base class for all exceptions raised by SimpleSchemaGenerator"""
+
+    # ----------------------------------------------------------------------
+    @abstractproperty
+    def Display(self):
+        raise Exception("Abstract property")
 
     # ----------------------------------------------------------------------
     def __init__( self,
@@ -64,7 +73,6 @@ class SimpleSchemaException(CompilerImpl.DiagnosticException):
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
-# BugBug: Ensure that all of these are used
 class PopulateUnsupportedIncludeStatementsException(SimpleSchemaException):         Display = "Include statements are not supported"
 class PopulateUnsupportedConfigStatementsException(SimpleSchemaException):          Display = "Config statements are not supported"
 class PopulateUnsupportedExtensionStatementException(SimpleSchemaException):        Display = "Extension statements are not supported"
@@ -95,13 +103,15 @@ class ValidateCycleException(SimpleSchemaException):                            
 
 class ValidateUnsupportedCustomElementsException(SimpleSchemaException):            Display = "Custom elements are not supported"
 class ValidateUnsupportedAnyElementsException(SimpleSchemaException):               Display = "Any elements are not supported"
-class ValidateUnsupportedAliasElementsException(SimpleSchemaException):             Display = "Alias elements are not supported"
-class ValidateUnsupportedSimpleObjectElementsException(SimpleSchemaException):      Display = "Simple object elements are not supported"
+class ValidateUnsupportedReferenceElementsException(SimpleSchemaException):         Display = "Reference elements are not supported"
+class ValidateUnsupportedSimpleObjectElementsException(SimpleSchemaException):      Display = "Pure simple object elements are not supported; consider adding the attribute 'fundamental_name' to automatically convert this element into a compound element"
 class ValidateUnsupportedVariantElementsException(SimpleSchemaException):           Display = "Variant elements are not supported"
 
 class ValidateDuplicateNameException(SimpleSchemaException):                        Display = "The element name '{name}' has already been defined ({original_source} [{original_line} <{original_column}>])"
 class ValidateInvalidExtensionException(SimpleSchemaException):                     Display = "The extension '{name}' is not a supported extension"
 class ValidateInvalidVariantArityException(SimpleSchemaException):                  Display = "Variant elements may only reference other elements with an arity of 1 (Index: {index})"
+
+class ValidateInvalidSimpleChildException(SimpleSchemaException):                   Display = "The children of simple elements must be fundamental attributes or references to fundamental elements/attributes with an arity of 1"
 
 class ValidateMissingAttributeException(SimpleSchemaException):                     Display = "The required attribute '{name}' was not provided"
 class ValidateExtraneousAttributeException(SimpleSchemaException):                  Display = "The attribute '{name}' was not recognized"

@@ -35,7 +35,8 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
 with ApplyRelativePackage():
-    from ..Elements import *
+    from .. import Attributes
+    from .. import Elements
 
 # ----------------------------------------------------------------------
 ANY_ELEMENT_NAME                            = "any"
@@ -85,28 +86,40 @@ class ResolvedMetadata(object):
         return CommonEnvironment.ObjectReprImpl(self)
 
     # ----------------------------------------------------------------------
-    def Clone(self, merge_metadata=None):
+    def Clone(self, merge_metadata_or_attributes=None):
         """Clones the current item, optionally merging it with the provided info"""
 
         values = copy.deepcopy(self.Values)
         required_items = copy.deepcopy(self.RequiredItems)
         optional_items = copy.deepcopy(self.OptionalItems)
 
-        if merge_metadata:
-            for k, v in six.iteritems(merge_metadata.Values):
-                if k not in values:
-                    values[k] = v
+        if merge_metadata_or_attributes:
+            if isinstance(merge_metadata_or_attributes, ResolvedMetadata):
+                merge_metadata = merge_metadata_or_attributes
+            
+                for k, v in six.iteritems(merge_metadata.Values):
+                    if k not in values:
+                        values[k] = v
 
-            ri_names = set(md.Name for md in required_items)
-            oi_names = set(md.Name for md in optional_items)
+                ri_names = set(md.Name for md in required_items)
+                oi_names = set(md.Name for md in optional_items)
 
-            for md in merge_metadata.RequiredItems:
-                if md.Name not in ri_names:
-                    required_items.append(md)
+                for md in merge_metadata.RequiredItems:
+                    if md.Name not in ri_names:
+                        required_items.append(md)
 
-            for md in merge_metadata.OptionalItems:
-                if md.Name not in oi_names:
-                    optional_items.append(md)
+                for md in merge_metadata.OptionalItems:
+                    if md.Name not in oi_names:
+                        optional_items.append(md)
+            
+            elif isinstance(merge_metadata_or_attributes, Attributes.AttributeInfo):
+                attributes = merge_metadata_or_attributes
+
+                required_items += attributes.RequiredItems
+                optional_items += attributes.OptionalItems
+
+            else:
+                assert False, merge_metadata_or_attributes
 
         return self.__class__( values,
                                required_items,
@@ -155,6 +168,7 @@ class Item(object):
         self.arity                          = None
         self.items                          = []
 
+        self.is_converted                   = False                         # Only used for SimpleElements that were converted to CompoundElements
         self.positional_arguments           = []                            # Only used for extensions
         self.keyword_arguments              = OrderedDict()                 # Only used for extensions
         
@@ -163,16 +177,34 @@ class Item(object):
         self.element_type                   = None
         self.original_name                  = None
 
-        # Populated during Transform
-        self.key                            = None
+        self._cached_key                    = None
 
+    # ----------------------------------------------------------------------
+    @property
+    def Key(self):
+        if self._cached_key is None:
+            names = []
+
+            item = self
+            while item:
+                names.append(item.name)
+                item = item.Parent
+
+            # Don't include the root element
+            names = names[:-1]
+            names.reverse()
+
+            self._cached_key = tuple(names)
+
+        return self._cached_key
+            
     # ----------------------------------------------------------------------
     def __repr__(self):
         return CommonEnvironment.ObjectReprImpl(self)
 
     # ----------------------------------------------------------------------
     def Enumerate(self):
-        if self.element_type == VariantElement:
+        if self.element_type == Elements.VariantElement:
             for item in self.reference:
                 yield item
         else:
@@ -235,14 +267,14 @@ class ItemVisitor(Interface):
     def Accept(cls, item, *args, **kwargs):
         """Calls the appropriate On___ method based on the item's element_type value"""
 
-        lookup = { FundamentalElement       : cls.OnFundamental,
-                   CompoundElement          : cls.OnCompound,
-                   SimpleElement            : cls.OnSimple,
-                   AnyElement               : cls.OnAny,
-                   CustomElement            : cls.OnCustom,
-                   VariantElement           : cls.OnVariant,
-                   ExtensionElement         : cls.OnExtension,
-                   ReferenceElement         : cls.OnReference,
+        lookup = { Elements.FundamentalElement          : cls.OnFundamental,
+                   Elements.CompoundElement             : cls.OnCompound,
+                   Elements.SimpleElement               : cls.OnSimple,
+                   Elements.AnyElement                  : cls.OnAny,
+                   Elements.CustomElement               : cls.OnCustom,
+                   Elements.VariantElement              : cls.OnVariant,
+                   Elements.ExtensionElement            : cls.OnExtension,
+                   Elements.ReferenceElement            : cls.OnReference,
                  }
 
         if item.element_type not in lookup:

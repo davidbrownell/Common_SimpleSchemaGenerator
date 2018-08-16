@@ -24,6 +24,7 @@ from collections import OrderedDict
 import six
 
 from CommonEnvironment.Interface import staticderived, override
+from CommonEnvironment.TypeInfo import Arity
 from CommonEnvironment.TypeInfo.AnyOfTypeInfo import AnyOfTypeInfo
 from CommonEnvironment.TypeInfo.ClassTypeInfo import ClassTypeInfo
 from CommonEnvironment.TypeInfo.DictTypeInfo import DictTypeInfo
@@ -36,10 +37,10 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
 with ApplyRelativePackage():
-    from .Item import *
+    from .Item import Item, ItemVisitor
     
-    from ..Elements import *
-    from ..Exceptions import *
+    from .. import Elements
+    from .. import Exceptions
     
     from ...Plugin import ParseFlag
 
@@ -49,15 +50,12 @@ def Transform(root, plugin):
 
     # ----------------------------------------------------------------------
     def Create(item, use_cache=True):
-        if item.key is None:
-            item.key = _CreateKey(item)
-
         if ( not use_cache or
-             item.key not in lookup or
-             (item.element_type == ExtensionElement and next(ext for ext in plugin.GetExtensions() if ext.Name == item.name).AllowDuplicates)
+             item.Key not in lookup or
+             (item.element_type == Elements.ExtensionElement and next(ext for ext in plugin.GetExtensions() if ext.Name == item.name).AllowDuplicates)
            ):
             # Signal that we are processing this item
-            lookup[item.key] = None
+            lookup[item.Key] = None
 
             # Create the element
             is_definition_only = item.ItemType == Item.ItemType.Definition
@@ -72,138 +70,44 @@ def Transform(root, plugin):
             if not use_cache:
                 return element
 
-            lookup[item.key] = element
+            lookup[item.Key] = element
 
-        assert item.key in lookup, item.key
-        return lookup[item.key]
+        assert item.Key in lookup, item.Key
+        return lookup[item.Key]
 
     # ----------------------------------------------------------------------
-    def ResolveParents(element, parent):
-        assert element.Parent is None
+    def Resolve(element, parent):
+        """Depth first traversal; elements will only be traversed once."""
+
+        # Apply changes to this element
+        assert element.Parent is None, element.Parent
         element.Parent = parent
 
-        for child in getattr(element, "Children", []):
-            ResolveParents(child, element)
+        if hasattr(element, "Reference"):
+            assert element.Reference is None, element.Reference
+            element.Reference = lookup[element._item.reference.Key]
 
-    # ----------------------------------------------------------------------
-    def SecondaryPass(element):
-        if hasattr(element, "secondary_pass_info"):
-            spi = element.secondary_pass_info
-            del element.secondary_pass_info
+        if hasattr(element, "Base") and element._item.reference:
+            assert element.Base is None, element.Base
+            element.Base = lookup[element._item.reference.Key]
 
-            for name, value in six.iteritems(spi.__dict__):
-                if name == "derived_elements":
-                    pass # BugBug
-                elif name == "reference":
-                    pass # BugBug
-                else:
-                    assert False, name
-
-        for child in getattr(element, "Children", []):
-            SecondaryPass(child)
-
-    # ----------------------------------------------------------------------
-    def ApplyTypeInfo(element):
-        # ----------------------------------------------------------------------
-        @staticderived
-        class ApplyVisitor(ElementVisitor):
-            # ----------------------------------------------------------------------
-            @staticmethod
-            @override
-            def OnFundamental(element):
-                kwargs = { "arity" : element._item.arity,
-                         }
-
-                for md in itertools.chain( element._item.reference.RequiredItems,
-                                           element._item.reference.OptionalItems,
-                                         ):
-                    if md.Name in element._item.metadata.Values:
-                        kwargs[md.Name] = element._item.metadata.Values[md.Name].Value
-                        del element._item.metadata.Values[md.Name]
-
-                return element._item.reference.TypeInfoClass(**kwargs)
-        
-            # ----------------------------------------------------------------------
-            @staticmethod
-            @override
-            def OnCompound(element):
-                child_type_info = OrderedDict()
-
-                for child in element.Children:
-                    ApplyTypeInfo(child)
-
-                    if hasattr(child, "TypeInfo"):
-                        child_type_info[child.Name] = child.TypeInfo
-
-                return AnyOfTypeInfo( [ DictTypeInfo(child_type_info),
-                                        ClassTypeInfo(child_type_info),
-                                      ],
-                                      arity=element._item.arity,
-                                    )
-        
-            # ----------------------------------------------------------------------
-            @staticmethod
-            @override
-            def OnSimple(element):
-                raise Exception("BugBug: Abstract property")
-        
-            # ----------------------------------------------------------------------
-            @staticmethod
-            @override
-            def OnAny(element):
-                assert False, "AnyElement doesn't have TypeInfo"
-        
-            # ----------------------------------------------------------------------
-            @staticmethod
-            @override
-            def OnCustom(element):
-                assert False, "CustomElement doesn't have TypeInfo"
-        
-            # ----------------------------------------------------------------------
-            @staticmethod
-            @override
-            def OnExtension(element):
-                assert False, "ExtensionElement doesn't have TypeInfo"
-        
-            # ----------------------------------------------------------------------
-            @staticmethod
-            @override
-            def OnVariant(element):
-                raise Exception("BugBug: Abstract property")
-        
-            # ----------------------------------------------------------------------
-            @staticmethod
-            @override
-            def OnReference(element):
-                ApplyTypeInfo(element.Reference)
-
-                new_type_info = copy.deepcopy(element.Reference.TypeInfo)
-                new_type_info.Arity = element._item.Arity
-
-                return new_type_info
-
-        # ----------------------------------------------------------------------
-
-        if hasattr(element, "TypeInfo") and element.TypeInfo is None:
-            element.TypeInfo = ApplyVisitor.Accept(element)
-
-    # ----------------------------------------------------------------------
-    def ApplyMetadata(element):
+        # Apply metadata
         element.Metadata = element._item.metadata
         element.AttributeNames = list(six.iterkeys(element._item.metadata.Values))
 
         for k, v in six.iteritems(element._item.metadata.Values):
             if hasattr(element, k):
-                raise InvalidAttributeNameException( v.Source,
-                                                     v.Line,
-                                                     v.Column,
-                                                     name=k,
-                                                   )
+                raise Exceptions.InvalidAttributeNameException( v.Source,
+                                                                v.Line,
+                                                                v.Column,
+                                                                name=k,
+                                                              )
 
             setattr(element, k, v.Value)
 
+        # Traverse the children
         for child in getattr(element, "Children", []):
-            ApplyMetadata(child)
+            Resolve(child, element)
 
     # ----------------------------------------------------------------------
     def ValidateMetadata(element):
@@ -220,163 +124,200 @@ def Transform(root, plugin):
                     result = md.MissingValidateFunc(plugin, element)
 
             if result is not None:
-                raise InvalidAttributeException( element._item.metadata.Values[md.Name].Source,
-                                                 element._item.metadata.Values[md.Name].Line,
-                                                 element._item.metadata.Values[md.Name].Column,
-                                                 desc=result,
-                                               )
-
-        for child in getattr(element, "Children", []):
-            ValidateMetadata(child)
+                raise Exceptions.InvalidAttributeException( element._item.metadata.Values[md.Name].Source,
+                                                            element._item.metadata.Values[md.Name].Line,
+                                                            element._item.metadata.Values[md.Name].Column,
+                                                            desc=result,
+                                                          )
 
     # ----------------------------------------------------------------------
     def Cleanup(element):
         del element._item
+    
+    # ----------------------------------------------------------------------
+    def Impl(element, functor):
+        functor(element)
 
         for child in getattr(element, "Children", []):
-            Cleanup(child)
+            Impl(child, functor)
 
     # ----------------------------------------------------------------------
 
     root_element = Create(root)
 
-    ResolveParents(root_element, None)
-    SecondaryPass(root_element)
-    ApplyTypeInfo(root_element)
-
-    # Note that we apply the metadata before we validate it, so any custom validation logic
-    # can operate on fully initialized elements.
-    ApplyMetadata(root_element)
-    ValidateMetadata(root_element)
+    Resolve(root_element, None)
     
-    Cleanup(root_element)
+    Impl(root_element, ValidateMetadata)
+    Impl(root_element, Cleanup)
 
     return root_element
 
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
+@staticderived
 class _CreateElementVisitor(ItemVisitor):
     # ----------------------------------------------------------------------
-    @staticmethod
+    @classmethod
     @override
-    def OnFundamental(item, plugin, create_element_func, is_definition_only):
-        return FundamentalElement( is_attribute=item.ItemType == Item.ItemType.Attribute and (plugin.Flags & ParseFlag.SupportAttributes),
-                                   
-                                   name=item.name,
-                                   original_name=item.original_name,
-                                   source=item.Source,
-                                   line=item.Line,
-                                   column=item.Column,
-                                   is_definition_only=is_definition_only,
-                                   is_external=item.IsExternal,
-                                   
-                                   # Secondary pass
-                                   parent=None,
-                                   type_info=None,
-                                 )
+    def OnFundamental(cls, item, plugin, create_element_func, is_definition_only):
+        return Elements.FundamentalElement( type_info=cls._CreateFundamentalTypeInfo(item, item.reference),
+                                            is_attribute=item.ItemType == Item.ItemType.Attribute and (plugin.Flags & ParseFlag.SupportAttributes),
+                                            
+                                            original_name=item.original_name,
+                                            name=item.name,
+                                            parent=None,                    # Set later
+                                            source=item.Source,
+                                            line=item.Line,
+                                            column=item.Column,
+                                            is_definition_only=is_definition_only,
+                                            is_external=item.IsExternal,
+                                          )
 
     # ----------------------------------------------------------------------
     @staticmethod
     @override
     def OnCompound(item, plugin, create_element_func, is_definition_only):
-        return CompoundElement( children=[ create_element_func(child) for child in item.items ],
-                                base=create_element_func(item.reference) if item.reference else None,
-
-                                name=item.name,
-                                original_name=item.original_name,
-                                source=item.Source,
-                                line=item.Line,
-                                column=item.Column,
-                                is_definition_only=is_definition_only,
-                                is_external=item.IsExternal,
-                                
-                                # Secondary pass
-                                parent=None,
-                                type_info=None,
-                                derived_elements=[],
-                              )
+        return Elements.CompoundElement( arity=item.arity,
+                                         children=[ create_element_func(child) for child in item.items ],
+                                         base=None,                         # Set later
+                                         
+                                         original_name=item.original_name,
+                                         name=item.name,
+                                         parent=None,                       # Set later
+                                         source=item.Source,
+                                         line=item.Line,
+                                         column=item.Column,
+                                         is_definition_only=is_definition_only,
+                                         is_external=item.IsExternal,
+                                       )
 
     # ----------------------------------------------------------------------
-    @staticmethod
+    @classmethod
     @override
-    def OnSimple(item, plugin, create_element_func, is_definition_only):
-        raise Exception("BugBug: Abstract method")
+    def OnSimple(cls, item, plugin, create_element_func, is_definition_only):
+        return Elements.SimpleElement( fundamental_type_info=cls._CreateFundamentalTypeInfo(item, item.reference),
+                                       arity=item.arity,
+                                       children=[ create_element_func(child) for child in item.items ],
+                                       
+                                       original_name=item.original_name,
+                                       name=item.name,
+                                       parent=None,                         # Set later
+                                       source=item.Source,
+                                       line=item.Line,
+                                       column=item.Column,
+                                       is_definition_only=is_definition_only,
+                                       is_external=item.IsExternal,
+                                     )
 
     # ----------------------------------------------------------------------
     @staticmethod
     @override
     def OnAny(item, plugin, create_element_func, is_definition_only):
-        return AnyElement( name=item.Name,
-                           original_name=item.original_name,
-                           source=item.Source,
-                           line=item.Line,
-                           column=item.Column,
-                           is_definition_only=is_definition_only,
-                           is_external=item.IsExternal,
-                           
-                           # Secondary pass
-                           parent=None,
-                         )
+        return Elements.AnyElement( arity=item.arity,
+                                    
+                                    original_name=item.original_name,
+                                    name=item.name,
+                                    parent=None,                            # Set later
+                                    source=item.Source,
+                                    line=item.Line,
+                                    column=item.Column,
+                                    is_definition_only=is_definition_only,
+                                    is_external=item.IsExternal,
+                                  )
 
     # ----------------------------------------------------------------------
     @staticmethod
     @override
     def OnCustom(item, plugin, create_element_func, is_definition_only):
-        return CustomElement( name=item.Name,
-                              original_name=item.original_name,
-                              source=item.Source,
-                              line=item.Line,
-                              column=item.Column,
-                              is_definition_only=is_definition_only,
-                              is_external=item.IsExternal,
-                              
-                              # Secondary pass
-                              parent=None,
-                            )
+        return Elements.CustomElement( arity=item.arity,
+            
+                                       original_name=item.original_name,
+                                       name=item.name,
+                                       parent=None,                         # Set later
+                                       source=item.Source,
+                                       line=item.Line,
+                                       column=item.Column,
+                                       is_definition_only=is_definition_only,
+                                       is_external=item.IsExternal,
+                                     )
 
     # ----------------------------------------------------------------------
     @staticmethod
     @override
     def OnVariant(item, plugin, create_element_func, is_definition_only):
-        # BugBug: Validate that items are unique... somehow
+        return Elements.VariantElement( arity=item.arity,
+                                        variations=[ create_element_func(sub_item, use_cache=False) for sub_item in item.reference ],
 
-        raise Exception("BugBug: Abstract method")
+                                        original_name=item.original_name,
+                                        name=item.name,
+                                        parent=None,                        # Set later
+                                        source=item.Source,
+                                        line=item.Line,
+                                        column=item.Column,
+                                        is_definition_only=is_definition_only,
+                                        is_external=item.IsExternal,
+                                      )
 
     # ----------------------------------------------------------------------
     @staticmethod
     @override
     def OnExtension(item, plugin, create_element_func, is_definition_only):
-        raise Exception("BugBug: Abstract method")
+        return Elements.ExtensionElement( arity=item.arity,
+                                          positional_arguments=item.positional_arguments,
+                                          keyword_arguments=item.keyword_arguments,
+
+                                          original_name=item.original_name,
+                                          name=item.name,
+                                          parent=None,                      # Set later
+                                          source=item.Source,
+                                          line=item.Line,
+                                          column=item.Column,
+                                          is_definition_only=is_definition_only,
+                                          is_external=item.IsExternal,
+                                        )
 
     # ----------------------------------------------------------------------
-    @staticmethod
+    @classmethod
     @override
-    def OnReference(item, plugin, create_element_func, is_definition_only):
-        return ReferenceElement( name=item.name,
-                                 original_name=item.original_name,
-                                 source=item.Source,
-                                 line=item.Line,
-                                 column=item.Column,
-                                 is_definition_only=is_definition_only,
-                                 is_external=item.IsExternal,
+    def OnReference(cls, item, plugin, create_element_func, is_definition_only):
+        ref = item.reference
+        while ref.element_type == Elements.ReferenceElement:
+            ref = ref.reference
 
-                                 # Secondary pass
-                                 parent=None,
-                                 reference=None,
-                               )
+        if ref.element_type == Elements.FundamentalElement:
+            type_info_or_arity = cls._CreateFundamentalTypeInfo(item, ref.reference)
+        else:
+            type_info_or_arity = item.arity
+        
+        return Elements.ReferenceElement( type_info_or_arity=type_info_or_arity,
+                                          reference=None,                   # Set later
 
-# ----------------------------------------------------------------------
-# ----------------------------------------------------------------------
-# ----------------------------------------------------------------------
-def _CreateKey(item):
-    names = []
+                                          original_name=item.original_name,
+                                          name=item.name,
+                                          parent=None,                      # Set later
+                                          source=item.Source,
+                                          line=item.Line,
+                                          column=item.Column,
+                                          is_definition_only=is_definition_only,
+                                          is_external=item.IsExternal,
+                                        )
 
-    while item:
-        names.append(item.name)
-        item = item.Parent
+    # ----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
+    @staticmethod
+    def _CreateFundamentalTypeInfo(item, fundamental_attributes_info):
+        kwargs = { "arity" : item.arity,
+                 }
 
-    names.reverse()
+        for md in itertools.chain( fundamental_attributes_info.RequiredItems,
+                                   fundamental_attributes_info.OptionalItems,
+                                 ):
+            if md.Name in item.metadata.Values:
+                kwargs[md.Name] = item.metadata.Values[md.Name].Value
+                del item.metadata.Values[md.Name]
 
-    # Don't include the root element
-    return tuple(names[1:])
+        type_info = fundamental_attributes_info.TypeInfoClass(**kwargs)
+
+        return type_info

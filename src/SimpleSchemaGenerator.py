@@ -61,7 +61,19 @@ CodeGenerator                               = GeneratorFactory.CodeGeneratorFact
                                                                                    )
 
 # ----------------------------------------------------------------------
-@CommandLine.EntryPoint # BugBug
+@CommandLine.EntryPoint( plugin=CommandLine.EntryPoint.Parameter("Name of plugin used for generation"),
+                         output_name=CommandLine.EntryPoint.Parameter("Output name used during generation; the way in which this value impacts generated output varies from plugin to plugin"),
+                         output_dir=CommandLine.EntryPoint.Parameter("Output directory used during generation; the way in which this value impacts generated output varies from plugin to plugin"),
+                         input=CommandLine.EntryPoint.Parameter("SimpleSchema input filename or a directory containing SimpleSchema files"),
+                         include=CommandLine.EntryPoint.Parameter("Elements names to explicitly include; other elements are ignored"),
+                         exclude=CommandLine.EntryPoint.Parameter("Element names to explicitly exclude; other elements are processed"),
+                         output_data_filename_prefix=CommandLine.EntryPoint.Parameter("Prefix used by the code generation implementation; provide this value to generated content from multiple plugins in the same output directory"),
+                         filter_unsupported_extensions=CommandLine.EntryPoint.Parameter("Ignore extensions that aren't supported; by default, unsupported extensions will generate an error"),
+                         filter_unsupported_attributes=CommandLine.EntryPoint.Parameter("Ignore element attributes that aren't supported; by default, unsupported attributes will generate an error"),
+                         plugin_arg=CommandLine.EntryPoint.Parameter("Argument passes directly to the plugin"),
+                         force=CommandLine.EntryPoint.Parameter("Force generation"),
+                         verbose=CommandLine.EntryPoint.Parameter("Generate verbose output during generation"),
+                       )
 @CommandLine.Constraints( plugin=_PluginTypeInfo,
                           output_name=CommandLine.StringTypeInfo(),
                           output_dir=CommandLine.DirectoryTypeInfo(ensure_exists=False),
@@ -86,7 +98,7 @@ def Generate( plugin,
               output_stream=sys.stdout,
               verbose=False,
             ):
-    """BugBug"""
+    """Generates content for the given SimpleSchema(s) using the named plugin"""
 
     return GeneratorFactory.CommandLineGenerate( CodeGenerator,
                                                  input,
@@ -109,13 +121,19 @@ def Generate( plugin,
                                                )
 
 # ----------------------------------------------------------------------
-@CommandLine.EntryPoint # BugBug
-@CommandLine.Constraints( output_stream=None,
+@CommandLine.EntryPoint( output_dir=CommandLine.EntryPoint.Parameter("Output directory previously generated"),
+                       )
+@CommandLine.Constraints( output_dir=CommandLine.DirectoryTypeInfo(),
+                          output_stream=None,
                         )
-def Clean( output_stream=sys.stdout,
+def Clean( output_dir,
+           output_stream=sys.stdout,
          ):
-    """BugBug"""
-    pass # BugBug
+    """Cleans content previously generated"""
+
+    return GeneratorFactory.CommandLineClean( output_dir,
+                                              output_stream,
+                                            )
 
 # ----------------------------------------------------------------------
 def CommandLineSuffix():

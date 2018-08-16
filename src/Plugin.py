@@ -113,7 +113,8 @@ class Plugin(PluginBase):
         the presence of a specific metadata item).
         """
 
-        # Terminate traversal for collections; this allows N-dimension tensors.
+        # Terminate traversal for collections unless "refines_arity" is set to True.
+        # This allows for N-dimensional arrays.
         return item.arity and item.arity.IsCollection and ("refines_arity" not in item.metadata.Values or not item.metadata.Values["refines_arity"].Value)
 
     # ----------------------------------------------------------------------
@@ -146,3 +147,10 @@ class Plugin(PluginBase):
                   **custom_settings
                 ):
         raise Exception("Abstract method")
+
+    # ----------------------------------------------------------------------
+    # |  
+    # |  Protected Methods
+    # |  
+    # ----------------------------------------------------------------------
+    

@@ -27,14 +27,14 @@ from CommonEnvironment import CommandLine
 from CommonEnvironment.StreamDecorator import StreamDecorator
 
 from CommonEnvironmentEx.CompilerImpl.GeneratorPluginFrameworkImpl import GeneratorFactory
-from CommonEnvironmentEx.Package import ApplyRelativePackage
+from CommonEnvironmentEx.Package import InitRelativeImports
 
 # ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
-with ApplyRelativePackage():
+with InitRelativeImports():
     from .Plugin import Plugin as PluginBase
     from .Schema.Parse import ParseFiles
 

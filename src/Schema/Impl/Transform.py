@@ -29,14 +29,14 @@ from CommonEnvironment.TypeInfo.AnyOfTypeInfo import AnyOfTypeInfo
 from CommonEnvironment.TypeInfo.ClassTypeInfo import ClassTypeInfo
 from CommonEnvironment.TypeInfo.DictTypeInfo import DictTypeInfo
 
-from CommonEnvironmentEx.Package import ApplyRelativePackage
+from CommonEnvironmentEx.Package import InitRelativeImports
 
 # ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
-with ApplyRelativePackage():
+with InitRelativeImports():
     from .Item import Item, ItemVisitor
     
     from .. import Elements

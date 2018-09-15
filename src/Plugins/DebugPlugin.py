@@ -19,14 +19,14 @@ import sys
 
 from CommonEnvironment.Interface import staticderived, override, DerivedProperty
 
-from CommonEnvironmentEx.Package import ApplyRelativePackage
+from CommonEnvironmentEx.Package import InitRelativeImports
 
 # ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
-with ApplyRelativePackage():
+with InitRelativeImports():
     from ..Plugin import Plugin as PluginBase, ParseFlag
 
 # ----------------------------------------------------------------------

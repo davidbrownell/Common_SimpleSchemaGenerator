@@ -50,7 +50,7 @@ class Plugin(PluginBase):
     @staticmethod
     @override
     def GenerateCustomSettingsAndDefaults():
-        return [ ( "foo", 'BugBug' ), ]
+        return []
 
     # ----------------------------------------------------------------------
     @staticmethod

@@ -250,9 +250,9 @@ def _ResolveElementType(plugin, item):
                 element_type = Elements.ReferenceElement
             elif isinstance(item.reference, Attributes.FundamentalAttributeInfo):
                 element_type = Elements.FundamentalElement
-            elif isinstance(item.reference, Attributes.ANY_ATTRIBUTE_INFO):
-                    element_type = Elements.AnyElement
-            elif isinstance(item.reference, Attributes.CUSTOM_ATTRIBUTE_INFO):
+            elif item.reference == Attributes.ANY_ATTRIBUTE_INFO:
+                element_type = Elements.AnyElement
+            elif item.reference == Attributes.CUSTOM_ATTRIBUTE_INFO:
                 element_type = Elements.CustomElement
             else:
                 assert False, item.reference

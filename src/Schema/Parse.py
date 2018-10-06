@@ -21,13 +21,15 @@ from collections import OrderedDict
 
 import six
 
+import CommonEnvironment
+
 from .Impl.Populate import Populate
 from .Impl.Resolve import Resolve
 from .Impl.Validate import Validate
 from .Impl.Transform import Transform
 
 # ----------------------------------------------------------------------
-_script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
+_script_fullpath = CommonEnvironment.ThisFullpath()
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 

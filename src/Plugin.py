@@ -24,13 +24,14 @@ from collections import namedtuple
 from enum import IntFlag, auto
 import six
 
+import CommonEnvironment
 from CommonEnvironment.BitFlagEnum import BitFlagEnum, auto
 from CommonEnvironment.Interface import *
 
 from CommonEnvironmentEx.CompilerImpl.GeneratorPluginFrameworkImpl.PluginBase import PluginBase
 
 # ----------------------------------------------------------------------
-_script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
+_script_fullpath = CommonEnvironment.ThisFullpath()
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 

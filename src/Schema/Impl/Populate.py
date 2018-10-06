@@ -23,6 +23,7 @@ from contextlib import contextmanager
 import antlr4
 import six
 
+import CommonEnvironment
 from CommonEnvironment import Nonlocals
 from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment.TypeInfo import Arity
@@ -31,7 +32,7 @@ from CommonEnvironmentEx.Antlr4Helpers.ErrorListener import ErrorListener
 from CommonEnvironmentEx.Package import InitRelativeImports
 
 # ----------------------------------------------------------------------
-_script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
+_script_fullpath = CommonEnvironment.ThisFullpath()
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 

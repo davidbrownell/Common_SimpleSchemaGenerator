@@ -23,6 +23,7 @@ from collections import OrderedDict
 
 import six
 
+import CommonEnvironment
 from CommonEnvironment.Interface import staticderived, override
 from CommonEnvironment.TypeInfo import Arity
 from CommonEnvironment.TypeInfo.AnyOfTypeInfo import AnyOfTypeInfo
@@ -32,7 +33,7 @@ from CommonEnvironment.TypeInfo.DictTypeInfo import DictTypeInfo
 from CommonEnvironmentEx.Package import InitRelativeImports
 
 # ----------------------------------------------------------------------
-_script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
+_script_fullpath = CommonEnvironment.ThisFullpath()
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 

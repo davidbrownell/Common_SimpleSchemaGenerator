@@ -20,6 +20,7 @@ import sys
 
 import six
 
+import CommonEnvironment
 from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import StringHelpers
 
@@ -29,7 +30,7 @@ from CommonEnvironment.TypeInfo.FundamentalTypes.Serialization.StringSerializati
 from CommonEnvironmentEx.Package import InitRelativeImports
 
 # ----------------------------------------------------------------------
-_script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
+_script_fullpath = CommonEnvironment.ThisFullpath()
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
     

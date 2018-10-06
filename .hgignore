@@ -11,3 +11,7 @@ Activate.sh
 
 .coverage
 coverage.xml
+cov.xml
+
+.vscode/*
+Scripts/SimpleSchemaGenerator.py

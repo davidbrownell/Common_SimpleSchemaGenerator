@@ -44,12 +44,12 @@ def GetCustomActions( output_stream,
                       is_mixin_repo,
                     ):
     """
-    Returns an action or list of actions that should be invoked as part of the activation process.
+    Returns an action or list of actions that should be invoked as part of the activaation process.
 
     Actions are generic command line statements defined in 
     <Common_Environment>/Libraries/Python/CommonEnvironment/v1.0/CommonEnvironment/Shell/Commands/__init__.py
     that are converted into statements appropriate for the current scripting language (in most
-    cases, this is Bash on Linux systems and Batch or PowerShell on Windows systems.
+    cases, this is Bash on Linux systems and Batch or Powershell on Windows systems.
     """
 
     return []
@@ -62,7 +62,7 @@ def GetCustomScriptExtractors():
     that depend upon it.
 
     ****************************************************
-    Note that it is very rare to have the need to implement 
+    Note that it is very rare to have the need to impement 
     this method. In most cases, it is safe to delete it.
     ****************************************************
 

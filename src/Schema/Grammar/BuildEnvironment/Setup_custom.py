@@ -91,11 +91,11 @@ def GetDependencies():
     (aka is configurable) or a single Configuration if not.
     """
 
-    return Configuration( "Contains code that operates on SimpleSchema files",
-                          [ Dependency( "3C72E8CD41EB483A891F01DDA606B780",
-                                        "Common_EnvironmentEx",
-                                        "python36",
-                                        lambda scm_or_none: "https://github.com/davidbrownell/Common_EnvironmentEx.git" if scm_or_none is None or scm_or_none.Name != "Mercurial" else "ssh://{mercurial_ssh_config_name}/d:/Mercurial/Code/v3/Common/Common_EnvironmentEx",
+    return Configuration( "Builds the grammar used by SimpleSchemaGenerator",
+                          [ Dependency( "9F6DB1C5041945F585C2C5F8557A2483",
+                                        "Common_ANTLR",
+                                        None,
+                                        "https://github.com/davidbrownell/Common_ANTLR-v3.git",
                                       ),
                           ],
                         )
@@ -111,7 +111,4 @@ def GetCustomActions(debug, verbose, explicit_configurations):
     cases, this is Bash on Linux systems and Batch or Powershell on Windows systems.
     """
 
-    return [ CurrentShell.Commands.SymbolicLink( os.path.join(_script_dir, "Scripts", "SimpleSchemaGenerator.py"),
-                                                 os.path.join(_script_dir, "src", "SimpleSchemaGenerator.py"),
-                                               ),
-           ]
+    return []

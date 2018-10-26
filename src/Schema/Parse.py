@@ -15,7 +15,6 @@
 """Functionality used when parsing SimpleSchema files"""
 
 import os
-import sys
 
 from collections import OrderedDict
 
@@ -39,12 +38,12 @@ def ParseFiles( filenames,
                 filter_unsupported_extensions,
                 filter_unsupported_attributes,
               ):
-    d = OrderedDict()
+    file_map = OrderedDict()
 
     for filename in filenames:
-        d[filename] = lambda filename=filename: open(filename).read()
+        file_map[filename] = lambda filename=filename: open(filename).read()
 
-    return ParseEx( d,
+    return ParseEx( file_map,
                     plugin,
                     filter_unsupported_extensions,
                     filter_unsupported_attributes,
@@ -56,12 +55,12 @@ def ParseStrings( named_strings,            # { "<name>" : "<content>", ... }
                   filter_unsupported_extensions,
                   filter_unsupported_attributes,
                 ):
-    d = OrderedDict()
+    string_map = OrderedDict()
 
     for k, v in six.iteritems(named_strings):
-        d[k] = lambda v=v: v
+        string_map[k] = lambda v=v: v
 
-    return ParseEx( d,
+    return ParseEx( string_map,
                     plugin,
                     filter_unsupported_extensions,
                     filter_unsupported_attributes,

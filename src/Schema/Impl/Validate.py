@@ -58,14 +58,16 @@ def Validate( root,
     # ----------------------------------------------------------------------
 
     extension_names = { ext.Name for ext in plugin.GetExtensions() }
-    
+    extensions_allowing_duplicate_names = { ext.Name for ext in plugin.GetExtensions() if ext.AllowDuplicates }
+
     Impl(root, lambda item: _ValidateSupported(plugin.Flags, item))
-    Impl(root, _ValidateUniqueNames)
+    Impl(root, lambda item: _ValidateUniqueNames(extensions_allowing_duplicate_names, item))
     Impl(root, _ValidateVariantArity)
     Impl(root, lambda item: _ValidateMetadata(filter_unsupported_metadata, item))
     Impl(root, _ValidateSimpleElements)
-    Impl(root, lambda item: _ValidateExtensions(filter_unsupported_extensions, extension_names, item))
-    
+    Impl(root, lambda item: _ValidateExtension(filter_unsupported_extensions, extension_names, item))
+    Impl(root, _ValidateReference)
+
     return root
 
 # ----------------------------------------------------------------------
@@ -82,6 +84,9 @@ def _ValidateSupported(plugin_flags, item):
         if item.element_type == Elements.ReferenceElement and not plugin_flags & ParseFlag.SupportReferenceElements:
             raise Exceptions.ValidateUnsupportedReferenceElementsException(item.Source, item.Line, item.Column)
 
+        if item.element_type == Elements.ListElement and not plugin_flags & ParseFlag.SupportListElements:
+            raise Exceptions.ValidateUnsupportedListElementsException(item.Source, item.Line, item.Column)
+            
         if item.element_type == Elements.SimpleElement and not plugin_flags & ParseFlag.SupportSimpleObjectElements:
             raise Exceptions.ValidateUnsupportedSimpleObjectElementsException(item.Source, item.Line, item.Column)
 
@@ -89,10 +94,13 @@ def _ValidateSupported(plugin_flags, item):
             raise Exceptions.ValidateUnsupportedVariantElementsException(item.Source, item.Line, item.Column)
 
 # ----------------------------------------------------------------------
-def _ValidateUniqueNames(item, names=None):
+def _ValidateUniqueNames(extensions_allowing_duplicate_names, item, names=None):
     names = names or {}
 
     for child in item.items:
+        if child.element_type == Elements.ExtensionElement and child.name in extensions_allowing_duplicate_names:
+            continue
+
         if child.name in names:
             raise Exceptions.ValidateDuplicateNameException( child.Source,
                                                              child.Line,
@@ -106,7 +114,7 @@ def _ValidateUniqueNames(item, names=None):
         names[child.name] = child
 
     if isinstance(item.reference, Item):
-        _ValidateUniqueNames(item.reference, names)
+        _ValidateUniqueNames(extensions_allowing_duplicate_names, item.reference, names)
 
 # ----------------------------------------------------------------------
 def _ValidateVariantArity(item):
@@ -180,7 +188,7 @@ def _ValidateSimpleElements(item):
         return
 
     # ----------------------------------------------------------------------
-    def ValidateImpl(child):
+    def ValidateAttribute(child):
         if child.ItemType != Item.ItemType.Attribute:
             return False
 
@@ -194,31 +202,43 @@ def _ValidateSimpleElements(item):
 
     # ----------------------------------------------------------------------
 
+    # Note that we don't need to validate that the reference points to a fundamental type,
+    # as that is the thing that made this a SimpleElement rather than a CompoundElement.
+    
+    # Validate the attributes
     for child in item.items:
-        if not ValidateImpl(child):
+        if not ValidateAttribute(child):
             raise Exceptions.ValidateInvalidSimpleChildException( child.Source,
                                                                   child.Line,
                                                                   child.Column,
                                                                 )
 
 # ----------------------------------------------------------------------
-def _ValidateExtensions(filter_unsupported_extensions, valid_extension_names, item):
-    if item.element_type != Elements.CompoundElement:
+def _ValidateExtension(filter_unsupported_extensions, valid_extension_names, item):
+    if item.element_type != Elements.ExtensionElement:
         return
 
-    index = 0
+    if item.name not in valid_extension_names:
+        if filter_unsupported_extensions:
+            item.ignore = True
+        else:
+            raise Exceptions.ValidateInvalidExtensionException( item.Source,
+                                                                item.Line,
+                                                                item.Column,
+                                                                name=item.name,
+                                                              )
 
-    while index < len(item.items):
-        if item.items[index].DeclarationType == Item.DeclarationType.Extension:
-            name = item.items[index].name
-            if name not in valid_extension_names:
-                if filter_unsupported_extensions:
-                    del item.items[index]
-                    continue
+# ----------------------------------------------------------------------
+def _ValidateReference(item):
+    if item.element_type != Elements.ReferenceElement:
+        return
 
-                raise Exceptions.ValidateInvalidExtensionException( item.Source,
-                                                                    item.Line,
-                                                                    item.Column,
-                                                                    name=name,
-                                                                  )
-        index += 1
+    ref = item
+    while isinstance(ref.reference, Item):
+        ref = ref.reference
+
+    if ref.element_type == Elements.ExtensionElement:
+        raise Exceptions.ValidateInvalidReferenceException( item.Source,
+                                                            item.Line,
+                                                            item.Column,
+                                                          )

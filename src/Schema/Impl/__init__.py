@@ -17,7 +17,7 @@
 
 #   1) Populate
 #      Converts ANTLR tokens into a hierarchy of Items. Errors generated are limited to those that can
-#      be caclulated given a single statement.
+#      be calculated given a single statement.
 #
 #   2) Resolve
 #      Resolves references to ensure a consistent processing experience.
@@ -26,4 +26,4 @@
 #      Validates that the Items in the Item hierarchy conform to logical rules.
 #
 #   4) Transform
-#      Converts the Items in the Item heirarchy into Elements.
+#      Converts the Items in the Item hierarchy into Elements.

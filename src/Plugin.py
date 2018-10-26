@@ -14,19 +14,15 @@
 # ----------------------------------------------------------------------
 """Contains the Plugin object"""
 
-import copy
-import itertools
 import os
-import sys
 
-from collections import namedtuple
+from collections import OrderedDict
 
-from enum import IntFlag, auto
-import six
+from enum import Enum, auto
 
 import CommonEnvironment
-from CommonEnvironment.BitFlagEnum import BitFlagEnum, auto
-from CommonEnvironment.Interface import *
+from CommonEnvironment.BitFlagEnum import BitFlagEnum
+from CommonEnvironment.Interface import abstractproperty, abstractmethod, extensionmethod
 
 from CommonEnvironmentEx.CompilerImpl.GeneratorPluginFrameworkImpl.PluginBase import PluginBase
 
@@ -57,6 +53,7 @@ class ParseFlag(BitFlagEnum):
     SupportCustomElements                   = auto()
     SupportAnyElements                      = auto()
     SupportReferenceElements                = auto()
+    SupportListElements                     = auto()
     SupportSimpleObjectElements             = auto()
     SupportVariantElements                  = auto()
     
@@ -69,7 +66,27 @@ class ParseFlag(BitFlagEnum):
     # Multi-bit flags
     SupportDeclarations                     = SupportUnnamedDeclarations | SupportNamedDeclarations
     SupportObjects                          = SupportUnnamedObjects | SupportNamedObjects
-                
+
+# ----------------------------------------------------------------------
+class Extension(object):
+    """
+    Defines a value that can be specified in a SimpleSchema file that invokes custom processing by the Plugin.
+    Extensions are written as functions with the SimpleSchema file and can include keyword and
+    positional arguments.
+    """
+
+    # ----------------------------------------------------------------------
+    def __init__( self, 
+                  name, 
+                  allow_duplicates=False,
+                ):
+        self.Name                           = name
+        self.AllowDuplicates                = allow_duplicates
+
+    # ----------------------------------------------------------------------
+    def __repr__(self):
+        return CommonEnvironment.ObjectReprImpl(self)
+
 # ----------------------------------------------------------------------
 class Plugin(PluginBase):
     """Abstract base class for SimpleSchema plugins"""
@@ -98,37 +115,22 @@ class Plugin(PluginBase):
     # ----------------------------------------------------------------------
     @staticmethod
     @extensionmethod
-    def GetExtensions():
-        """Return a list of supported extension names"""
-
-        # No extensions by default
-        return []
-
-    # ----------------------------------------------------------------------
-    @staticmethod
-    @extensionmethod
-    def BreaksReferenceChain(item):
-        """\
-        Return True to terminate reference chain traversal. Plugins may override
-        this method to terminate reference traversal early (for example, based on
-        the presence of a specific metadata item).
-        """
-
-        # Terminate traversal for collections unless "refines_arity" is set to True.
-        # This allows for N-dimensional arrays.
-        return item.arity and item.arity.IsCollection and ("refines_arity" not in item.metadata.Values or not item.metadata.Values["refines_arity"].Value)
-
-    # ----------------------------------------------------------------------
-    @staticmethod
-    @extensionmethod
     def GetRequiredMetadataItems(item):
-        """Returns a list of metadata items for the provided item."""
+        """Returns a list of required metadata items for the provided item."""
         return []
 
     # ----------------------------------------------------------------------
     @staticmethod
     @extensionmethod
     def GetOptionalMetadataItems(item):
+        """Returns a list of optional metadata items for the provided item."""
+        return []
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @extensionmethod
+    def GetExtensions():
+        """Return a list of supported extension names"""
         return []
 
     # ----------------------------------------------------------------------
@@ -154,4 +156,69 @@ class Plugin(PluginBase):
     # |  Protected Methods
     # |  
     # ----------------------------------------------------------------------
-    
+    class IncludeMapType(Enum):
+        """Indicates why an element was part of an include map"""
+        Standard                            = auto()    # The element was explicitly included
+        Referenced                          = auto()    # The element was included because something that referenced it was included
+        Parent                              = auto()    # The element was included because it is an ancestor of an element that was explicitly included
+
+    class IncludeMapValue(object):
+        
+        # ----------------------------------------------------------------------
+        def __init__(self, element, include_map_type):
+            self.Element                    = element
+            self.Type                       = include_map_type
+
+        # ----------------------------------------------------------------------
+        def __repr__(self):
+            return CommonEnvironment.ObjectReprImpl(self)
+
+    @classmethod
+    def _GenerateIncludeMap(cls, elements, include_indexes):
+        """
+        Returns a map that contains all elements that have been explicitly included and
+        the elements that it relies upon.
+
+            { "<dotted type name>" : <include_map_value>, ... }
+        """
+
+        include_map = OrderedDict()
+
+        # ----------------------------------------------------------------------
+        def Impl(element, include_map_type):
+            dn = element.DottedName
+
+            include_map_value = include_map.get(dn, None)
+            if include_map_value is not None and include_map_value.Type == cls.IncludeMapType.Standard:
+                return
+
+            include_map[dn] = cls.IncludeMapValue(element, include_map_type)
+
+            # Ensure that all ancestors are included
+            parent = element.Parent
+            while parent:
+                pdn = parent.DottedName
+                if pdn in include_map:
+                    break
+
+                include_map[pdn] = cls.IncludeMapValue(parent, cls.IncludeMapType.Parent)
+                parent = parent.Parent
+
+            # Ensure that all children are included
+            for potential_item_name in [ "Children", "Base", "Derived", "Reference", ]:
+                potential_items = getattr(element, potential_item_name, None)
+                if potential_items is None:
+                    continue
+
+                if not isinstance(potential_items, list):
+                    potential_items = [ potential_items, ]
+
+                for item in potential_items:
+                    Impl(item, cls.IncludeMapType.Referenced)
+
+        # ----------------------------------------------------------------------
+
+        for element in [ elements[include_index] for include_index in include_indexes ]:
+            Impl(element, cls.IncludeMapType.Standard)
+
+        return include_map

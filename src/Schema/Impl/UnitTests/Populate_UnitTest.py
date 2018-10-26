@@ -240,7 +240,7 @@ class AritySuite(unittest.TestCase):
         self.assertEqual(_Invoke("<foo ?>").items[0].arity, Arity.FromString('?'))
         self.assertEqual(_Invoke("<foo *>").items[0].arity, Arity.FromString('*'))
         self.assertEqual(_Invoke("<foo +>").items[0].arity, Arity.FromString('+'))
-        self.assertEqual(_Invoke("<foo {10}>").items[0].arity, Arity(10, None))
+        self.assertEqual(_Invoke("<foo {10}>").items[0].arity, Arity(10, 10))
         self.assertEqual(_Invoke("<foo {5, 20}>").items[0].arity, Arity(5, 20))
 
     # ----------------------------------------------------------------------

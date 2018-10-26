@@ -15,7 +15,6 @@
 """Contains the Plugin object"""
 
 import os
-import sys
 import textwrap
 
 import six
@@ -99,17 +98,17 @@ class Plugin(PluginBase):
                                                        )
 
                 # ----------------------------------------------------------------------
-                def OnCompoundVisitingChildren(element, *args, **kwargs):
+                def OnCompoundVisitingChildren(element, *args, **kwargs):   # <Unused argument> pylint: disable = W0613
                     # Don't visit children
                     return False
 
                 # ----------------------------------------------------------------------
-                def OnSimpleVisitingChildren(element, *args, **kwargs):
+                def OnSimpleVisitingChildren(element, *args, **kwargs):     # <Unused argument> pylint: disable = W0613
                     # Don't visit children
                     return False
 
                 # ----------------------------------------------------------------------
-                def OnFundamental(element, *args, **kwargs):
+                def OnFundamental(element, *args, **kwargs):                # <Unused argument> pylint: disable = W0613
                     if not isinstance(element.TypeInfo, EnumTypeInfo):
                         return
 
@@ -150,10 +149,10 @@ class Plugin(PluginBase):
 
                 # ----------------------------------------------------------------------
 
-                simple_element_visitor = Elements.CreateSimpleElementVisitor( on_fundamental_func=OnFundamental,
-                                                                              on_compound_visiting_children_func=OnCompoundVisitingChildren,
-                                                                              on_simple_visiting_children_func=OnSimpleVisitingChildren,
-                                                                            )
+                simple_element_visitor = Elements.CreateElementVisitor( on_fundamental_func=OnFundamental,
+                                                                        on_compound_visiting_children_func=OnCompoundVisitingChildren,
+                                                                        on_simple_visiting_children_func=OnSimpleVisitingChildren,
+                                                                      )
 
                 for include_index in include_indexes:
                     element = elements[include_index]
@@ -162,4 +161,3 @@ class Plugin(PluginBase):
 
                 if not nonlocals.wrote_value:
                     f.write("# No enum values with friendly names were found.\n")
-                

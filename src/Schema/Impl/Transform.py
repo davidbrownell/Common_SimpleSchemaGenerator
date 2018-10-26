@@ -14,21 +14,20 @@
 # ----------------------------------------------------------------------
 """Transforms Items into Element objects"""
 
-import copy
 import itertools
 import os
-import sys
 
 from collections import OrderedDict
 
 import six
 
 import CommonEnvironment
-from CommonEnvironment.Interface import staticderived, override
-from CommonEnvironment.TypeInfo import Arity
+from CommonEnvironment.Interface import staticderived, override, DerivedProperty
+from CommonEnvironment.TypeInfo import TypeInfo
 from CommonEnvironment.TypeInfo.AnyOfTypeInfo import AnyOfTypeInfo
 from CommonEnvironment.TypeInfo.ClassTypeInfo import ClassTypeInfo
-from CommonEnvironment.TypeInfo.DictTypeInfo import DictTypeInfo
+from CommonEnvironment.TypeInfo.GenericTypeInfo import GenericTypeInfo
+from CommonEnvironment.TypeInfo.ListTypeInfo import ListTypeInfo
 
 from CommonEnvironmentEx.Package import InitRelativeImports
 
@@ -46,72 +45,59 @@ with InitRelativeImports():
     from ...Plugin import ParseFlag
 
 # ----------------------------------------------------------------------
+# <Wrong hanging indentation> pylint: disable = C0330
+
+# ----------------------------------------------------------------------
 def Transform(root, plugin):
-    lookup = {}
+    elements = {}
+
+    # When an element is created, we may not have all the information necessary
+    # to fully create it (as will be the case with circular references). Methods
+    # can be added to this queue to execute after all of the elements are created;
+    # at this time the context is available and anything that couldn't be created
+    # before can be created at this time.
+    delayed_instruction_queue = []
+    apply_type_info_visitor = _ApplyTypeInfoVisitor()
+
+    extensions_allowing_duplicate_names = { ext.Name for ext in plugin.GetExtensions() if ext.AllowDuplicates }
 
     # ----------------------------------------------------------------------
-    def Create(item, use_cache=True):
-        if ( not use_cache or
-             item.Key not in lookup or
-             (item.element_type == Elements.ExtensionElement and next(ext for ext in plugin.GetExtensions() if ext.Name == item.name).AllowDuplicates)
-           ):
-            # Signal that we are processing this item
-            lookup[item.Key] = None
+    def Create(item):
+        if item.ignore:
+            return None
 
-            # Create the element
-            is_definition_only = item.ItemType == Item.ItemType.Definition
+        allow_duplicates = item.element_type == Elements.ExtensionElement and item.name in extensions_allowing_duplicate_names
 
-            element = _CreateElementVisitor().Accept( item, 
-                                                      plugin, 
-                                                      Create, 
-                                                      is_definition_only,
-                                                    )
-            element._item = item
+        if item.Key in elements and not allow_duplicates: 
+            return elements[item.Key]
 
-            if not use_cache:
-                return element
+        # Single that we are in the process of creating this element
+        if allow_duplicates:
+            elements.setdefault(item.Key, []).append(None)
+        else:
+            elements[item.Key] = None
 
-            lookup[item.Key] = element
+        element = _CreateElementVisitor().Accept( item,
+                                                  plugin,
+                                                  elements,
+                                                  delayed_instruction_queue,
+                                                  apply_type_info_visitor,
+                                                  Create,
+                                                  is_definition_only=item.ItemType == Item.ItemType.Definition,
+                                                )
 
-        assert item.Key in lookup, item.Key
-        return lookup[item.Key]
+        element._item = item
 
-    # ----------------------------------------------------------------------
-    def Resolve(element, parent):
-        """Depth first traversal; elements will only be traversed once."""
+        if allow_duplicates:
+            elements[item.Key][-1] = element
+        else:
+            elements[item.Key] = element
 
-        # Apply changes to this element
-        assert element.Parent is None, element.Parent
-        element.Parent = parent
-
-        if hasattr(element, "Reference"):
-            assert element.Reference is None, element.Reference
-            element.Reference = lookup[element._item.reference.Key]
-
-        if hasattr(element, "Base") and element._item.reference:
-            assert element.Base is None, element.Base
-            element.Base = lookup[element._item.reference.Key]
-
-        # Apply metadata
-        element.Metadata = element._item.metadata
-        element.AttributeNames = list(six.iterkeys(element._item.metadata.Values))
-
-        for k, v in six.iteritems(element._item.metadata.Values):
-            if hasattr(element, k):
-                raise Exceptions.InvalidAttributeNameException( v.Source,
-                                                                v.Line,
-                                                                v.Column,
-                                                                name=k,
-                                                              )
-
-            setattr(element, k, v.Value)
-
-        # Traverse the children
-        for child in getattr(element, "Children", []):
-            Resolve(child, element)
+        return element
 
     # ----------------------------------------------------------------------
-    def ValidateMetadata(element):
+    def ValidateAndApplyMetadata(element):
+        # Validate
         for md in itertools.chain( element._item.metadata.RequiredItems,
                                    element._item.metadata.OptionalItems,
                                  ):
@@ -120,7 +106,7 @@ def Transform(root, plugin):
             if md.Name in element._item.metadata.Values:
                 if md.ValidateFunc is not None:
                     result = md.ValidateFunc(plugin, element)
-            elif md.Name not in element._item.metadata.Values:
+            else:
                 if md.MissingValidateFunc is not None:
                     result = md.MissingValidateFunc(plugin, element)
 
@@ -131,26 +117,75 @@ def Transform(root, plugin):
                                                             desc=result,
                                                           )
 
+        # Apply
+        for k, v in six.iteritems(element._item.metadata.Values):
+            if hasattr(element, k):
+                raise Exceptions.InvalidAttributeNameException( v.Source,
+                                                                v.Line,
+                                                                v.Column,
+                                                                name=k,
+                                                              )
+
+            setattr(element, k, v.Value)
+
+        # Commit
+        element.Metadata = element._item.metadata
+        element.AttributeNames = list(six.iterkeys(element._item.metadata.Values))
+
+    # ----------------------------------------------------------------------
+    def CreateVariantTypeInfoList(element):
+        if isinstance(element, Elements.ReferenceElement):
+            return CreateVariantTypeInfoList(element.Reference)
+
+        if isinstance(element, Elements.VariantElement):
+            result = []
+
+            for variation in element.Variations:
+                result += CreateVariantTypeInfoList(variation)
+
+            return result
+        
+        return [ element.TypeInfo, ]
+
+    # ----------------------------------------------------------------------
+    def FlattenVariant(element):
+        if not isinstance(element, Elements.VariantElement):
+            return
+
+        element.TypeInfo.ElementTypeInfos = CreateVariantTypeInfoList(element)
+
     # ----------------------------------------------------------------------
     def Cleanup(element):
         del element._item
-    
+
     # ----------------------------------------------------------------------
-    def Impl(element, functor):
+    def Impl(element, functor, visited=None):
+        if visited is None:
+            visited = set()
+
+        if element in visited:
+            return
+
+        visited.add(element)
+
         functor(element)
 
         for child in getattr(element, "Children", []):
-            Impl(child, functor)
+            Impl(child, functor, visited=visited)
 
     # ----------------------------------------------------------------------
 
     root_element = Create(root)
+    assert root_element
 
-    Resolve(root_element, None)
-    
-    Impl(root_element, ValidateMetadata)
+    while delayed_instruction_queue:
+        instruction = delayed_instruction_queue.pop(0)
+        instruction()
+
+    Impl(root_element, ValidateAndApplyMetadata)
+    Impl(root_element, FlattenVariant)
     Impl(root_element, Cleanup)
-
+    
     return root_element
 
 # ----------------------------------------------------------------------
@@ -161,13 +196,59 @@ class _CreateElementVisitor(ItemVisitor):
     # ----------------------------------------------------------------------
     @classmethod
     @override
-    def OnFundamental(cls, item, plugin, create_element_func, is_definition_only):
-        return Elements.FundamentalElement( type_info=cls._CreateFundamentalTypeInfo(item, item.reference),
-                                            is_attribute=item.ItemType == Item.ItemType.Attribute and (plugin.Flags & ParseFlag.SupportAttributes),
-                                            
-                                            original_name=item.original_name,
+    def OnFundamental( cls, 
+                       item, 
+                       plugin, 
+                       elements, 
+                       delayed_instruction_queue, 
+                       apply_type_info_visitor,
+                       create_element_func,             # <Unused argument> pylint: disable = W0613
+                       is_definition_only,
+                     ):                                 # <Parameters differ from overridden...> pylint: disable = W0221
+        element = Elements.FundamentalElement( is_attribute=item.ItemType == Item.ItemType.Attribute and (plugin.Flags & ParseFlag.SupportAttributes) != 0,
+                                               
+                                               type_info=None,              # Set below
+                                               name=item.name,
+                                               parent=None,                 # Set below
+                                               source=item.Source,
+                                               line=item.Line,
+                                               column=item.Column,
+                                               is_definition_only=is_definition_only,
+                                               is_external=item.IsExternal,
+                                             )
+
+        # Parent
+        cls._ApplyParent(element, item, elements, delayed_instruction_queue)
+        
+        # TypeInfo
+        apply_type_info_visitor.Accept(item, item, element, elements, delayed_instruction_queue)
+
+        return element
+
+    # ----------------------------------------------------------------------
+    @classmethod
+    @override
+    def OnCompound( cls, 
+                    item, 
+                    plugin,                             # <Unused argument> pylint: disable = W0613 
+                    elements, 
+                    delayed_instruction_queue, 
+                    apply_type_info_visitor,
+                    create_element_func, 
+                    is_definition_only,
+                  ):                                    # <Parameters differ from overridden...> pylint: disable = W0221
+        element = Elements.CompoundElement( children=cls._CreateChildElements( item,
+                                                                               item.items,
+                                                                               elements,
+                                                                               delayed_instruction_queue,
+                                                                               create_element_func,
+                                                                             ),
+                                            base=None,                      # Set below
+                                            derived=[],                     # Set below
+
+                                            type_info=None,                 # Set below
                                             name=item.name,
-                                            parent=None,                    # Set later
+                                            parent=None,                    # Set below
                                             source=item.Source,
                                             line=item.Line,
                                             column=item.Column,
@@ -175,84 +256,160 @@ class _CreateElementVisitor(ItemVisitor):
                                             is_external=item.IsExternal,
                                           )
 
-    # ----------------------------------------------------------------------
-    @staticmethod
-    @override
-    def OnCompound(item, plugin, create_element_func, is_definition_only):
-        return Elements.CompoundElement( arity=item.arity,
-                                         children=[ create_element_func(child) for child in item.items ],
-                                         base=None,                         # Set later
-                                         
-                                         original_name=item.original_name,
-                                         name=item.name,
-                                         parent=None,                       # Set later
-                                         source=item.Source,
-                                         line=item.Line,
-                                         column=item.Column,
-                                         is_definition_only=is_definition_only,
-                                         is_external=item.IsExternal,
-                                       )
+        # Parent
+        cls._ApplyParent(element, item, elements, delayed_instruction_queue)
+        
+        # Base and Derived
+        if item.reference is not None:
+            # ----------------------------------------------------------------------
+            def ApplyBase():
+                assert item.reference.Key in elements, item.reference.Key
+                base_element = elements[item.reference.Key]
+                assert base_element
+
+                element.Base = base_element
+                element.Base.Derived.append(element)
+
+            # ----------------------------------------------------------------------
+
+            if elements.get(item.reference.Key, None) is None:
+                delayed_instruction_queue.append(ApplyBase)
+            else:
+                ApplyBase()
+           
+        # TypeInfo
+        apply_type_info_visitor.Accept(item, item, element, elements, delayed_instruction_queue)
+
+        return element
 
     # ----------------------------------------------------------------------
     @classmethod
     @override
-    def OnSimple(cls, item, plugin, create_element_func, is_definition_only):
-        return Elements.SimpleElement( fundamental_type_info=cls._CreateFundamentalTypeInfo(item, item.reference),
-                                       arity=item.arity,
-                                       children=[ create_element_func(child) for child in item.items ],
-                                       
-                                       original_name=item.original_name,
-                                       name=item.name,
-                                       parent=None,                         # Set later
-                                       source=item.Source,
-                                       line=item.Line,
-                                       column=item.Column,
-                                       is_definition_only=is_definition_only,
-                                       is_external=item.IsExternal,
-                                     )
+    def OnSimple( cls, 
+                  item, 
+                  plugin,                               # <Unused argument> pylint: disable = W0613
+                  elements, 
+                  delayed_instruction_queue, 
+                  apply_type_info_visitor,
+                  create_element_func, 
+                  is_definition_only,
+                ):                                      # <Parameters differ from overridden...> pylint: disable = W0221
+        element = Elements.SimpleElement( attributes=cls._CreateChildElements( item,
+                                                                               item.items,
+                                                                               elements,
+                                                                               delayed_instruction_queue,
+                                                                               create_element_func,
+                                                                             ),
+                                          type_info=None,                   # Set below
+                                          name=item.name,
+                                          parent=None,                      # Set below
+                                          source=item.Source,
+                                          line=item.Line,
+                                          column=item.Column,
+                                          is_definition_only=is_definition_only,
+                                          is_external=item.IsExternal,
+                                        )
+        # Parent
+        cls._ApplyParent(element, item, elements, delayed_instruction_queue)
+
+        # TypeInfo
+        apply_type_info_visitor.Accept(item, item, element, elements, delayed_instruction_queue)
+        
+        return element
 
     # ----------------------------------------------------------------------
-    @staticmethod
+    @classmethod
     @override
-    def OnAny(item, plugin, create_element_func, is_definition_only):
-        return Elements.AnyElement( arity=item.arity,
-                                    
-                                    original_name=item.original_name,
-                                    name=item.name,
-                                    parent=None,                            # Set later
-                                    source=item.Source,
-                                    line=item.Line,
-                                    column=item.Column,
-                                    is_definition_only=is_definition_only,
-                                    is_external=item.IsExternal,
-                                  )
+    def OnVariant( cls, 
+                   item, 
+                   plugin,                              # <Unused argument> pylint: disable = W0613
+                   elements, 
+                   delayed_instruction_queue, 
+                   apply_type_info_visitor,
+                   create_element_func, 
+                   is_definition_only,
+                 ):                                     # <Parameters differ from overridden...> pylint: disable = W0221
+        element = Elements.VariantElement( variations=cls._CreateChildElements( item,
+                                                                                item.reference,
+                                                                                elements,
+                                                                                delayed_instruction_queue,
+                                                                                create_element_func,
+                                                                              ),
+                                           type_info=None,                  # Set below
+                                           name=item.name,
+                                           parent=None,                     # Set below
+                                           source=item.Source,
+                                           line=item.Line,
+                                           column=item.Column,
+                                           is_definition_only=is_definition_only,
+                                           is_external=item.IsExternal,
+                                         )
+        
+        # Parent
+        cls._ApplyParent(element, item, elements, delayed_instruction_queue)
+        
+        # TypeInfo
+        apply_type_info_visitor.Accept(item, item, element, elements, delayed_instruction_queue)
+
+        return element
 
     # ----------------------------------------------------------------------
-    @staticmethod
+    @classmethod
     @override
-    def OnCustom(item, plugin, create_element_func, is_definition_only):
-        return Elements.CustomElement( arity=item.arity,
+    def OnReference( cls, 
+                     item, 
+                     plugin,                            # <Unused argument> pylint: disable = W0613 
+                     elements, 
+                     delayed_instruction_queue, 
+                     apply_type_info_visitor,
+                     create_element_func, 
+                     is_definition_only,
+                   ):                                   # <Parameters differ from overridden...> pylint: disable = W0221
+        element = Elements.ReferenceElement( reference=None,                # Set below
+
+                                             type_info=None,                # Set below
+                                             name=item.name,
+                                             parent=None,                   # Set below
+                                             source=item.Source,
+                                             line=item.Line,
+                                             column=item.Column,
+                                             is_definition_only=is_definition_only,
+                                             is_external=item.IsExternal,
+                                           )
+
+        # Parent
+        cls._ApplyParent(element, item, elements, delayed_instruction_queue)
+
+        # Reference
+        cls._ApplyReference( element,
+                             item,
+                             elements,
+                             delayed_instruction_queue,
+                             create_element_func,
+                           )
             
-                                       original_name=item.original_name,
-                                       name=item.name,
-                                       parent=None,                         # Set later
-                                       source=item.Source,
-                                       line=item.Line,
-                                       column=item.Column,
-                                       is_definition_only=is_definition_only,
-                                       is_external=item.IsExternal,
-                                     )
+        # TypeInfo
+        apply_type_info_visitor.Accept(item, item, element, elements, delayed_instruction_queue)
 
+        return element
+        
     # ----------------------------------------------------------------------
-    @staticmethod
+    @classmethod
     @override
-    def OnVariant(item, plugin, create_element_func, is_definition_only):
-        return Elements.VariantElement( arity=item.arity,
-                                        variations=[ create_element_func(sub_item, use_cache=False) for sub_item in item.reference ],
+    def OnList( cls, 
+                item,
+                plugin,                                 # <Unused argument> pylint: disable = W0613
+                elements, 
+                delayed_instruction_queue,
+                apply_type_info_visitor, 
+                create_element_func, 
+                is_definition_only,
+              ):                                        # <Parameters differ from overridden...> pylint: disable = W0221
+        element = Elements.ListElement( reference=None,                     # Set below
 
-                                        original_name=item.original_name,
+                                        type_info=None,                     # Set below
                                         name=item.name,
-                                        parent=None,                        # Set later
+                                        parent=None,                        # Set below
                                         source=item.Source,
                                         line=item.Line,
                                         column=item.Column,
@@ -260,65 +417,376 @@ class _CreateElementVisitor(ItemVisitor):
                                         is_external=item.IsExternal,
                                       )
 
-    # ----------------------------------------------------------------------
-    @staticmethod
-    @override
-    def OnExtension(item, plugin, create_element_func, is_definition_only):
-        return Elements.ExtensionElement( arity=item.arity,
-                                          positional_arguments=item.positional_arguments,
-                                          keyword_arguments=item.keyword_arguments,
+        # Parent
+        cls._ApplyParent(element, item, elements, delayed_instruction_queue)
 
-                                          original_name=item.original_name,
+        # Reference
+        cls._ApplyReference( element,
+                             item,
+                             elements,
+                             delayed_instruction_queue,
+                             create_element_func,
+                           )
+
+        # TypeInfo
+        apply_type_info_visitor.Accept(item, item, element, elements, delayed_instruction_queue)
+
+        return element
+
+    # ----------------------------------------------------------------------
+    @classmethod
+    @override
+    def OnAny( cls, 
+               item, 
+               plugin,                                  # <Unused argument> pylint: disable = W0613
+               elements, 
+               delayed_instruction_queue, 
+               apply_type_info_visitor,
+               create_element_func,                     # <Unused argument> pylint: disable = W0613
+               is_definition_only,
+             ):                                         # <Parameters differ from overridden...> pylint: disable = W0221
+        element = Elements.AnyElement( type_info=None,                      # Set below
+                                       name=item.name,
+                                       parent=None,                         # Set below
+                                       source=item.Source,
+                                       line=item.Line,
+                                       column=item.Column,
+                                       is_definition_only=is_definition_only,
+                                       is_external=item.IsExternal,
+                                     )
+
+        # Parent
+        cls._ApplyParent(element, item, elements, delayed_instruction_queue)
+
+        # TypeInfo
+        apply_type_info_visitor.Accept(item, item, element, elements, delayed_instruction_queue)
+
+        return element
+
+    # ----------------------------------------------------------------------
+    @classmethod
+    @override
+    def OnCustom( cls, 
+                  item, 
+                  plugin,                               # <Unused argument> pylint: disable = W0613
+                  elements, 
+                  delayed_instruction_queue, 
+                  apply_type_info_visitor,
+                  create_element_func,                  # <Unused argument> pylint: disable = W0613
+                  is_definition_only,
+                ):                                      # <Parameters differ from overridden...> pylint: disable = W0221
+        element = Elements.CustomElement( type_info=None,                   # Set below
                                           name=item.name,
-                                          parent=None,                      # Set later
+                                          parent=None,                      # Set below
                                           source=item.Source,
                                           line=item.Line,
                                           column=item.Column,
                                           is_definition_only=is_definition_only,
                                           is_external=item.IsExternal,
+                                        )
+
+        # Parent
+        cls._ApplyParent(element, item, elements, delayed_instruction_queue)
+
+        # TypeInfo
+        apply_type_info_visitor.Accept(item, item, element, elements, delayed_instruction_queue)
+
+        return element
+
+    # ----------------------------------------------------------------------
+    @classmethod
+    @override
+    def OnExtension( cls, 
+                     item, 
+                     plugin,                            # <Unused argument> pylint: disable = W0613 
+                     elements, 
+                     delayed_instruction_queue, 
+                     apply_type_info_visitor,
+                     create_element_func,               # <Unused argument> pylint: disable = W0613
+                     is_definition_only,
+                   ):                                   # <Parameters differ from overridden...> pylint: disable = W0221
+        element = Elements.ExtensionElement( positional_arguments=item.positional_arguments,
+                                             keyword_arguments=item.keyword_arguments,
+
+                                             type_info=None,                # Set below
+                                             name=item.name,
+                                             parent=None,                   # Set below
+                                             source=item.Source,
+                                             line=item.Line,
+                                             column=item.Column,
+                                             is_definition_only=is_definition_only,
+                                             is_external=item.IsExternal,
+                                           )
+
+        # Parent
+        cls._ApplyParent(element, item, elements, delayed_instruction_queue)
+
+        # TypeInfo
+        apply_type_info_visitor.Accept(item, item, element, elements, delayed_instruction_queue)
+
+        return element
+
+    # ----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
+    @staticmethod
+    def _ApplyParent(element, item, elements, delayed_instruction_queue):
+        if item.Parent is None:
+            return
+
+        parent_element = elements.get(item.Parent.Key, None)
+
+        if parent_element is None:
+            # ----------------------------------------------------------------------
+            def ApplyParent():
+                assert item.Parent.Key in elements, item.Parent.Key
+                element.Parent = elements[item.Parent.Key]
+
+            # ----------------------------------------------------------------------
+
+            delayed_instruction_queue.append(ApplyParent)
+        else:
+            element.Parent = parent_element
+
+    # ----------------------------------------------------------------------
+    @classmethod
+    def _CreateChildElements( cls, 
+                              item,                     # <Unused argument> pylint: disable = W0613
+                              child_items, 
+                              elements, 
+                              delayed_instruction_queue, 
+                              create_element_func,
+                            ):
+        child_elements = []
+        
+        for child_item in child_items:
+            # The element will be placed in the elements map
+            if not create_element_func(child_item):
+                continue
+
+            child_elements.append(None)     # This placeholder will be replaced in ApplyChild
+            child_index = len(child_elements) - 1
+
+            # ----------------------------------------------------------------------
+            def ApplyChild(child_item=child_item, child_index=child_index):
+                assert child_item.Key in elements, child_item.Key
+                child_element = elements[child_item.Key]
+                if isinstance(child_element, list):
+                    # This can only happen with ExtensionElements that allow duplicates.
+                    # Fortunately, these elements can never reference other elements, which means
+                    # that this method will always be invoked directly rather than queued.
+                    # Because of this, we can assume that the element to apply is the last
+                    # item in the list.
+                    assert child_element
+
+                    child_element = child_element[-1]
+                    assert isinstance(child_element, Elements.ExtensionElement), child_element
+                    assert child_element._item == child_item
+
+                assert child_element is not None
+
+                assert child_index < len(child_elements)
+                assert child_elements[child_index] is None
+                child_elements[child_index] = child_element
+
+            # ----------------------------------------------------------------------
+
+            if elements.get(child_item.Key, None) is None:
+                delayed_instruction_queue.append(ApplyChild)
+            else:
+                ApplyChild()
+
+        return child_elements
+
+    # ----------------------------------------------------------------------
+    @classmethod
+    def _ApplyReference( cls,
+                         element,
+                         item,
+                         elements,
+                         delayed_instruction_queue,
+                         create_element_func,
+                       ):
+        # The element will be placed in the elements map
+        create_element_func(item.reference)
+        
+        # ----------------------------------------------------------------------
+        def ApplyReference():
+            assert item.reference.Key in elements, item.reference.Key
+            referenced_element = elements[item.reference.Key]
+            assert referenced_element
+
+            assert element.Reference is None, element.Reference
+            element.Reference = referenced_element
+
+        # ----------------------------------------------------------------------
+
+        if elements.get(item.reference.Key, None) is None:
+            delayed_instruction_queue.append(ApplyReference)
+        else:
+            ApplyReference()
+
+# ----------------------------------------------------------------------
+@staticderived
+class _ApplyTypeInfoVisitor(ItemVisitor):
+    # ----------------------------------------------------------------------
+    @classmethod
+    @override
+    def OnFundamental(cls, item, metadata_item, element, elements, delayed_instruction_queue):  # <Parameters differ from overridden...> pylint: disable = W0221
+        element.TypeInfo = cls._CreateFundamentalTypeInfo(metadata_item, item)
+
+    # ----------------------------------------------------------------------
+    @classmethod
+    @override
+    def OnCompound(cls, item, metadata_item, element, elements, delayed_instruction_queue):     # <Parameters differ from overridden...> pylint: disable = W0221
+        cls._ApplyClass( metadata_item, 
+                         item, 
+                         element, 
+                         elements, 
+                         delayed_instruction_queue,
+                         item.items,
+                       )
+
+    # ----------------------------------------------------------------------
+    @classmethod
+    @override
+    def OnSimple(cls, item, metadata_item, element, elements, delayed_instruction_queue):       # <Parameters differ from overridden...> pylint: disable = W0221
+        cls._ApplyClass( metadata_item,
+                         item,
+                         element,
+                         elements,
+                         delayed_instruction_queue,
+                         item.items,
+                       )
+
+        element.TypeInfo.Items[None] = cls._CreateFundamentalTypeInfo(metadata_item, item)
+        
+    # ----------------------------------------------------------------------
+    @classmethod
+    @override
+    def OnVariant(cls, item, metadata_item, element, elements, delayed_instruction_queue):      # <Parameters differ from overridden...> pylint: disable = W0221
+        # Create a placeholder
+        element.TypeInfo = AnyOfTypeInfo( [ cls._PlaceholderTypeInfo(), ],
+                                          arity=metadata_item.arity,
                                         )
 
     # ----------------------------------------------------------------------
     @classmethod
     @override
-    def OnReference(cls, item, plugin, create_element_func, is_definition_only):
-        ref = item.reference
-        while ref.element_type == Elements.ReferenceElement:
-            ref = ref.reference
+    def OnReference(cls, item, metadata_item, element, elements, delayed_instruction_queue):    # <Parameters differ from overridden...> pylint: disable = W0221
+        cls.Accept(item.reference, metadata_item, element, elements, delayed_instruction_queue)
 
-        if ref.element_type == Elements.FundamentalElement:
-            type_info_or_arity = cls._CreateFundamentalTypeInfo(item, ref.reference)
+    # ----------------------------------------------------------------------
+    @classmethod
+    @override
+    def OnList(cls, item, metadata_item, element, elements, delayed_instruction_queue):         # <Parameters differ from overridden...> pylint: disable = W0221
+        element.TypeInfo = ListTypeInfo( cls._PlaceholderTypeInfo(),
+                                         arity=metadata_item.arity,
+                                       )
+
+        # ----------------------------------------------------------------------
+        def ApplyTypeInfo():
+            assert item.reference.Key in elements, item.reference.Key
+            referenced_element = elements[item.reference.Key]
+            assert referenced_element
+            assert referenced_element.TypeInfo
+            assert isinstance(element.TypeInfo.ItemTypeInfo, cls._PlaceholderTypeInfo), element.TypeInfo.ItemTypeInfo
+            element.TypeInfo.ItemTypeInfo = referenced_element.TypeInfo
+
+        # ----------------------------------------------------------------------
+
+        referenced_element = elements.get(item.reference.Key, None)
+        if referenced_element is None or referenced_element.TypeInfo is None:
+            delayed_instruction_queue.append(ApplyTypeInfo)
         else:
-            type_info_or_arity = item.arity
-        
-        return Elements.ReferenceElement( type_info_or_arity=type_info_or_arity,
-                                          reference=None,                   # Set later
+            ApplyTypeInfo()
 
-                                          original_name=item.original_name,
-                                          name=item.name,
-                                          parent=None,                      # Set later
-                                          source=item.Source,
-                                          line=item.Line,
-                                          column=item.Column,
-                                          is_definition_only=is_definition_only,
-                                          is_external=item.IsExternal,
-                                        )
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @override
+    def OnAny(item, metadata_item, element, elements, delayed_instruction_queue):               # <Parameters differ from overridden...> pylint: disable = W0221
+        element.TypeInfo = GenericTypeInfo(arity=metadata_item.arity)
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @override
+    def OnCustom(item, metadata_item, element, elements, delayed_instruction_queue):            # <Parameters differ from overridden...> pylint: disable = W0221
+        element.TypeInfo = GenericTypeInfo(arity=metadata_item.arity)
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @override
+    def OnExtension(item, metadata_item, element, elements, delayed_instruction_queue):         # <Parameters differ from overridden...> pylint: disable = W0221
+        element.TypeInfo = GenericTypeInfo(arity=metadata_item.arity)
+
+    # ----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
+    class _PlaceholderTypeInfo(TypeInfo):
+        Desc                            = DerivedProperty('')
+        ConstraintsDesc                 = DerivedProperty('')
+        ExpectedType                    = bool
+    
+        @staticmethod
+        @override
+        def _ValidateItemNoThrowImpl(item):             # <Parameters differ from overridden...> pylint: disable = W0221
+            pass
 
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
     @staticmethod
-    def _CreateFundamentalTypeInfo(item, fundamental_attributes_info):
+    def _CreateFundamentalTypeInfo(item, resolved_item):
         kwargs = { "arity" : item.arity,
                  }
 
-        for md in itertools.chain( fundamental_attributes_info.RequiredItems,
-                                   fundamental_attributes_info.OptionalItems,
+        for md in itertools.chain( resolved_item.reference.RequiredItems,
+                                   resolved_item.reference.OptionalItems,
                                  ):
             if md.Name in item.metadata.Values:
                 kwargs[md.Name] = item.metadata.Values[md.Name].Value
                 del item.metadata.Values[md.Name]
 
-        type_info = fundamental_attributes_info.TypeInfoClass(**kwargs)
+        return resolved_item.reference.TypeInfoClass(**kwargs)
 
-        return type_info
+    # ----------------------------------------------------------------------
+    @classmethod
+    def _ApplyClass(cls, item, resolved_item, element, elements, delayed_instruction_queue, child_items):
+        child_type_info_placeholders = OrderedDict()
+
+        for child_item in child_items:
+            if child_item.element_type == Elements.ExtensionElement:
+                continue
+
+            child_type_info_placeholders[child_item.name] = cls._PlaceholderTypeInfo()
+
+        element.TypeInfo = ClassTypeInfo( # Placeholders values are overridden below
+                                          child_type_info_placeholders,
+                                          require_exact_match=bool(child_type_info_placeholders),
+                                          arity=item.arity,
+                                        )
+
+        for child_item in child_items:
+            if child_item.element_type == Elements.ExtensionElement:
+                continue
+
+            assert not child_item.ignore, child_item
+
+            # ----------------------------------------------------------------------
+            def ApplyChild(child_item=child_item):
+                assert child_item.Key in elements, child_item.Key
+                child_element = elements[child_item.Key]
+                assert child_element
+                assert child_element.TypeInfo
+                assert not isinstance(child_element.TypeInfo, cls._PlaceholderTypeInfo), child_element.Name
+                assert child_element.Name in element.TypeInfo.Items, child_element.Name
+                assert isinstance(element.TypeInfo.Items[child_element.Name], cls._PlaceholderTypeInfo), element.TypeInfo.Items[child_element.Name]
+                element.TypeInfo.Items[child_element.Name] = child_element.TypeInfo
+
+            # ----------------------------------------------------------------------
+
+            child_element = elements.get(child_item.Key, None)
+            if child_element is None or child_element.TypeInfo is None:
+                delayed_instruction_queue.append(ApplyChild)
+            else:
+                ApplyChild()

@@ -244,7 +244,7 @@ def Populate( source_name_content_generators,           # { "name" : def Func() 
                                                                 value=value,
                                                               )
 
-            self._stack.append(Arity(value, None))
+            self._stack.append(Arity(value, value))
 
         # ----------------------------------------------------------------------
         def visitArityVariable(self, ctx):
@@ -407,10 +407,10 @@ def Populate( source_name_content_generators,           # { "name" : def Func() 
             else:
                 assert False, values
 
-            item = self._GetStackParent()
+            parent = self._GetStackParent()
             
-            item.metadata = metadata
-            item.arity = arity
+            parent.metadata = metadata
+            parent.arity = arity
 
         # ----------------------------------------------------------------------
         def visitUnnamedDeclaration(self, ctx):
@@ -530,7 +530,8 @@ def Populate( source_name_content_generators,           # { "name" : def Func() 
                 self._ValidateName(item, name)
 
                 item.name = name
-
+                item.metadata = ResolvedMetadata({}, [], [])
+                
                 if len(values) > 1:
                     item.arity = values[1]
                     

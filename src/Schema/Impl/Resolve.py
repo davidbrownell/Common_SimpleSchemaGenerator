@@ -18,14 +18,15 @@ import itertools
 import os
 import sys
 
-from collections import OrderedDict
+from collections import OrderedDict, namedtuple
 
 import six
-import inflect as inflect_mod
 
 import CommonEnvironment
 from CommonEnvironment.Interface import staticderived, override
-from CommonEnvironment.TypeInfo import Arity
+from CommonEnvironment.TypeInfo import Arity, ValidationException
+from CommonEnvironment.TypeInfo.FundamentalTypes.BoolTypeInfo import BoolTypeInfo
+from CommonEnvironment.TypeInfo.FundamentalTypes.Serialization.StringSerialization import StringSerialization
 
 from CommonEnvironmentEx.Package import InitRelativeImports
 
@@ -47,9 +48,6 @@ with InitRelativeImports():
     from .. import Exceptions
 
     from ...Plugin import ParseFlag
-
-# ----------------------------------------------------------------------
-inflect                                     = inflect_mod.engine()
 
 # ----------------------------------------------------------------------
 def Resolve(root, plugin):
@@ -75,18 +73,27 @@ def Resolve(root, plugin):
     assert config_metadata
     config_metadata = config_metadata[0]
     
-    Impl(root, _ResolveReference)
-    Impl(root, lambda item: _ResolveElementType(plugin, item))
-    Impl(root, lambda item: _ResolveArity(plugin, item))
-    Impl(root, _ResolveName)
-    Impl(root, lambda item: _ResolveMetadata_NonArity(plugin, config_metadata, item))
-    Impl(root, _ResolveMetadata_Arity)
-    Impl(root, _ResolveMetadata_Defaults)
+    reference_states = {}
 
+    Impl(root, _ResolveReference)
+    Impl(root, _ResolveName)
+    Impl(root, lambda item: _ResolveElementType(plugin, reference_states, item))
+    Impl(root, _ResolveArity)
+    Impl(root, lambda item: _ResolveMetadata(plugin, config_metadata, item))
+    Impl(root, lambda item: _ResolveReferenceType(reference_states, item))
+    Impl(root, _ResolveMetadataDefaults)
+    
     return root
 
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
+_ReferenceState                             = namedtuple( "ReferenceState",
+                                                          [ "HasArity",
+                                                            "MetadataKeys",
+                                                          ],
+                                                        )
+
 # ----------------------------------------------------------------------
 def _ResolveReference(item):
     """Convert string names into Items"""
@@ -142,7 +149,7 @@ def _ResolveReference(item):
     if isinstance(item.reference, list):
         new_items = []
 
-        for var, var_metadata in item.reference:
+        for var_index, (var, var_metadata) in enumerate(item.reference):
             new_item = Item( Item.DeclarationType.Declaration,
                              Item.ItemType.Standard,
                              item,
@@ -152,6 +159,7 @@ def _ResolveReference(item):
                              item.IsExternal,
                            )
 
+            new_item.name = str(var_index)
             new_item.reference = Impl(var)
             new_item.metadata = var_metadata
             
@@ -162,7 +170,29 @@ def _ResolveReference(item):
         item.reference = Impl(item.reference)
 
 # ----------------------------------------------------------------------
-def _ResolveElementType(plugin, item):
+def _ResolveName(item):
+    """Apply custom name info if provided by metadata"""
+
+    # ----------------------------------------------------------------------
+    def IsValidName(value):
+        return bool(value)
+
+    # ----------------------------------------------------------------------
+    
+    if Attributes.UNIVERSAL_NAME_OVERRIDE_ATTRIBUTE_NAME in item.metadata.Values:
+        metadata_value = item.metadata.Values[Attributes.UNIVERSAL_NAME_OVERRIDE_ATTRIBUTE_NAME]
+        if not IsValidName(metadata_value.Value):
+            raise Exceptions.ResolveInvalidCustomNameException( metadata_value.Source,
+                                                                metadata_value.Line,
+                                                                metadata_value.Column,
+                                                                name=metadata_value.Value,
+                                                              )
+
+        item.name = metadata_value.Value
+        del item.metadata.Values[Attributes.UNIVERSAL_NAME_OVERRIDE_ATTRIBUTE_NAME]
+
+# ----------------------------------------------------------------------
+def _ResolveElementType(plugin, reference_states, item):
     """Assign an element type for the item"""
 
     if isinstance(item.reference, list):
@@ -190,7 +220,7 @@ def _ResolveElementType(plugin, item):
             # ----------------------------------------------------------------------
 
             if IsSimple():
-                if Attributes.SIMPLE_FUNDAMENTAL_NAME_ATTRIBUTE_NAME in item.metadata.Values and not plugin.Flags & ParseFlag.SupportSimpleObjectElements:
+                if not plugin.Flags & ParseFlag.SupportSimpleObjectElements and Attributes.SIMPLE_FUNDAMENTAL_NAME_ATTRIBUTE_NAME in item.metadata.Values:
                     # Convert this item into a compound element
                     fundamental_name = item.metadata.Values.pop(Attributes.SIMPLE_FUNDAMENTAL_NAME_ATTRIBUTE_NAME).Value
 
@@ -247,7 +277,62 @@ def _ResolveElementType(plugin, item):
             assert item.reference is not None
 
             if isinstance(item.reference, Item):
-                element_type = Elements.ReferenceElement
+                # ----------------------------------------------------------------------
+                def IsList():
+                    # This item is a list if it meets the following conditions:
+                    #
+                    #   1) An arity was explicitly provided
+                    #   2) The arity is a collection
+                    #   3) The referenced item (or one of its descendants) has an arity
+                    #   4) The referenced item's arity (or one of its descendants) is a collection.
+                    #   5) 'refines_arity' is not provided or set to False
+                    
+                    # 1 and 2
+                    if item.arity is None or not item.arity.IsCollection:
+                        return False
+
+                    # 3 and 4
+                    ref = item.reference
+                    while ref.element_type == Elements.ReferenceElement and ref.arity is None:
+                        ref = ref.reference
+
+                    if ref.arity is None or not ref.arity.IsCollection:
+                        return False
+
+                    # 5
+                    if Attributes.COLLECTION_REFINES_ARITY_ATTRIBUTE_NAME in item.metadata.Values:
+                        refines_arity = item.metadata.Values[Attributes.COLLECTION_REFINES_ARITY_ATTRIBUTE_NAME].Value
+                        del item.metadata.Values[Attributes.COLLECTION_REFINES_ARITY_ATTRIBUTE_NAME]
+
+                        try:
+                            refines_arity = StringSerialization.DeserializeItem(BoolTypeInfo(), refines_arity)
+                        except ValidationException as ex:
+                            raise Exceptions.InvalidAttributeException( item.Source,
+                                                                        item.Line,
+                                                                        item.Column,
+                                                                        desc="'{}' is not valid: {}".fromat(Attributes.COLLECTION_REFINES_ARITY_ATTRIBUTE_NAME, str(ex)),
+                                                                      )
+
+                        if refines_arity:
+                            return False
+
+                    return True
+
+                # ----------------------------------------------------------------------
+
+                if IsList():
+                    element_type = Elements.ListElement
+                else: 
+                    element_type = Elements.ReferenceElement
+
+                    # This reference may be a simple reference or an item that augments
+                    # another. Unfortunately, we don't have the context here to differentiate
+                    # between the two, so capture state information that can be used later
+                    # when we do have the necessary context.
+                    reference_states[item] = _ReferenceState( item.arity is not None,
+                                                              list(six.iterkeys(item.metadata.Values)),
+                                                            )
+
             elif isinstance(item.reference, Attributes.FundamentalAttributeInfo):
                 element_type = Elements.FundamentalElement
             elif item.reference == Attributes.ANY_ATTRIBUTE_INFO:
@@ -263,61 +348,19 @@ def _ResolveElementType(plugin, item):
         item.element_type = element_type
 
 # ----------------------------------------------------------------------
-def _ResolveArity(plugin, item):
-    if item.arity is None:
-        if item.element_type == Elements.ReferenceElement and not plugin.BreaksReferenceChain(item):
-            _ResolveArity(plugin, item.reference)
-            item.arity = item.reference.arity
+def _ResolveArity(item):
+    for sub_item in item.Enumerate(variant_includes_self=True):
+        if sub_item.arity is not None:
+            continue
+
+        if sub_item.element_type == Elements.ReferenceElement:
+            _ResolveArity(sub_item.reference)
+            sub_item.arity = sub_item.reference.arity
         else:
-            item.arity = Arity(1, 1)
-
-    if item.element_type == Elements.VariantElement:
-        for sub_item in item.reference:
-            if sub_item.arity is None:
-                sub_item.arity = Arity(1, 1)
-
-# ----------------------------------------------------------------------
-def _ResolveName(item):
-    """Apply custom name info if provided by metadata"""
-
-    # ----------------------------------------------------------------------
-    def IsValidName(value):
-        return bool(value)
-
-    # ----------------------------------------------------------------------
+            sub_item.arity = Arity(1, 1)
     
-    if Attributes.UNIVERSAL_NAME_OVERRIDE_ATTRIBUTE_NAME in item.metadata.Values:
-        metadata_value = item.metadata.Values[Attributes.UNIVERSAL_NAME_OVERRIDE_ATTRIBUTE_NAME]
-        if not IsValidName(metadata_value.Value):
-            raise Exceptions.ResolveInvalidCustomNameException( metadata_value.Source,
-                                                                metadata_value.Line,
-                                                                metadata_value.Column,
-                                                                name=metadata_value.Value,
-                                                              )
-
-        item.name = metadata_value.Value
-        del item.metadata.Values[Attributes.UNIVERSAL_NAME_OVERRIDE_ATTRIBUTE_NAME]
-
-    item.original_name = item.name
-
-    if item.arity.IsCollection:
-        if Attributes.COLLECTION_PLURAL_ATTRIBUTE_NAME in item.metadata.Values:
-            metadata_value = item.metadata.Values[Attributes.COLLECTION_PLURAL_ATTRIBUTE_NAME]
-            if not IsValidName(metadata_value.Value):
-                raise Exceptions.ResolveInvalidCustomNameException( metadata_value.Source,
-                                                                    metadata_value.Line,
-                                                                    metadata_value.Column,
-                                                                    name=metadata_value.Value,
-                                                                  )
-
-            item.name = metadata_value.Value
-            del item.metadata.Values[Attributes.COLLECTION_PLURAL_ATTRIBUTE_NAME]
-
-        else:
-            item.name = inflect.plural(item.name)
-
 # ----------------------------------------------------------------------
-def _ResolveMetadata_NonArity(plugin, config_values, item):
+def _ResolveMetadata(plugin, config_values, item):
     if isinstance(item.metadata, ResolvedMetadata):
         return
 
@@ -332,17 +375,22 @@ def _ResolveMetadata_NonArity(plugin, config_values, item):
     metadata_info = _MetadataInfoVisitor.Accept(item)
 
     item.metadata = ResolvedMetadata( metadata,
-                                      Attributes.UNIVERSAL_ATTRIBUTE_INFO.RequiredItems + metadata_info.RequiredItems,
-                                      Attributes.UNIVERSAL_ATTRIBUTE_INFO.OptionalItems + metadata_info.OptionalItems,
+                                      Attributes.UNIVERSAL_ATTRIBUTE_INFO.RequiredItems + metadata_info.RequiredItems + plugin.GetRequiredMetadataItems(item),
+                                      Attributes.UNIVERSAL_ATTRIBUTE_INFO.OptionalItems + metadata_info.OptionalItems + plugin.GetOptionalMetadataItems(item),
                                     )
 
+    if item.arity.IsOptional:
+        item.metadata = item.metadata.Clone(Attributes.OPTIONAL_ATTRIBUTE_INFO)
+    elif item.arity.IsCollection:
+        item.metadata = item.metadata.Clone(Attributes.COLLECTION_ATTRIBUTE_INFO)
+
     for item in item.Enumerate():
-        _ResolveMetadata_NonArity(plugin, config_values, item)
+        _ResolveMetadata(plugin, config_values, item)
 
         # SimpleElement items may be decorated with metadata associated with the fundamental type
         if item.element_type == Elements.SimpleElement:
             if isinstance(item.reference, Item):
-                _ResolveMetadata_NonArity(plugin, config_values, item.reference)
+                _ResolveMetadata(plugin, config_values, item.reference)
 
             ref = item.reference
             while isinstance(ref, Item):
@@ -352,36 +400,69 @@ def _ResolveMetadata_NonArity(plugin, config_values, item):
             item.metadata = item.metadata.Clone(ref)
             
         # Reference items may be decorated with metadata associated with the referenced type
-        if item.element_type == Elements.ReferenceElement and not plugin.BreaksReferenceChain(item):
-            _ResolveMetadata_NonArity(plugin, config_values, item.reference)
+        if item.element_type == Elements.ReferenceElement:
+            _ResolveMetadata(plugin, config_values, item.reference)
 
             item.metadata = item.metadata.Clone(item.reference.metadata)
 
 # ----------------------------------------------------------------------
-def _ResolveMetadata_Arity(item):
-    if item.arity.IsOptional:
-        item.metadata = item.metadata.Clone(Attributes.OPTIONAL_ATTRIBUTE_INFO)
-    elif item.arity.IsCollection:
-        item.metadata = item.metadata.Clone(Attributes.COLLECTION_ATTRIBUTE_INFO)
+def _ResolveReferenceType(reference_states, item):
+    # ----------------------------------------------------------------------
+    def IsAugmenting(item):
+        state = reference_states.pop(item)
+
+        if state.HasArity:
+            return True
+
+        for attribute in itertools.chain( item.metadata.RequiredItems,
+                                          item.metadata.OptionalItems,
+                                        ):
+            if attribute.IsMetadata:
+                continue
+
+            if attribute.Name in state.MetadataKeys:
+                return True
+
+        return False
+
+    # ----------------------------------------------------------------------
+
+    for item in item.Enumerate():
+        if item.element_type != Elements.ReferenceElement:
+            continue
+
+        if item not in reference_states:
+            continue
+
+        _ResolveReferenceType(reference_states, item.reference)
+
+        if not IsAugmenting(item):
+            continue
+
+        ref = item.reference
+        while ref.element_type == Elements.ReferenceElement:
+            ref = ref.reference
+
+        item.Copy(ref)
 
 # ----------------------------------------------------------------------
-def _ResolveMetadata_Defaults(item):
+def _ResolveMetadataDefaults(item):
     for item in item.Enumerate():
-        for md in itertools.chain( item.metadata.RequiredItems,
-                                   item.metadata.OptionalItems,
-                                 ):
-            if md.Name not in item.metadata.Values and md.DefaultValue != Attributes.Attribute.DoesNotExist:
-                if callable(md.DefaultValue):
-                    value = md.DefaultValue(item)
+        for attribute in itertools.chain( item.metadata.RequiredItems,
+                                          item.metadata.OptionalItems,
+                                        ):
+            if attribute.Name not in item.metadata.Values and attribute.DefaultValue != Attributes.Attribute.DoesNotExist:
+                if callable(attribute.DefaultValue):
+                    value = attribute.DefaultValue(item)
                 else:
-                    value = md.DefaultValue
+                    value = attribute.DefaultValue
 
-                item.metadata.Values[md.Name] = MetadataValue( value,
-                                                               MetadataSource.Default,
-                                                               item.Source,
-                                                               item.Line,
-                                                               item.Column
-                                                             )
+                item.metadata.Values[attribute.Name] = MetadataValue( value,
+                                                                      MetadataSource.Default,
+                                                                      item.Source,
+                                                                      item.Line,
+                                                                      item.Column
+                                                                    )
 
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
@@ -439,3 +520,9 @@ class _MetadataInfoVisitor(ItemVisitor):
     @override
     def OnReference(item, *args, **kwargs):
         return Attributes.REFERENCE_ATTRIBUTE_INFO
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @override
+    def OnList(item, *args, **kwargs):
+        return Attributes.LIST_ATTRIBUTE_INFO

@@ -18,14 +18,10 @@ Elements are passed to Plugins to perform custom code generation.
 """
 
 import os
-import sys
-
-import six
 
 import CommonEnvironment
 from CommonEnvironment.CallOnExit import CallOnExit
-from CommonEnvironment.Interface import *
-from CommonEnvironment.TypeInfo import Arity
+from CommonEnvironment.Interface import Interface, abstractmethod, extensionmethod, override, staticderived
 
 # ----------------------------------------------------------------------
 _script_fullpath = CommonEnvironment.ThisFullpath()
@@ -42,7 +38,7 @@ class Element(Interface):
 
     # ----------------------------------------------------------------------
     def __init__( self,
-                  original_name,
+                  type_info,
                   name,
                   parent,
                   source,
@@ -51,7 +47,7 @@ class Element(Interface):
                   is_definition_only,
                   is_external,
                 ):
-        self.GivenName                      = original_name
+        self.TypeInfo                       = type_info
         self.Name                           = name
         self.Parent                         = parent
         self.Source                         = source
@@ -80,49 +76,21 @@ class Element(Interface):
     @property
     def DottedName(self):
         if self._cached_dotted_name is None:
-            self._cached_dotted_name = self._DottedNameImpl(lambda e: e.Name)
+            names = []
+
+            element = self
+            while element:
+                names.append(element.Name)
+                element = element.Parent
+
+            names.reverse()
+
+            self._cached_dotted_name = '.'.join(names)
 
         return self._cached_dotted_name
-            
-    @property
-    def DottedTypeName(self):
-        if self._cached_dotted_type_name is None:
-            self._cached_dotted_type_name = self._DottedNameImpl(lambda e: e.GivenName)
-
-        return self._cached_dotted_type_name
-
-    # ----------------------------------------------------------------------
-    # ----------------------------------------------------------------------
-    # ----------------------------------------------------------------------
-    def _DottedNameImpl(self, name_functor):
-        names = []
-
-        element = self
-        while element:
-            names.append(name_functor(element))
-            element = element.Parent
-
-        names.reverse()
-
-        # Don't include the root
-        names = names[1:]
-
-        return '.'.join(names)
 
 # ----------------------------------------------------------------------
-class TypeInfoMixin(object):
-    # ----------------------------------------------------------------------
-    def __init__(self, type_info):
-        self.TypeInfo                       = type_info
-
-# ----------------------------------------------------------------------
-class ArityMixin(object):
-    # ----------------------------------------------------------------------
-    def __init__(self, arity):
-        self.Arity                          = arity
-
-# ----------------------------------------------------------------------
-class ParentMixin(object):
+class ChildrenMixin(object):
     # ----------------------------------------------------------------------
     def __init__(self, children):
         self.Children                       = children
@@ -154,109 +122,88 @@ class ReferenceMixin(object):
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
-class FundamentalElement(TypeInfoMixin, Element):
+class FundamentalElement(Element):
     # ----------------------------------------------------------------------
     def __init__( self,
-                  type_info,
                   is_attribute,
                   *args,
                   **kwargs
                 ):
         Element.__init__(self, *args, **kwargs)
-        TypeInfoMixin.__init__(self, type_info)
-
+        
         self.IsAttribute                    = is_attribute
 
 # ----------------------------------------------------------------------
-class CompoundElement(ArityMixin, ParentMixin, Element):
+class CompoundElement(ChildrenMixin, Element):
     # ----------------------------------------------------------------------
     def __init__( self,
-                  arity,
                   children,
                   base,
+                  derived,
                   *args,
                   **kwargs
                 ):
         Element.__init__(self, *args, **kwargs)
-        ParentMixin.__init__(self, children)
-        ArityMixin.__init__(self, arity)
-
+        ChildrenMixin.__init__(self, children)
+        
         self.Base                           = base
+        self.Derived                        = derived
 
+    # ----------------------------------------------------------------------
+    def __repr__(self):
+        return CommonEnvironment.ObjectReprImpl( self,
+                                                 Parent=lambda e: e.Name if e else "None",
+                                                 Base=lambda b: b.DottedName if b else "<None>",
+                                                 Derived=lambda derived: [ d.DottedName for d in derived ],
+                                               )
+                                               
 # ----------------------------------------------------------------------
-class SimpleElement(TypeInfoMixin, ArityMixin, ParentMixin, Element):
+class SimpleElement(ChildrenMixin, Element):
     # ----------------------------------------------------------------------
     def __init__( self,
-                  fundamental_type_info,
-                  arity,
-                  children,
+                  attributes,
                   *args,
                   **kwargs
                 ):
         Element.__init__(self, *args, **kwargs)
-        ParentMixin.__init__(self, children)
-        ArityMixin.__init__(self, arity)
-        TypeInfoMixin.__init__(self, fundamental_type_info)
+        ChildrenMixin.__init__(self, attributes)
+        
+        # The referenced fundamental type's TypeInfo is available as
+        # self.TypeInfo.Items[None].
 
         self.Attributes                     = self.Children
 
-# ----------------------------------------------------------------------
-class AnyElement(ArityMixin, Element):
     # ----------------------------------------------------------------------
-    def __init__( self,
-                  arity,
-                  *args,
-                  **kwargs
-                ):
-        Element.__init__(self, *args, **kwargs)
-        ArityMixin.__init__(self, arity)
+    def __repr__(self):
+        return CommonEnvironment.ObjectReprImpl( self,
+                                                 Parent=lambda e: e.Name if e else "None",
+                                                 Children=lambda e: None,
+                                               )
 
 # ----------------------------------------------------------------------
-class CustomElement(ArityMixin, Element):
+class VariantElement(ChildrenMixin, Element):
     # ----------------------------------------------------------------------
     def __init__( self,
-                  arity,
-                  *args,
-                  **kwargs
-                ):
-        Element.__init__(self, *args, **kwargs)
-        ArityMixin.__init__(self, arity)
-
-# ----------------------------------------------------------------------
-class ExtensionElement(Element):
-    # ----------------------------------------------------------------------
-    def __init__( self,
-                  arity,
-                  positional_arguments,
-                  keyword_arguments,
-                  *args,
-                  **kwargs
-                ):
-        Element.__init__(self, *args, **kwargs)
-        ArityMixin.__init__(self, arity)
-
-        self.PositionalArguments            = positional_arguments
-        self.KeywordArguments               = keyword_arguments
-        
-# ----------------------------------------------------------------------
-class VariantElement(ArityMixin, Element):
-    # ----------------------------------------------------------------------
-    def __init__( self,
-                  arity,
                   variations,
                   *args,
                   **kwargs
                 ):
         Element.__init__(self, *args, **kwargs)
-        ArityMixin.__init__(self, arity)
+        ChildrenMixin.__init__(self, variations)
 
-        self.Variations                     = variations
+        self.Variations                     = self.Children
 
+    # ----------------------------------------------------------------------
+    def __repr__(self):
+        return CommonEnvironment.ObjectReprImpl( self,
+                                                 Parent=lambda e: e.Name if e else "None",
+                                                 Children=lambda e: None,
+                                               )
+    
 # ----------------------------------------------------------------------
-class ReferenceElement(TypeInfoMixin, ArityMixin, ReferenceMixin, Element):
+class ReferenceElement(ReferenceMixin, Element):
     # ----------------------------------------------------------------------
     def __init__( self,
-                  type_info_or_arity,       # type_info if referencing a FundamentalElement, arity otherwise
                   reference,
                   *args,
                   **kwargs
@@ -264,13 +211,63 @@ class ReferenceElement(TypeInfoMixin, ArityMixin, ReferenceMixin, Element):
         Element.__init__(self, *args, **kwargs)
         ReferenceMixin.__init__(self, reference)
 
-        if isinstance(type_info_or_arity, Arity):
-            ArityMixin.__init__(self, type_info_or_arity)
-            TypeInfoMixin.__init__(self, None)
-        else:
-            ArityMixin.__init__(self, None)
-            TypeInfoMixin.__init__(self, type_info_or_arity)
+    # ----------------------------------------------------------------------
+    def __repr__(self):
+        return CommonEnvironment.ObjectReprImpl( self,
+                                                 Parent=lambda e: e.Name if e else "None",
+                                                 Reference=lambda r: r.Name if r else "None",
+                                               )
 
+# ----------------------------------------------------------------------
+class ListElement(ReferenceMixin, Element):
+    # ----------------------------------------------------------------------
+    def __init__( self,
+                  reference,
+                  *args,
+                  **kwargs
+                ):
+        Element.__init__(self, *args, **kwargs)
+        ReferenceMixin.__init__(self, reference)
+
+    # ----------------------------------------------------------------------
+    def __repr__(self):
+        return CommonEnvironment.ObjectReprImpl( self,
+                                                 Parent=lambda e: e.Name if e else "None",
+                                                 Reference=lambda r: r.Name,
+                                               )
+    
+# ----------------------------------------------------------------------
+class AnyElement(Element):
+    # ----------------------------------------------------------------------
+    def __init__( self,
+                  *args,
+                  **kwargs
+                ):
+        Element.__init__(self, *args, **kwargs)
+
+# ----------------------------------------------------------------------
+class CustomElement(Element):
+    # ----------------------------------------------------------------------
+    def __init__( self,
+                  *args,
+                  **kwargs
+                ):
+        Element.__init__(self, *args, **kwargs)
+
+# ----------------------------------------------------------------------
+class ExtensionElement(Element):
+    # ----------------------------------------------------------------------
+    def __init__( self,
+                  positional_arguments,
+                  keyword_arguments,
+                  *args,
+                  **kwargs
+                ):
+        Element.__init__(self, *args, **kwargs)
+
+        self.PositionalArguments            = positional_arguments
+        self.KeywordArguments               = keyword_arguments
+        
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
@@ -278,20 +275,32 @@ class ElementVisitor(Interface):
 
     # ----------------------------------------------------------------------
     @staticmethod
+    @extensionmethod
+    def OnEnteringElement(element, *args, **kwargs):
+        pass
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @extensionmethod
+    def OnExitingElement(element, *args, **kwargs):
+        pass
+
+    # ----------------------------------------------------------------------
+    @staticmethod
     @abstractmethod
     def OnFundamental(element, *args, **kwargs):
-        raise Exception("Abstract property")
+        raise Exception("Abstract method")
 
     # ----------------------------------------------------------------------
     @staticmethod
     @abstractmethod
     def OnCompound(element, *args, **kwargs):
-        raise Exception("Abstract property")
+        raise Exception("Abstract method")
 
     # ----------------------------------------------------------------------
     @staticmethod
     @extensionmethod
-    def OnCompound_VisitingChildren(element, *args, **kwargs):
+    def OnCompound_VisitingChildren(element, *args, **kwargs):              # <Unused argument> pylint: disable = W0613
         """Return False to prevent the visitation of children. Called after OnCompound."""
         return True
         
@@ -305,12 +314,12 @@ class ElementVisitor(Interface):
     @staticmethod
     @abstractmethod
     def OnSimple(element, *args, **kwargs):
-        raise Exception("Abstract property")
+        raise Exception("Abstract method")
 
     # ----------------------------------------------------------------------
     @staticmethod
     @extensionmethod
-    def OnSimple_VisitingChildren(element, *args, **kwargs):
+    def OnSimple_VisitingChildren(element, *args, **kwargs):                # <Unused argument> pylint: disable = W0613
         """Return False to prevent the visitation of children. Called after OnSimple."""
         return True
         
@@ -323,109 +332,142 @@ class ElementVisitor(Interface):
     # ----------------------------------------------------------------------
     @staticmethod
     @abstractmethod
-    def OnAny(element, *args, **kwargs):
-        raise Exception("Abstract property")
-
-    # ----------------------------------------------------------------------
-    @staticmethod
-    @abstractmethod
-    def OnCustom(element, *args, **kwargs):
-        raise Exception("Abstract property")
-
-    # ----------------------------------------------------------------------
-    @staticmethod
-    @abstractmethod
-    def OnExtension(element, *args, **kwargs):
-        raise Exception("Abstract property")
-
-    # ----------------------------------------------------------------------
-    @staticmethod
-    @abstractmethod
     def OnVariant(element, *args, **kwargs):
-        raise Exception("Abstract property")
+        raise Exception("Abstract method")
 
     # ----------------------------------------------------------------------
     @staticmethod
     @abstractmethod
     def OnReference(element, *args, **kwargs):
-        raise Exception("Abstract property")
+        raise Exception("Abstract method")
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @abstractmethod
+    def OnList(element, *args, **kwargs):
+        raise Exception("Abstract method")
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @abstractmethod
+    def OnAny(element, *args, **kwargs):
+        raise Exception("Abstract method")
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @abstractmethod
+    def OnCustom(element, *args, **kwargs):
+        raise Exception("Abstract method")
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @abstractmethod
+    def OnExtension(element, *args, **kwargs):
+        raise Exception("Abstract method")
 
     # ----------------------------------------------------------------------
     @classmethod
     def Accept( cls, 
-                element, 
+                element_or_elements, 
                 *args, 
                 traverse=True,
+                include_dotted_names=None,  # set of the dotted_names of elements that should be traversed.
                 **kwargs
               ):
         """Calls the appropriate On___ method based on the element type"""
 
+        if include_dotted_names is None:
+            should_traverse_func = lambda element: True
+        else:
+            should_traverse_func = lambda element: element.DottedName in include_dotted_names
+
         lookup = { FundamentalElement       : cls.OnFundamental,
                    CompoundElement          : cls.OnCompound,
                    SimpleElement            : cls.OnSimple,
+                   VariantElement           : cls.OnVariant,
+                   ReferenceElement         : cls.OnReference,
+                   ListElement              : cls.OnList,
                    AnyElement               : cls.OnAny,
                    CustomElement            : cls.OnCustom,
-                   VariantElement           : cls.OnVariant,
                    ExtensionElement         : cls.OnExtension,
-                   ReferenceElement         : cls.OnReference,
                  }
 
-        typ = type(element)
+        if isinstance(element_or_elements, list):
+            elements = element_or_elements
+        else:
+            elements = [ element_or_elements, ]
 
-        if typ not in lookup:
-            raise Exception("'{}' was not expected".format(typ))
+        for element in elements:
+            if not should_traverse_func(element):
+                continue
 
-        nonlocals = CommonEnvironment.Nonlocals( result=lookup[typ](element, *args, **kwargs),
-                                               )
+            typ = type(element)
 
-        if isinstance(element, ParentMixin) and traverse:
-            visitation_lookup = { CompoundElement       : ( cls.OnCompound_VisitingChildren, cls.OnCompound_VisitedChildren ),
-                                  SimpleElement         : ( cls.OnSimple_VisitingChildren, cls.OnSimple_VisitedChildren ),
-                                }
+            if typ not in lookup:
+                raise Exception("'{}' was not expected ({})".format(typ, element))
 
-            if typ not in visitation_lookup:
-                raise Exception("'{}' was not expected".format(typ))
+            cls.OnEnteringElement(element, *args, **kwargs)
+            with CallOnExit(lambda: cls.OnExitingElement(element, *args, **kwargs)):
+                nonlocals = CommonEnvironment.Nonlocals( result=lookup[typ](element, *args, **kwargs),
+                                                       )
 
-            visiting_func, visited_func = visitation_lookup[typ]
+                if isinstance(element, ChildrenMixin) and traverse:
+                    if not isinstance(element, VariantElement):
+                        visitation_lookup = { CompoundElement       : ( cls.OnCompound_VisitingChildren, cls.OnCompound_VisitedChildren ),
+                                              SimpleElement         : ( cls.OnSimple_VisitingChildren, cls.OnSimple_VisitedChildren ),
+                                            }
 
-            if visiting_func(element, *args, **kwargs) != False:
-                # ----------------------------------------------------------------------
-                def CallVisited():
-                    visited_result = visited_func(element, *args, **kwargs)
-                    if visited_result is not None and nonlocals.result is None:
-                        nonlocals.result = visited_result
+                        if typ not in visitation_lookup:
+                            raise Exception("'{}' was not expected".format(typ))
 
-                # ----------------------------------------------------------------------
-                
-                with CallOnExit(CallVisited):
-                    for child in element.Children:
-                        cls.Accept(child, *args, **kwargs)
+                        visiting_func, visited_func = visitation_lookup[typ]
 
-        return nonlocals.result
+                        if visiting_func(element, *args, **kwargs) != False:
+                            # ----------------------------------------------------------------------
+                            def CallVisited():
+                                visited_result = visited_func(element, *args, **kwargs)
+                                if visited_result is not None and nonlocals.result is None:
+                                    nonlocals.result = visited_result
+
+                            # ----------------------------------------------------------------------
+
+                            with CallOnExit(CallVisited):
+                                for child in element.Children:
+                                    cls.Accept(child, *args, **kwargs)
+
+                if nonlocals.result is not None:
+                    return nonlocals.result
+
+        return None
 
 # ----------------------------------------------------------------------
 # |  
 # |  Public Methods
 # |  
 # ----------------------------------------------------------------------
-def CreateSimpleElementVisitor( on_fundamental_func=None,                   # def Func(element, *args, **kwargs)
-                                on_compound_func=None,                      # def Func(element, *args, **kwargs)
-                                on_compound_visiting_children_func=None,    # def Func(element, *args, **kwargs)
-                                on_compound_visited_children_func=None,     # def Func(element, *args, **kwargs)
-                                on_simple_func=None,                        # def Func(element, *args, **kwargs)
-                                on_simple_visiting_children_func=None,      # def Func(element, *args, **kwargs)
-                                on_simple_visited_children_func=None,       # def Func(element, *args, **kwargs)
-                                on_any_func=None,                           # def Func(element, *args, **kwargs)
-                                on_custom_func=None,                        # def Func(element, *args, **kwargs)
-                                on_extension_func=None,                     # def Func(element, *args, **kwargs)
-                                on_variant_func=None,                       # def Func(element, *args, **kwargs)
-                                on_reference_func=None,                     # def Func(element, *args, **kwargs)
-                                on_default_func=None,                       # def Func(element, *args, **kwargs)
-                              ):
+def CreateElementVisitor( on_entering_element=None,                         # def Func(element, *args, **kwargs)
+                          on_exiting_element=None,                          # def Func(element, *args, **kwargs)
+                          on_fundamental_func=None,                         # def Func(element, *args, **kwargs)
+                          on_compound_func=None,                            # def Func(element, *args, **kwargs)
+                          on_compound_visiting_children_func=None,          # def Func(element, *args, **kwargs)
+                          on_compound_visited_children_func=None,           # def Func(element, *args, **kwargs)
+                          on_simple_func=None,                              # def Func(element, *args, **kwargs)
+                          on_simple_visiting_children_func=None,            # def Func(element, *args, **kwargs)
+                          on_simple_visited_children_func=None,             # def Func(element, *args, **kwargs)
+                          on_variant_func=None,                             # def Func(element, *args, **kwargs)
+                          on_reference_func=None,                           # def Func(element, *args, **kwargs)
+                          on_list_func=None,                                # def Func(element, *args, **kwargs)
+                          on_any_func=None,                                 # def Func(element, *args, **kwargs)
+                          on_custom_func=None,                              # def Func(element, *args, **kwargs)
+                          on_extension_func=None,                           # def Func(element, *args, **kwargs)
+                          on_default_func=None,                             # def Func(element, *args, **kwargs)
+                        ):
     """Creates an ElementVisitor instance implemented in terms of the non-None function arguments."""
 
     on_default_func = on_default_func or (lambda element, *args, **kwargs: None)
 
+    on_entering_element = on_entering_element or on_default_func
+    on_exiting_element = on_exiting_element or on_default_func
     on_fundamental_func = on_fundamental_func or on_default_func
     on_compound_func = on_compound_func or on_default_func
     on_compound_visiting_children_func = on_compound_visiting_children_func or on_default_func
@@ -433,15 +475,28 @@ def CreateSimpleElementVisitor( on_fundamental_func=None,                   # de
     on_simple_func = on_simple_func or on_default_func
     on_simple_visiting_children_func = on_simple_visiting_children_func or on_default_func
     on_simple_visited_children_func = on_simple_visited_children_func or on_default_func
+    on_variant_func = on_variant_func or on_default_func
+    on_reference_func = on_reference_func or on_default_func
+    on_list_func = on_list_func or on_default_func
     on_any_func = on_any_func or on_default_func
     on_custom_func = on_custom_func or on_default_func
     on_extension_func = on_extension_func or on_default_func
-    on_variant_func = on_variant_func or on_default_func
-    on_reference_func = on_reference_func or on_default_func
-
+    
     # ----------------------------------------------------------------------
     @staticderived
-    class SimpleElementVisitor(ElementVisitor):
+    class ThisElementVisitor(ElementVisitor):
+        # ----------------------------------------------------------------------
+        @staticmethod
+        @override
+        def OnEnteringElement(element, *args, **kwargs):
+            return on_entering_element(element, *args, **kwargs)
+
+        # ----------------------------------------------------------------------
+        @staticmethod
+        @override
+        def OnExitingElement(element, *args, **kwargs):
+            return on_exiting_element(element, *args, **kwargs)
+
         # ----------------------------------------------------------------------
         @staticmethod
         @override
@@ -487,6 +542,24 @@ def CreateSimpleElementVisitor( on_fundamental_func=None,                   # de
         # ----------------------------------------------------------------------
         @staticmethod
         @override
+        def OnVariant(element, *args, **kwargs):
+            return on_variant_func(element, *args, **kwargs)
+
+        # ----------------------------------------------------------------------
+        @staticmethod
+        @override
+        def OnReference(element, *args, **kwargs):
+            return on_reference_func(element, *args, **kwargs)
+
+        # ----------------------------------------------------------------------
+        @staticmethod
+        @override
+        def OnList(element, *args, **kwargs):
+            return on_list_func(element, *args, **kwargs)
+
+        # ----------------------------------------------------------------------
+        @staticmethod
+        @override
         def OnAny(element, *args, **kwargs):
             return on_any_func(element, *args, **kwargs)
 
@@ -502,19 +575,6 @@ def CreateSimpleElementVisitor( on_fundamental_func=None,                   # de
         def OnExtension(element, *args, **kwargs):
             return on_extension_func(element, *args, **kwargs)
 
-        # ----------------------------------------------------------------------
-        @staticmethod
-        @override
-        def OnVariant(element, *args, **kwargs):
-            return on_variant_func(element, *args, **kwargs)
-
-        # ----------------------------------------------------------------------
-        @staticmethod
-        @override
-        def OnReference(element, *args, **kwargs):
-            return on_reference_func(element, *args, **kwargs)
-
     # ----------------------------------------------------------------------
 
-    return SimpleElementVisitor
-    
+    return ThisElementVisitor

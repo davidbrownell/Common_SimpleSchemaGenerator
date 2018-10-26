@@ -99,22 +99,22 @@ class PopulateReservedNameException(SimpleSchemaException):                     
 class ResolveInvalidReferenceException(SimpleSchemaException):                      Display = "The reference '{name}' could not be resolved"
 class ResolveInvalidCustomNameException(SimpleSchemaException):                     Display = "The value '{name}' is not a valid name"
 
-class ValidateCycleException(SimpleSchemaException):                                Display = "A dependency cycle was detected:\n\n{info}\n"
-
 class ValidateUnsupportedCustomElementsException(SimpleSchemaException):            Display = "Custom elements are not supported"
 class ValidateUnsupportedAnyElementsException(SimpleSchemaException):               Display = "Any elements are not supported"
 class ValidateUnsupportedReferenceElementsException(SimpleSchemaException):         Display = "Reference elements are not supported"
+class ValidateUnsupportedListElementsException(SimpleSchemaException):              Display = "List elements are not supported"
 class ValidateUnsupportedSimpleObjectElementsException(SimpleSchemaException):      Display = "Pure simple object elements are not supported; consider adding the attribute 'fundamental_name' to automatically convert this element into a compound element"
 class ValidateUnsupportedVariantElementsException(SimpleSchemaException):           Display = "Variant elements are not supported"
 
 class ValidateDuplicateNameException(SimpleSchemaException):                        Display = "The element name '{name}' has already been defined ({original_source} [{original_line} <{original_column}>])"
 class ValidateInvalidExtensionException(SimpleSchemaException):                     Display = "The extension '{name}' is not a supported extension"
 class ValidateInvalidVariantArityException(SimpleSchemaException):                  Display = "Variant elements may only reference other elements with an arity of 1 (Index: {index})"
-
+class ValidateInvalidReferenceException(SimpleSchemaException):                     Display = "An extension may not be the target of a reference"
+    
 class ValidateInvalidSimpleChildException(SimpleSchemaException):                   Display = "The children of simple elements must be fundamental attributes or references to fundamental elements/attributes with an arity of 1"
 
 class ValidateMissingAttributeException(SimpleSchemaException):                     Display = "The required attribute '{name}' was not provided"
-class ValidateExtraneousAttributeException(SimpleSchemaException):                  Display = "The attribute '{name}' was not recognized"
+class ValidateExtraneousAttributeException(SimpleSchemaException):                  Display = "The attribute '{name}' is not valid for this element"
 class ValidateInvalidAttributeException(SimpleSchemaException):                     Display = "The attribute value for '{name}' is not valid: {reason}"
 
 class InvalidAttributeNameException(SimpleSchemaException):                         Display = "The metadata name '{name}' is reserved and cannot be used"

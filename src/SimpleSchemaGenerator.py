@@ -25,7 +25,6 @@ from six.moves import cPickle as pickle
 import CommonEnvironment
 from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import CommandLine
-from CommonEnvironment.StreamDecorator import StreamDecorator
 
 from CommonEnvironmentEx.CompilerImpl.GeneratorPluginFrameworkImpl import GeneratorFactory
 from CommonEnvironmentEx.Package import InitRelativeImports
@@ -36,7 +35,6 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
 with InitRelativeImports():
-    from .Plugin import Plugin as PluginBase
     from .Schema.Parse import ParseFiles
 
 # ----------------------------------------------------------------------
@@ -189,7 +187,14 @@ def __CreateContext(context, plugin):
     # Therefore, save the data (via pickling) and remove the elements. During the invocation below, we will
     # deserialize the elements from the pickled data before invoking the plugin's Generate method.
 
-    context["pickled_elements"] = pickle.dumps(elements)
+    # Note that pickling requires a fully qualified name, which is one level higher
+    # than the current dir. Add that path.
+    #
+    # Note that this doesn't feel right; there is probably a better way to do this.
+    sys.path.insert(0, os.path.join(_script_dir, ".."))
+    with CallOnExit(lambda: sys.path.pop(0)):
+        context["pickled_elements"] = pickle.dumps(elements)
+
     context["include_indexes"] = include_indexes
 
     return context

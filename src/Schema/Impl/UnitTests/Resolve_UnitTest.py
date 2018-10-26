@@ -269,7 +269,7 @@ class MetadataSuite(unittest.TestCase):
         root = Resolve(parent, _CreatePlugin())
         
         self.assertEqual(len(root.items), 1)
-        self.assertEqual(root.items[0].name, "new_names")
+        self.assertEqual(root.items[0].name, "new_name")
         self.assertTrue("name" not in root.items[0].metadata.Values)
         
     # ----------------------------------------------------------------------
@@ -288,51 +288,6 @@ class MetadataSuite(unittest.TestCase):
                                                         1,
                                                         2,
                                                       )
-
-        self.assertRaises(Exceptions.ResolveInvalidCustomNameException, lambda: Resolve(parent, _CreatePlugin()))
-
-    # ----------------------------------------------------------------------
-    def test_Plural(self):
-        parent = _CreateItem()
-        parent.config = {}
-
-        child1 = _CreateItem( declaration_type=Item.DeclarationType.Declaration,
-                              parent=parent,
-                            )
-        child1.name = "this_should_be_overridden"
-        child1.reference = "string"
-        child1.arity = Arity(1, None)
-
-        child1.metadata.Values["plural"] = MetadataValue( "items",
-                                                          MetadataSource.Explicit,
-                                                          "<source>",
-                                                          1,
-                                                          2,
-                                                        )
-
-        root = Resolve(parent, _CreatePlugin())
-
-        self.assertEqual(len(root.items), 1)
-        self.assertEqual(root.items[0].name, "items")
-
-    # ----------------------------------------------------------------------
-    def test_InvalidPlural(self):
-        parent = _CreateItem()
-        parent.config = {}
-
-        child1 = _CreateItem( declaration_type=Item.DeclarationType.Declaration,
-                              parent=parent,
-                            )
-        child1.name = "this_should_be_overridden"
-        child1.reference = "string"
-        child1.arity = Arity(1, None)
-
-        child1.metadata.Values["plural"] = MetadataValue( "",
-                                                          MetadataSource.Explicit,
-                                                          "<source>",
-                                                          1,
-                                                          2,
-                                                        )
 
         self.assertRaises(Exceptions.ResolveInvalidCustomNameException, lambda: Resolve(parent, _CreatePlugin()))
 
@@ -394,7 +349,8 @@ def _CreatePlugin( name="Plugin",
     plugin.Name = name
     plugin.Description = "Plugin Description"
     plugin.Flags = flags
-    plugin.BreaksReferenceChain = lambda item: False
+    plugin.GetRequiredMetadataItems = lambda item: []
+    plugin.GetOptionalMetadataItems = lambda item: []
 
     return plugin
 

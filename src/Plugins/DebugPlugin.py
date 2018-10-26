@@ -28,7 +28,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
 with InitRelativeImports():
-    from ..Plugin import Plugin as PluginBase, ParseFlag
+    from ..Plugin import Plugin as PluginBase, ParseFlag, Extension
 
 # ----------------------------------------------------------------------
 @staticderived

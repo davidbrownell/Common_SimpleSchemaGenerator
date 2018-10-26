@@ -15,9 +15,7 @@
 """Contains the Item object"""
 
 import copy
-import itertools
 import os
-import sys
 
 from collections import OrderedDict, namedtuple
 
@@ -25,7 +23,7 @@ from enum import Enum
 import six
 
 import CommonEnvironment
-from CommonEnvironment.Interface import *
+from CommonEnvironment.Interface import Interface, abstractmethod
 
 from CommonEnvironmentEx.Package import InitRelativeImports
 
@@ -35,9 +33,9 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
 with InitRelativeImports():
-    from .. import Attributes
-    from .. import Elements
-
+    from ..Attributes import AttributeInfo
+    from ..Elements import *
+    
 # ----------------------------------------------------------------------
 ANY_ELEMENT_NAME                            = "any"
 CUSTOM_ELEMENT_NAME                         = "custom"
@@ -112,7 +110,7 @@ class ResolvedMetadata(object):
                     if md.Name not in oi_names:
                         optional_items.append(md)
             
-            elif isinstance(merge_metadata_or_attributes, Attributes.AttributeInfo):
+            elif isinstance(merge_metadata_or_attributes, AttributeInfo):
                 attributes = merge_metadata_or_attributes
 
                 required_items += attributes.RequiredItems
@@ -166,17 +164,17 @@ class Item(object):
         
         self.metadata                       = None
         self.arity                          = None
+        
         self.items                          = []
-
         self.is_converted                   = False                         # Only used for SimpleElements that were converted to CompoundElements
         self.positional_arguments           = []                            # Only used for extensions
         self.keyword_arguments              = OrderedDict()                 # Only used for extensions
+        self.ignore                         = False                         # Only used for extensions that are not valid
         
         # Populated during Resolve
         self.referenced_by                  = []
         self.element_type                   = None
-        self.original_name                  = None
-
+        
         self._cached_key                    = None
 
     # ----------------------------------------------------------------------
@@ -203,12 +201,26 @@ class Item(object):
         return CommonEnvironment.ObjectReprImpl(self)
 
     # ----------------------------------------------------------------------
-    def Enumerate(self):
-        if self.element_type == Elements.VariantElement:
+    def Enumerate(self, variant_includes_self=False):
+        if self.element_type == VariantElement:
+            if variant_includes_self:
+                yield self
+
             for item in self.reference:
                 yield item
         else:
             yield self
+
+    # ----------------------------------------------------------------------
+    def Copy(self, other):
+        self.items                          = [ copy.deepcopy(item) for item in other.items ]
+        self.is_converted                   = other.is_converted
+        self.positional_arguments	        = other.positional_arguments
+        self.keyword_arguments              = other.keyword_arguments
+        self.element_type                   = other.element_type
+        self.reference                      = other.reference
+
+        return self
 
 # ----------------------------------------------------------------------
 class ItemVisitor(Interface):
@@ -263,18 +275,25 @@ class ItemVisitor(Interface):
         raise Exception("Abstract method")
 
     # ----------------------------------------------------------------------
+    @staticmethod
+    @abstractmethod
+    def OnList(item, *args, **kwargs):
+        raise Exception("Abstract method")
+
+    # ----------------------------------------------------------------------
     @classmethod
     def Accept(cls, item, *args, **kwargs):
         """Calls the appropriate On___ method based on the item's element_type value"""
 
-        lookup = { Elements.FundamentalElement          : cls.OnFundamental,
-                   Elements.CompoundElement             : cls.OnCompound,
-                   Elements.SimpleElement               : cls.OnSimple,
-                   Elements.AnyElement                  : cls.OnAny,
-                   Elements.CustomElement               : cls.OnCustom,
-                   Elements.VariantElement              : cls.OnVariant,
-                   Elements.ExtensionElement            : cls.OnExtension,
-                   Elements.ReferenceElement            : cls.OnReference,
+        lookup = { FundamentalElement       : cls.OnFundamental,
+                   CompoundElement          : cls.OnCompound,
+                   SimpleElement            : cls.OnSimple,
+                   AnyElement               : cls.OnAny,
+                   CustomElement            : cls.OnCustom,
+                   VariantElement           : cls.OnVariant,
+                   ExtensionElement         : cls.OnExtension,
+                   ReferenceElement         : cls.OnReference,
+                   ListElement              : cls.OnList,
                  }
 
         if item.element_type not in lookup:

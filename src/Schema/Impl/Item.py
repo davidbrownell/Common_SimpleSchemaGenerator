@@ -167,9 +167,10 @@ class Item(object):
         
         self.items                          = []
         self.is_converted                   = False                         # Only used for SimpleElements that were converted to CompoundElements
+        self.is_augmenting_reference        = False                         # Only used for ReferenceElements that modify the referenced type
         self.positional_arguments           = []                            # Only used for extensions
         self.keyword_arguments              = OrderedDict()                 # Only used for extensions
-        self.ignore                         = False                         # Only used for extensions that are not valid
+        self.ignore                         = False                         # Only used for extensions that are not supported
         
         # Populated during Resolve
         self.referenced_by                  = []
@@ -210,17 +211,6 @@ class Item(object):
                 yield item
         else:
             yield self
-
-    # ----------------------------------------------------------------------
-    def Copy(self, other):
-        self.items                          = [ copy.deepcopy(item) for item in other.items ]
-        self.is_converted                   = other.is_converted
-        self.positional_arguments	        = other.positional_arguments
-        self.keyword_arguments              = other.keyword_arguments
-        self.element_type                   = other.element_type
-        self.reference                      = other.reference
-
-        return self
 
 # ----------------------------------------------------------------------
 class ItemVisitor(Interface):

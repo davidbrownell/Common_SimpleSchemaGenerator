@@ -22,6 +22,7 @@ from enum import Enum, auto
 
 import CommonEnvironment
 from CommonEnvironment.BitFlagEnum import BitFlagEnum
+from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment.Interface import abstractproperty, abstractmethod, extensionmethod
 
 from CommonEnvironmentEx.CompilerImpl.GeneratorPluginFrameworkImpl.PluginBase import PluginBase
@@ -183,9 +184,15 @@ class Plugin(PluginBase):
         """
 
         include_map = OrderedDict()
+        stack = []
 
         # ----------------------------------------------------------------------
         def Impl(element, include_map_type):
+            # Prevent infinite recursion when operating on structures that have
+            # loops
+            if element in stack:
+                return
+
             dn = element.DottedName
 
             include_map_value = include_map.get(dn, None)
@@ -205,16 +212,18 @@ class Plugin(PluginBase):
                 parent = parent.Parent
 
             # Ensure that all children are included
-            for potential_item_name in [ "Children", "Base", "Derived", "Reference", ]:
-                potential_items = getattr(element, potential_item_name, None)
-                if potential_items is None:
-                    continue
+            stack.append(element)
+            with CallOnExit(lambda: stack.pop()):
+                for potential_item_name in [ "Children", "Base", "Derived", "Reference", ]:
+                    potential_items = getattr(element, potential_item_name, None)
+                    if potential_items is None:
+                        continue
 
-                if not isinstance(potential_items, list):
-                    potential_items = [ potential_items, ]
+                    if not isinstance(potential_items, list):
+                        potential_items = [ potential_items, ]
 
-                for item in potential_items:
-                    Impl(item, cls.IncludeMapType.Referenced)
+                    for item in potential_items:
+                        Impl(item, cls.IncludeMapType.Referenced)
 
         # ----------------------------------------------------------------------
 

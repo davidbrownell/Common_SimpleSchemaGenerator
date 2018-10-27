@@ -434,17 +434,8 @@ def _ResolveReferenceType(reference_states, item):
         if item not in reference_states:
             continue
 
-        _ResolveReferenceType(reference_states, item.reference)
-
-        if not IsAugmenting(item):
-            continue
-
-        ref = item.reference
-        while ref.element_type == Elements.ReferenceElement:
-            ref = ref.reference
-
-        item.Copy(ref)
-
+        item.is_augmenting_reference = IsAugmenting(item)
+        
 # ----------------------------------------------------------------------
 def _ResolveMetadataDefaults(item):
     for item in item.Enumerate():

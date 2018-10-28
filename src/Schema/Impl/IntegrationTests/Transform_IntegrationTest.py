@@ -152,7 +152,7 @@ class TestBase(unittest.TestCase):
         self.assertEqual(self._element.Name, "test_base")
         self.assertEqual([ child.Name for child in self._element.Children ], [ "a", ])
         self.assertEqual(self._element.Base, None)
-        self.assertEqual(set([ other.Name for other in self._element.Derived ]), set([ "test_derived", "test_derived_ref2", ]))
+        self.assertEqual(set([ other.Name for other in self._element.Derived ]), set([ "test_derived", "test_derived_ref2", "test_derived_ref4", ]))
         
         self.assertTrue(isinstance(self._element.Children[0], FundamentalElement))
 
@@ -297,8 +297,8 @@ class TestDerived(unittest.TestCase):
         self.assertEqual(element.Name, "test_derived_ref5")
         self.assertTrue(isinstance(element.TypeInfo, ListTypeInfo))
         self.assertEqual(element.TypeInfo.Arity, Arity(20, 20))
-        self._VerifyTestDerived(element.TypeInfo.ItemTypeInfo)
-        self.assertEqual(element.TypeInfo.ItemTypeInfo.Arity, Arity(10, 10))
+        self._VerifyTestDerived(element.TypeInfo.ElementTypeInfo)
+        self.assertEqual(element.TypeInfo.ElementTypeInfo.Arity, Arity(10, 10))
 
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
@@ -323,14 +323,14 @@ class TestDerived(unittest.TestCase):
         self.assertTrue(isinstance(type_info.Items["test_derived_ref3"], ClassTypeInfo))
         self.assertTrue(isinstance(type_info.Items["test_derived_ref4"], ClassTypeInfo))
         self.assertTrue(isinstance(type_info.Items["test_derived_ref5"], ListTypeInfo))
-        self.assertTrue(isinstance(type_info.Items["test_derived_ref5"].ItemTypeInfo, ClassTypeInfo))
+        self.assertTrue(isinstance(type_info.Items["test_derived_ref5"].ElementTypeInfo, ClassTypeInfo))
         
         if verify_derived_refs:
             self._VerifyTestDerived(type_info.Items["test_derived_ref1"], verify_derived_refs=False)
             self._VerifyTestDerived(type_info.Items["test_derived_ref2"], verify_derived_refs=False)
             self._VerifyTestDerived(type_info.Items["test_derived_ref3"], verify_derived_refs=False)
             self._VerifyTestDerived(type_info.Items["test_derived_ref4"], verify_derived_refs=False)
-            self._VerifyTestDerived(type_info.Items["test_derived_ref5"].ItemTypeInfo, verify_derived_refs=False)
+            self._VerifyTestDerived(type_info.Items["test_derived_ref5"].ElementTypeInfo, verify_derived_refs=False)
 
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------

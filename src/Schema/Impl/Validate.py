@@ -192,7 +192,7 @@ def _ValidateSimpleElements(item):
         if child.ItemType != Item.ItemType.Attribute:
             return False
 
-        if child.arity != Arity(1, 1):
+        if child.arity.Max != 1:
             return False
 
         while child.element_type == Elements.ReferenceElement:

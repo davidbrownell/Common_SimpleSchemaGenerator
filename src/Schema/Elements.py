@@ -22,6 +22,7 @@ import os
 import CommonEnvironment
 from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment.Interface import Interface, abstractmethod, extensionmethod, override, staticderived
+from CommonEnvironment.Visitor import Visitor as VisitorBase
 
 # ----------------------------------------------------------------------
 _script_fullpath = CommonEnvironment.ThisFullpath()
@@ -124,9 +125,17 @@ class ReferenceMixin(object):
         return ref
 
 # ----------------------------------------------------------------------
+class IsAttributeMixin(object):
+    # ----------------------------------------------------------------------
+    def __init__( self,
+                  is_attribute,
+                ):
+        self.IsAttribute                    = is_attribute
+
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
-class FundamentalElement(Element):
+# ----------------------------------------------------------------------
+class FundamentalElement(IsAttributeMixin, Element):
     # ----------------------------------------------------------------------
     def __init__( self,
                   is_attribute,
@@ -134,8 +143,7 @@ class FundamentalElement(Element):
                   **kwargs
                 ):
         Element.__init__(self, *args, **kwargs)
-        
-        self.IsAttribute                    = is_attribute
+        IsAttributeMixin.__init__(self, is_attribute)
 
 # ----------------------------------------------------------------------
 class CompoundElement(ChildrenMixin, Element):
@@ -185,16 +193,18 @@ class SimpleElement(ChildrenMixin, Element):
                                                )
 
 # ----------------------------------------------------------------------
-class VariantElement(ChildrenMixin, Element):
+class VariantElement(ChildrenMixin, IsAttributeMixin, Element):
     # ----------------------------------------------------------------------
     def __init__( self,
                   variations,
+                  is_attribute,
                   *args,
                   **kwargs
                 ):
         Element.__init__(self, *args, **kwargs)
         ChildrenMixin.__init__(self, variations)
-
+        IsAttributeMixin.__init__(self, is_attribute)
+        
         self.Variations                     = self.Children
 
     # ----------------------------------------------------------------------
@@ -275,7 +285,7 @@ class ExtensionElement(Element):
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
-class ElementVisitor(Interface):
+class ElementVisitor(VisitorBase):
 
     # ----------------------------------------------------------------------
     @staticmethod

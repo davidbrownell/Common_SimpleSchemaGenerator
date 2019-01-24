@@ -23,7 +23,8 @@ from enum import Enum
 import six
 
 import CommonEnvironment
-from CommonEnvironment.Interface import Interface, abstractmethod
+from CommonEnvironment.Interface import abstractmethod
+from CommonEnvironment.Visitor import Visitor as VisitorBase
 
 from CommonEnvironmentEx.Package import InitRelativeImports
 
@@ -213,7 +214,7 @@ class Item(object):
             yield self
 
 # ----------------------------------------------------------------------
-class ItemVisitor(Interface):
+class ItemVisitor(VisitorBase):
     """Visitor for Item objects based on element_type"""
 
     # ----------------------------------------------------------------------

@@ -103,7 +103,7 @@ class ValidateUnsupportedCustomElementsException(SimpleSchemaException):        
 class ValidateUnsupportedAnyElementsException(SimpleSchemaException):               Display = "Any elements are not supported"
 class ValidateUnsupportedReferenceElementsException(SimpleSchemaException):         Display = "Reference elements are not supported"
 class ValidateUnsupportedListElementsException(SimpleSchemaException):              Display = "List elements are not supported"
-class ValidateUnsupportedSimpleObjectElementsException(SimpleSchemaException):      Display = "Pure simple object elements are not supported; consider adding the attribute 'fundamental_name' to automatically convert this element into a compound element"
+class ValidateUnsupportedSimpleObjectElementsException(SimpleSchemaException):      Display = "Pure simple object elements are not supported by this plugin; consider adding the attribute 'fundamental_name' to automatically convert this element into a compound element"
 class ValidateUnsupportedVariantElementsException(SimpleSchemaException):           Display = "Variant elements are not supported"
 
 class ValidateDuplicateNameException(SimpleSchemaException):                        Display = "The element name '{name}' has already been defined ({original_source} [{original_line} <{original_column}>])"

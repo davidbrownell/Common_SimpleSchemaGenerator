@@ -39,6 +39,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 with InitRelativeImports():
     from .Item import Item, ItemVisitor
     
+    from .. import Attributes
     from .. import Elements
     from .. import Exceptions
     
@@ -109,6 +110,22 @@ def Transform(root, plugin):
 
     # ----------------------------------------------------------------------
     def ValidateAndApplyMetadata(element):
+        # Note that we are applying before validating to provide
+        # a more consistent validation experience for the metadata
+        # items. Should validation fail, and exception will be raised
+        # and the element will be invalidated anyway.
+        
+        # Apply
+        for k, v in six.iteritems(element._item.metadata.Values):
+            if hasattr(element, k):
+                raise Exceptions.InvalidAttributeNameException( v.Source,
+                                                                v.Line,
+                                                                v.Column,
+                                                                name=k,
+                                                              )
+
+            setattr(element, k, v.Value)
+
         # Validate
         for md in itertools.chain( element._item.metadata.RequiredItems,
                                    element._item.metadata.OptionalItems,
@@ -128,17 +145,6 @@ def Transform(root, plugin):
                                                             element._item.metadata.Values[md.Name].Column,
                                                             desc=result,
                                                           )
-
-        # Apply
-        for k, v in six.iteritems(element._item.metadata.Values):
-            if hasattr(element, k):
-                raise Exceptions.InvalidAttributeNameException( v.Source,
-                                                                v.Line,
-                                                                v.Column,
-                                                                name=k,
-                                                              )
-
-            setattr(element, k, v.Value)
 
         # Commit
         element.Metadata = element._item.metadata
@@ -351,6 +357,8 @@ class _CreateElementVisitor(ItemVisitor):
                                                                                 delayed_instruction_queue,
                                                                                 create_element_func,
                                                                               ),
+                                           is_attribute=metadata_item.ItemType == Item.ItemType.Attribute and (plugin.Flags & ParseFlag.SupportAttributes) != 0,
+
                                            type_info=None,                  # Set below
                                            name=metadata_item.name,
                                            parent=None,                     # Set below
@@ -691,7 +699,11 @@ class _ApplyTypeInfoVisitor(ItemVisitor):
                          item.items,
                        )
 
-        element.TypeInfo.Items[None] = cls._CreateFundamentalTypeInfo(metadata_item, item)
+        fundamental_type_info_key = metadata_item.metadata.Values.get(Attributes.SIMPLE_FUNDAMENTAL_NAME_ATTRIBUTE_NAME, None)
+        if fundamental_type_info_key is not None:
+            fundamental_type_info_key = fundamental_type_info_key.Value 
+        
+        element.TypeInfo.Items[fundamental_type_info_key] = cls._CreateFundamentalTypeInfo(metadata_item, item)
         
     # ----------------------------------------------------------------------
     @classmethod

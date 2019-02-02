@@ -1,0 +1,114 @@
+# ----------------------------------------------------------------------
+# |
+# |  PythonDestinationStatementWriter.py
+# |
+# |  David Brownell <db@DavidBrownell.com>
+# |      2019-01-25 16:17:44
+# |
+# ----------------------------------------------------------------------
+# |
+# |  Copyright David Brownell 2019
+# |  Distributed under the Boost Software License, Version 1.0. See
+# |  accompanying file LICENSE_1_0.txt or copy at
+# |  http://www.boost.org/LICENSE_1_0.txt.
+# |
+# ----------------------------------------------------------------------
+"""Contains the PythonDestinationStatementWriter object"""
+
+import os
+import textwrap
+
+import CommonEnvironment
+from CommonEnvironment import Interface
+
+from CommonEnvironmentEx.Package import InitRelativeImports
+
+# ----------------------------------------------------------------------
+_script_fullpath                            = CommonEnvironment.ThisFullpath()
+_script_dir, _script_name                   = os.path.split(_script_fullpath)
+#  ----------------------------------------------------------------------
+
+with InitRelativeImports():
+    from ..StatementWriters import DestinationStatementWriter
+
+# ----------------------------------------------------------------------
+@Interface.staticderived
+class PythonDestinationStatementWriter(DestinationStatementWriter):
+
+    # ----------------------------------------------------------------------
+    ObjectTypeDesc                          = Interface.DerivedProperty("a python object")
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @Interface.override
+    def CreateCompoundElement(element, attributes_var_or_none):
+        return textwrap.dedent(
+            """\
+            _CreatePythonObject(
+                attributes={attributes},
+            )
+            """,
+        ).format(
+            attributes=attributes_var_or_none or "None",
+        )
+
+    # ----------------------------------------------------------------------
+    @classmethod
+    @Interface.override
+    def CreateSimpleElement(cls, element, attributes_var_or_none, fundamental_statement):
+        return textwrap.dedent(
+            """\
+            _CreatePythonObject(
+                attributes={attributes},
+                **{{"{value_name}": {fundamental}}},
+            )
+            """,
+        ).format(
+            attributes=attributes_var_or_none or "None",
+            value_name=element.FundamentalAttributeName,
+            fundamental=fundamental_statement,
+        )
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @Interface.override
+    def CreateFundamentalElement(element, fundamental_statement):
+        return fundamental_statement
+
+    # ----------------------------------------------------------------------
+    @classmethod
+    @Interface.override
+    def AppendChild(cls, child_element, parent_var_name, var_name_or_none):
+        if var_name_or_none is None:
+            var_name_or_none = "[]" if child_element.TypeInfo.Arity.IsCollection else "None"
+
+        return 'setattr({}, {}, {})'.format(parent_var_name, cls.GetElementStatementName(child_element), var_name_or_none)
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @Interface.override
+    def SerializeToString(var_name):
+        return "BugBug"
+        raise Exception("This should not be called for python objects")
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @Interface.override
+    def GetGlobalUtilityMethods(source_writer):
+        return textwrap.dedent(
+            """\
+            # ----------------------------------------------------------------------
+            def _CreatePythonObject(
+                attributes=None,
+                **kwargs
+            ):
+                result = Object()
+
+                for d in [attributes or {}, kwargs]:
+                    for k, v in six.iteritems(d):
+                        setattr(result, k, v)
+
+                return result
+
+            """,
+        )

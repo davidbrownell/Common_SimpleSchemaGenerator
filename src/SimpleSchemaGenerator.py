@@ -108,7 +108,7 @@ def Generate( plugin,
                                                  output_name=output_name,
                                                  output_dir=output_dir,
 
-                                                 plugin_metadata=plugin_arg,
+                                                 plugin_settings=plugin_arg,
 
                                                  force=force,
 

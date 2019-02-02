@@ -173,6 +173,7 @@ class CompoundElement(ChildrenMixin, Element):
 class SimpleElement(ChildrenMixin, Element):
     # ----------------------------------------------------------------------
     def __init__( self,
+                  fundamental_attribute_name,
                   attributes,
                   *args,
                   **kwargs
@@ -183,6 +184,7 @@ class SimpleElement(ChildrenMixin, Element):
         # The referenced fundamental type's TypeInfo is available as
         # self.TypeInfo.Items[None].
 
+        self.FundamentalAttributeName       = fundamental_attribute_name
         self.Attributes                     = self.Children
 
     # ----------------------------------------------------------------------
@@ -391,68 +393,114 @@ class ElementVisitor(VisitorBase):
         """Calls the appropriate On___ method based on the element type"""
 
         if include_dotted_names is None:
-            should_traverse_func = lambda element: True
+            should_visit_func = lambda element: True
         else:
-            should_traverse_func = lambda element: element.DottedName in include_dotted_names
+            should_visit_func = lambda element: element.DottedName in include_dotted_names
 
-        lookup = { FundamentalElement       : cls.OnFundamental,
-                   CompoundElement          : cls.OnCompound,
-                   SimpleElement            : cls.OnSimple,
-                   VariantElement           : cls.OnVariant,
-                   ReferenceElement         : cls.OnReference,
-                   ListElement              : cls.OnList,
-                   AnyElement               : cls.OnAny,
-                   CustomElement            : cls.OnCustom,
-                   ExtensionElement         : cls.OnExtension,
-                 }
+        lookup_map = { 
+            FundamentalElement              : cls.OnFundamental,
+            CompoundElement                 : cls.OnCompound,
+            SimpleElement                   : cls.OnSimple,
+            VariantElement                  : cls.OnVariant,
+            ReferenceElement                : cls.OnReference,
+            ListElement                     : cls.OnList,
+            AnyElement                      : cls.OnAny,
+            CustomElement                   : cls.OnCustom,
+            ExtensionElement                : cls.OnExtension,
+        }
 
+        child_visitation_lookup_map = { 
+            CompoundElement                 : ( cls.OnCompound_VisitingChildren, cls.OnCompound_VisitedChildren ),
+            SimpleElement                   : ( cls.OnSimple_VisitingChildren, cls.OnSimple_VisitedChildren ),
+        }
+
+        return cls._AcceptImpl(
+            element_or_elements,
+            traverse,
+            should_visit_func,
+            lookup_map,
+            child_visitation_lookup_map,
+            set(),
+            *args,
+            **kwargs
+        )
+
+    # ----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
+    @classmethod
+    def _AcceptImpl(
+        cls,
+        element_or_elements,
+        traverse,
+        should_visit_func,
+        lookup_map,
+        child_visitation_lookup_map,
+        visited,
+        *args,
+        **kwargs
+    ):
         if isinstance(element_or_elements, list):
             elements = element_or_elements
         else:
-            elements = [ element_or_elements, ]
+            elements = [element_or_elements]
 
         for element in elements:
-            if not should_traverse_func(element):
+            element_id = id(element)
+            if element_id in visited:
+                continue
+
+            visited.add(element_id)
+
+            if not should_visit_func(element):
                 continue
 
             typ = type(element)
 
-            if typ not in lookup:
+            if typ not in lookup_map:
                 raise Exception("'{}' was not expected ({})".format(typ, element))
 
             cls.OnEnteringElement(element, *args, **kwargs)
             with CallOnExit(lambda: cls.OnExitingElement(element, *args, **kwargs)):
-                nonlocals = CommonEnvironment.Nonlocals( result=lookup[typ](element, *args, **kwargs),
-                                                       )
+                result = lookup_map[typ](element, *args, **kwargs)
 
-                if isinstance(element, ChildrenMixin) and traverse:
-                    if not isinstance(element, VariantElement):
-                        visitation_lookup = { CompoundElement       : ( cls.OnCompound_VisitingChildren, cls.OnCompound_VisitedChildren ),
-                                              SimpleElement         : ( cls.OnSimple_VisitingChildren, cls.OnSimple_VisitedChildren ),
-                                            }
+                nonlocals = CommonEnvironment.Nonlocals(
+                    result=result,
+                )
 
-                        if typ not in visitation_lookup:
-                            raise Exception("'{}' was not expected".format(typ))
+                if traverse and isinstance(element, ChildrenMixin) and not isinstance(element, VariantElement):
+                    if typ not in child_visitation_lookup_map:
+                        raise Exception("'{}' was not expected ({})".format(typ, element))
 
-                        visiting_func, visited_func = visitation_lookup[typ]
+                    visiting_func, visited_func = child_visitation_lookup_map[typ]
 
-                        if visiting_func(element, *args, **kwargs) != False:
-                            # ----------------------------------------------------------------------
-                            def CallVisited():
-                                visited_result = visited_func(element, *args, **kwargs)
-                                if visited_result is not None and nonlocals.result is None:
-                                    nonlocals.result = visited_result
+                    if visiting_func(element, *args, **kwargs) != False:
+                        # ----------------------------------------------------------------------
+                        def CallVisited():
+                            visited_result = visited_func(element, *args, **kwargs)
+                            if visited_result is not None and nonlocals.result is None:
+                                nonlocals.result = visited_result
 
-                            # ----------------------------------------------------------------------
+                        # ----------------------------------------------------------------------
 
-                            with CallOnExit(CallVisited):
-                                for child in element.Children:
-                                    cls.Accept(child, *args, **kwargs)
+                        with CallOnExit(CallVisited):
+                            for child in element.Children:
+                                cls._AcceptImpl(
+                                    child,
+                                    traverse,
+                                    should_visit_func,
+                                    lookup_map,
+                                    child_visitation_lookup_map,
+                                    visited,
+                                    *args,
+                                    **kwargs
+                                )
 
                 if nonlocals.result is not None:
                     return nonlocals.result
 
         return None
+
 
 # ----------------------------------------------------------------------
 # |  

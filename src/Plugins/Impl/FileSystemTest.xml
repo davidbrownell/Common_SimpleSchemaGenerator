@@ -1,0 +1,24 @@
+<everything>
+  <root name="one">
+    <directories>
+      <item name="two">
+        <directories>
+          <item name="three">
+            <files>
+              <item size="10">file1</item>
+              <item size="200">file2</item>
+            </files>
+          </item>
+        </directories>
+      </item>
+    </directories>
+    <files>
+      <item size="20">file10</item>
+    </files>
+  </root>
+  
+  <roots>
+    <item name="dir1" />
+    <item name="dir2" />
+  </roots>
+</everything>

@@ -23,7 +23,7 @@ import six
 
 import CommonEnvironment
 from CommonEnvironment.Interface import staticderived, override, DerivedProperty
-from CommonEnvironment.TypeInfo import TypeInfo
+from CommonEnvironment.TypeInfo import TypeInfo, Arity
 from CommonEnvironment.TypeInfo.AnyOfTypeInfo import AnyOfTypeInfo
 from CommonEnvironment.TypeInfo.ClassTypeInfo import ClassTypeInfo
 from CommonEnvironment.TypeInfo.GenericTypeInfo import GenericTypeInfo
@@ -76,7 +76,7 @@ def Transform(root, plugin):
     # ----------------------------------------------------------------------
     def CreateElement(item):
         if item.ignore:
-            return None
+            return False
 
         allow_duplicates = item.element_type == Elements.ExtensionElement and item.name in extensions_allowing_duplicate_names
 
@@ -315,7 +315,13 @@ class _CreateElementVisitor(ItemVisitor):
                   create_element_func, 
                   is_definition_only,
                 ):                                      # <Parameters differ from overridden...> pylint: disable = W0221
-        element = Elements.SimpleElement( attributes=cls._CreateChildElements( item,
+
+        fundamental_attribute_name = metadata_item.metadata.Values.get(Attributes.SIMPLE_FUNDAMENTAL_NAME_ATTRIBUTE_NAME, None)
+        if fundamental_attribute_name is not None:
+            fundamental_attribute_name = fundamental_attribute_name.Value
+
+        element = Elements.SimpleElement( fundamental_attribute_name=fundamental_attribute_name,
+                                          attributes=cls._CreateChildElements( item,
                                                                                item.items,
                                                                                elements,
                                                                                delayed_instruction_queue,
@@ -601,7 +607,7 @@ class _CreateElementVisitor(ItemVisitor):
         
         for child_item in child_items:
             # The element will be placed in the elements map
-            if not create_element_func(child_item):
+            if create_element_func(child_item) == False:
                 continue
 
             child_elements.append(None)     # This placeholder will be replaced in ApplyChild
@@ -699,11 +705,11 @@ class _ApplyTypeInfoVisitor(ItemVisitor):
                          item.items,
                        )
 
-        fundamental_type_info_key = metadata_item.metadata.Values.get(Attributes.SIMPLE_FUNDAMENTAL_NAME_ATTRIBUTE_NAME, None)
-        if fundamental_type_info_key is not None:
-            fundamental_type_info_key = fundamental_type_info_key.Value 
-        
-        element.TypeInfo.Items[fundamental_type_info_key] = cls._CreateFundamentalTypeInfo(metadata_item, item)
+        element.TypeInfo.Items[element.FundamentalAttributeName] = cls._CreateFundamentalTypeInfo(
+            metadata_item,
+            item,
+            arity_override=Arity(1, 1),
+        )
         
     # ----------------------------------------------------------------------
     @classmethod
@@ -780,8 +786,12 @@ class _ApplyTypeInfoVisitor(ItemVisitor):
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
     @staticmethod
-    def _CreateFundamentalTypeInfo(item, resolved_item):
-        kwargs = { "arity" : item.arity,
+    def _CreateFundamentalTypeInfo(
+        item,
+        resolved_item,
+        arity_override=None,
+    ):
+        kwargs = { "arity" : arity_override or item.arity,
                  }
 
         for md in itertools.chain( resolved_item.reference.RequiredItems,

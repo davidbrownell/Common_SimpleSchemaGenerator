@@ -2,8 +2,9 @@
     [size int min=0]
 
 (Directory):
-    <name string>
+    [name string]
     <directories Directory unique_key="name" *>
     <files File unique_key="name" *>
 
-<root Directory>
+<root Directory ?>
+<roots Directory unique_key="name" +>

@@ -36,6 +36,8 @@ with InitRelativeImports():
 @Interface.clsinit
 class Plugin(PythonSerializationImpl):
 
+    COLLECTION_ITEM_NAME                    = "item"
+
     # ----------------------------------------------------------------------
     # |  Properties
     Name                                                                                       = Interface.DerivedProperty("PythonXml")
@@ -53,14 +55,171 @@ class Plugin(PythonSerializationImpl):
     # ----------------------------------------------------------------------
     # |  Private Types
     @Interface.staticderived
+    class SourceStatementWriter(PythonSerializationImpl.SourceStatementWriter):
+        ObjectTypeDesc                      = Interface.DerivedProperty("an XML object (ElementTree)")
+
+        # ----------------------------------------------------------------------
+        @staticmethod
+        @Interface.override
+        def ConvenienceConversions(var_name, element):
+            return textwrap.dedent(
+                """\
+                if isinstance({var_name}, six.string_types):
+                    if os.path.isfile({var_name}):
+                        with open({var_name}) as f:
+                            {var_name} = f.read()
+
+                    {var_name} = ET.fromstring({var_name})
+
+                potential_child = _GetXmlElement(
+                    {var_name},
+                    "{name}",
+                    is_optional={is_optional},
+                    is_collection={is_collection},
+                )
+                if potential_child is not DoesNotExist or is_root:
+                    {var_name} = potential_child
+
+                """,
+            ).format(
+                var_name=var_name,
+                name=element.Name,
+                is_optional=element.TypeInfo.Arity.Min == 0,
+                is_collection=element.TypeInfo.Arity.IsCollection,
+            )
+
+        # ----------------------------------------------------------------------
+        @classmethod
+        @Interface.override
+        def GetChild(
+            cls,
+            var_name,
+            child_element,
+            is_simple_schema_fundamental=False,
+        ):
+            if is_simple_schema_fundamental:
+                return '{}.text or ""'.format(var_name)
+
+            if getattr(child_element, "IsAttribute", False):
+                return textwrap.dedent(
+                    """\
+                    cls._GetXmlAttribute(
+                        {var_name},
+                        {name},
+                        is_optional={is_optional},
+                    )
+                    """,
+                ).format(
+                    var_name=var_name,
+                    name=cls.GetElementStatementName(child_element),
+                    is_optional=child_element.TypeInfo.Arity.Min == 0,
+                )
+
+            return textwrap.dedent(
+                """\
+                _GetXmlElement(
+                    {var_name},
+                    {name},
+                    is_optional={is_optional},
+                    is_collection={is_collection},
+                )
+                """,
+            ).format(
+                var_name=var_name,
+                name=cls.GetElementStatementName(child_element),
+                is_optional=child_element.TypeInfo.Arity.Min == 0,
+                is_collection=child_element.TypeInfo.Arity.IsCollection,
+            )
+
+        # ----------------------------------------------------------------------
+        @staticmethod
+        @Interface.override
+        def GetFundamentalString(var_name, child_element, is_attribute):
+            return "BugBug: GetFundmaentalString"
+
+        # ----------------------------------------------------------------------
+        @staticmethod
+        @Interface.override
+        def GetApplyAdditionalData(dest_writer):
+            return textwrap.dedent(
+                """\
+                pass # BugBug: GetApplyAdditionalData
+                """,
+            )
+
+        # ----------------------------------------------------------------------
+        @staticmethod
+        @Interface.override
+        def GetClassUtilityMethods(dest_writer):
+            return textwrap.dedent(
+                """\
+                # ----------------------------------------------------------------------
+                @staticmethod
+                def _GetXmlAttribute(
+                    element,
+                    attribute_name,
+                    is_optional=False,
+                ):
+                    value = element.attrib.get(attribute_name, DoesNotExist)
+                    if value is DoesNotExist and not is_optional:
+                        raise SerializeException("The attribute '{}' does not exist".format(attribute_name))
+
+                    return value
+
+                """)
+
+        # ----------------------------------------------------------------------
+        @staticmethod
+        @Interface.override
+        def GetGlobalUtilityMethods(dest_writer):
+            return textwrap.dedent(
+                """\
+                # ----------------------------------------------------------------------
+                def _GetXmlElement(
+                    element,
+                    child_name,
+                    is_optional=False,
+                    is_collection=False,
+                ):
+                    children = element.findall(child_name)
+                    if not children:
+                        if is_optional:
+                            return DoesNotExist
+
+                        raise SerializeException("No elements were found")
+                    if len(children) != 1:
+                        raise SerializeException("Multiple items were found ({{}})".format(len(children)))
+
+                    result = children[0]
+
+                    if is_collection:
+                        result = result.findall("{collection_item_name}")
+
+                    return result
+
+                """,
+            ).format(
+                collection_item_name=Plugin.COLLECTION_ITEM_NAME,
+            )
+        
+        # BugBug # ----------------------------------------------------------------------
+        # BugBug @staticmethod
+        # BugBug @Interface.override
+        # BugBug def GetGlobalUtilityMethods(dest_writer):
+        # BugBug     return None
+
+    # ----------------------------------------------------------------------
+    @Interface.staticderived
     class DestinationStatementWriter(PythonSerializationImpl.DestinationStatementWriter):
+        ObjectTypeDesc                      = Interface.DerivedProperty("an XML object (ElementTree)")
+
         # ----------------------------------------------------------------------
         @classmethod
         @Interface.override
         def CreateCompoundElement(cls, element, attributes_var_or_none):
             return textwrap.dedent(
                 """\
-                cls._CreateElement(
+                _CreateXmlElement(
                     {name},
                     attributes={attributes},
                 )
@@ -81,10 +240,10 @@ class Plugin(PythonSerializationImpl):
         ):
             return textwrap.dedent(
                 """\
-                cls._CreateElement(
+                _CreateXmlElement(
                     {name},
                     attributes={attributes},
-                    text_value={fundamental}, # BugBug: SHould this value be converted to a string?
+                    text_value={fundamental},
                 )
                 """,
             ).format(
@@ -99,7 +258,7 @@ class Plugin(PythonSerializationImpl):
         def CreateFundamentalElement(cls, element, fundamental_statement):
             return textwrap.dedent(
                 """\
-                cls._CreateElement(
+                _CreateXmlElement(
                     {name},
                     text_value={statement},
                 )
@@ -110,12 +269,13 @@ class Plugin(PythonSerializationImpl):
             )
 
         # ----------------------------------------------------------------------
-        @staticmethod
+        @classmethod
         @Interface.override
-        def AppendChild(child_element, parent_var_name, var_name_or_none):
+        def AppendChild(cls, child_element, parent_var_name, var_name_or_none):
+            
             if var_name_or_none is None:
-                return "BugBug: None var_name"
-
+                var_name_or_none = "_CreateXmlElement({})".format(cls.GetElementStatementName(child_element))
+            
             return "{parent_var_name}.append({var_name})".format(
                 parent_var_name=parent_var_name,
                 var_name=var_name_or_none,
@@ -124,12 +284,25 @@ class Plugin(PythonSerializationImpl):
         # ----------------------------------------------------------------------
         @staticmethod
         @Interface.override
-        def GetUtilityMethods(source_writer):
+        def SerializeToString(var_name):
+            return textwrap.dedent(
+                """\
+                ET.tostring(
+                    {},
+                    encoding="utf-8",
+                    method="xml",
+                    pretty_print=pretty_print,
+                ).decode("utf-8")
+                """).format(var_name)
+
+        # ----------------------------------------------------------------------
+        @staticmethod
+        @Interface.override
+        def GetGlobalUtilityMethods(source_writer):
             return textwrap.dedent(
                 """\
                 # ----------------------------------------------------------------------
-                @staticmethod
-                def _CreateElement(
+                def _CreateXmlElement(
                     element_name,
                     attributes=None,
                     text_value=None,
@@ -143,7 +316,6 @@ class Plugin(PythonSerializationImpl):
                         result.text = text_value
 
                     return result
-
                 """
             )
 
@@ -154,6 +326,7 @@ class Plugin(PythonSerializationImpl):
     _TypeInfoSerializationName              = Interface.DerivedProperty("StringSerialization")
 
     _DestinationStatementWriter             = Interface.DerivedProperty(DestinationStatementWriter)
+    _SourceStatementWriter                  = Interface.DerivedProperty(SourceStatementWriter)
 
     # ----------------------------------------------------------------------
     # |  Private Methods
@@ -163,23 +336,9 @@ class Plugin(PythonSerializationImpl):
         output_stream.write(
             textwrap.dedent(
                 """\
-                import sys
                 import xml.etree.ElementTree as ET
 
-                from collections import OrderedDict
-
-                import six
-
-                import CommonEnvironment
-                from CommonEnvironment.TypeInfo import Arity, ValidationException
-                from CommonEnvironment.TypeInfo.AnyOfTypeInfo import AnyOfTypeInfo
-                from CommonEnvironment.TypeInfo.ClassTypeInfo import ClassTypeInfo
-                from CommonEnvironment.TypeInfo.DictTypeInfo import DictTypeInfo
-                from CommonEnvironment.TypeInfo.GenericTypeInfo import GenericTypeInfo
-                from CommonEnvironment.TypeInfo.ListTypeInfo import ListTypeInfo
-
-                from CommonEnvironment.TypeInfo.FundamentalTypes.Serialization.StringSerialization import StringSerialization
-
+                
                 """,
             )
         )

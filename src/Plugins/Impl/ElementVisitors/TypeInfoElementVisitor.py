@@ -36,11 +36,7 @@ with InitRelativeImports():
 class TypeInfoElementVisitor(ElementVisitor):
 
     # ----------------------------------------------------------------------
-    def __init__(
-        self,
-        python_code_visitor,
-        cached_children_statements,
-    ):
+    def __init__(self, python_code_visitor, cached_children_statements):
         self._python_code_visitor           = python_code_visitor
         self._cached_children_statements    = cached_children_statements
 
@@ -114,8 +110,8 @@ class TypeInfoElementVisitor(ElementVisitor):
                             comma_prefix=False,
                         ),
                     ) for k, v in six.iteritems(element.TypeInfo.Items) if k is not None
-                ],
-            ),
+                ]
+            )
         )
 
         if children_statement not in self._cached_children_statements:

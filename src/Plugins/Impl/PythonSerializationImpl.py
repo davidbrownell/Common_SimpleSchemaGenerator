@@ -200,13 +200,13 @@ class PythonSerializationImpl(PluginBase):
 
                         # <Unused import> pylint: disable = W0611
                         # <Unused import> pylint: disable = W0614
-                        from CommonEnvironment.TypeInfo.FundamentalTypes.All import *               # <Wildcard import> pylint: disable = W0401 
+                        from CommonEnvironment.TypeInfo.FundamentalTypes.All import *               # <Wildcard import> pylint: disable = W0401
 
                         # <Standard import should be placed before...> pylint: disable = C0411
 
                         # ----------------------------------------------------------------------
                         """,
-                    ),
+                    )
                 )
 
                 cls._WriteFileHeader(f)
@@ -224,16 +224,16 @@ class PythonSerializationImpl(PluginBase):
                             # <Too many branches> pylint: disable = R0912
                             # <Too many statements> pylint: disable = R0915
 
-                            
+
                             # ----------------------------------------------------------------------
                             class DoesNotExist(object):                                                 pass
 
-                            
+
                             class Object(object):
                                 def __repr__(self):
                                     return CommonEnvironment.ObjectReprImpl(self)
 
-                            
+
                             class SerializationException(Exception):
                                 def __init__(self, ex_or_string):
                                     if isinstance(ex_or_string, six.string_types):
@@ -243,7 +243,7 @@ class PythonSerializationImpl(PluginBase):
 
                                         self.__dict__ = copy.deepcopy(ex_or_string.__dict__)
 
-                            
+
                             class UniqueKeySerializationException(SerializationException):              pass
                             class SerializeException(SerializationException):                           pass
                             class DeserializeException(SerializationException):                         pass
@@ -380,7 +380,7 @@ class PythonSerializationImpl(PluginBase):
                                 # <The raise statement is not inside an except clause> pylint: disable = E0704
                                 raise
                             """,
-                        ),
+                        )
                     )
 
             # Open the file again and trim all empty lines; this
@@ -495,12 +495,13 @@ class PythonSerializationImpl(PluginBase):
     ):
         if is_serialization:
             method_name = "Serialize"
-            
+
             extra_args = textwrap.dedent(
                 """\
                 to_string=False,
                 pretty_print=False,
-                """)
+                """,
+            )
 
             suffix = textwrap.dedent(
                 """\
@@ -583,7 +584,9 @@ class PythonSerializationImpl(PluginBase):
                     ),
                     4,
                 ).strip(),
-                suffix="{}\n\n    ".format(StringHelpers.LeftJustify("{}\n\n".format(suffix), 4).strip()) if suffix else "",
+                suffix="{}\n\n    ".format(
+                    StringHelpers.LeftJustify("{}\n\n".format(suffix), 4).strip(),
+                ) if suffix else "",
                 statements=StringHelpers.LeftJustify("".join(statements), 4).strip(),
             )
         )
@@ -620,18 +623,20 @@ class PythonSerializationImpl(PluginBase):
                         """\
                         to_string=False,
                         pretty_print=False,
-                        """)
+                        """,
+                    )
 
                     suffix = textwrap.dedent(
                         """\
 
                         if to_string and {var_name} not in [DoesNotExist, None]:
                             {var_name} = {statement}
-                        """).format(
-                            var_name=var_name,
-                            statement=StringHelpers.LeftJustify(to_string_statements, 4).strip(),
-                        )
-            
+                        """,
+                    ).format(
+                        var_name=var_name,
+                        statement=StringHelpers.LeftJustify(to_string_statements, 4).strip(),
+                    )
+
             convenience_conversions = source_writer.ConvenienceConversions(var_name, element)
             if "is_root" in convenience_conversions:
                 extra_args += "is_root=False,\n"
@@ -681,7 +686,7 @@ class PythonSerializationImpl(PluginBase):
                     dest_type=dest_writer.ObjectTypeDesc,
                     convenience=StringHelpers.LeftJustify(convenience_conversions, 4).strip(),
                     suffix=StringHelpers.LeftJustify(suffix, 4),
-                ),
+                )
             )
 
     # ----------------------------------------------------------------------
@@ -722,10 +727,7 @@ class PythonSerializationImpl(PluginBase):
         type_infos = OrderedDict()
         cached_children_statements = OrderedDict()
 
-        type_info_visitor = TypeInfoElementVisitor(
-            python_code_visitor,
-            cached_children_statements,
-        )
+        type_info_visitor = TypeInfoElementVisitor(python_code_visitor, cached_children_statements)
 
         # ----------------------------------------------------------------------
         def OnElement(element):
@@ -736,7 +738,9 @@ class PythonSerializationImpl(PluginBase):
                 type_infos["_{}_TypeInfo".format(python_name)] = type_info_value
 
                 if isinstance(element, Elements.SimpleElement):
-                    type_infos["_{}__value__TypeInfo".format(python_name)] = python_code_visitor.Accept(element.TypeInfo.Items[element.FundamentalAttributeName])
+                    type_infos["_{}__value__TypeInfo".format(python_name)] = python_code_visitor.Accept(
+                        element.TypeInfo.Items[element.FundamentalAttributeName],
+                    )
 
         # ----------------------------------------------------------------------
 
@@ -905,12 +909,12 @@ class PythonSerializationImpl(PluginBase):
                         textwrap.dedent(
                             """\
                             {result_name} = {statement}
-                            
+
                             """,
                         ).format(
                             result_name=result_name,
                             statement=statement,
-                        ),
+                        )
                     )
 
                 # ----------------------------------------------------------------------
@@ -969,7 +973,7 @@ class PythonSerializationImpl(PluginBase):
                         if {arg_name} in [{does_not_exist_items}]:
                             _{python_name}_TypeInfo.ValidateArity(None)
                             return DoesNotExist
-                        
+
                         _{python_name}_TypeInfo.ValidateArity({arg_name})
 
                         """,
@@ -1022,7 +1026,7 @@ class PythonSerializationImpl(PluginBase):
                 # ----------------------------------------------------------------------
                 # ----------------------------------------------------------------------
                 """,
-            ),
+            )
         )
 
         # Item_ methods
@@ -1092,7 +1096,10 @@ class PythonSerializationImpl(PluginBase):
             content_template.format(
                 method_name="_ApplyOptionalChild",
                 var_name="item",
-                get_statement=StringHelpers.LeftJustify(source_writer.GetChild("item", optional_child_empty_element), 4).strip(),
+                get_statement=StringHelpers.LeftJustify(
+                    source_writer.GetChild("item", optional_child_empty_element),
+                    4,
+                ).strip(),
                 add_child=StringHelpers.LeftJustify(
                     dest_writer.AppendChild(optional_child_empty_element, "dest", "value"),
                     12,
@@ -1101,7 +1108,7 @@ class PythonSerializationImpl(PluginBase):
                     dest_writer.AppendChild(optional_child_empty_element, "dest", None),
                     8,
                 ).strip(),
-            ),
+            )
         )
 
         optional_children_empty_element = dest_writer.CreateTemporaryElement(
@@ -1113,7 +1120,10 @@ class PythonSerializationImpl(PluginBase):
             content_template.format(
                 method_name="_ApplyOptionalChildren",
                 var_name="items",
-                get_statement=StringHelpers.LeftJustify(source_writer.GetChild("items", optional_children_empty_element), 4).strip(),
+                get_statement=StringHelpers.LeftJustify(
+                    source_writer.GetChild("items", optional_children_empty_element),
+                    4,
+                ).strip(),
                 add_child=StringHelpers.LeftJustify(
                     dest_writer.AppendChild(optional_children_empty_element, "dest", "value"),
                     12,
@@ -1122,7 +1132,7 @@ class PythonSerializationImpl(PluginBase):
                     dest_writer.AppendChild(optional_children_empty_element, "dest", None),
                     8,
                 ).strip(),
-            ),
+            )
         )
 
         optional_attribute_empty_element = dest_writer.CreateTemporaryElement(
@@ -1135,10 +1145,13 @@ class PythonSerializationImpl(PluginBase):
             content_template.format(
                 method_name="_ApplyOptionalAttribute",
                 var_name="item",
-                get_statement=StringHelpers.LeftJustify(source_writer.GetChild("item", optional_attribute_empty_element), 4).strip(),
+                get_statement=StringHelpers.LeftJustify(
+                    source_writer.GetChild("item", optional_attribute_empty_element),
+                    4,
+                ).strip(),
                 add_child="dest[attribute_name] = value",
                 add_child_empty="dest[attribute_name] = None",
-            ),
+            )
         )
 
         # Write the utility funcs

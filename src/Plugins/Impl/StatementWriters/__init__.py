@@ -45,7 +45,7 @@ class StatementWriter(Interface.Interface):
     def ObjectTypeDesc(self):
         """String description of the writer's object type used in docstrings"""
         raise Exception("Abstract property")
-    
+
     # ----------------------------------------------------------------------
     @staticmethod
     def GetElementStatementName(element):
@@ -53,12 +53,12 @@ class StatementWriter(Interface.Interface):
         Returns a value that can be used within a statement
         to represent the name of an element.
         """
-    
+
         if callable(element.Name):
             return element.Name()
-    
+
         return '"{}"'.format(element.Name)
-    
+
     # ----------------------------------------------------------------------
     @staticmethod
     def CreateTemporaryElement(
@@ -91,7 +91,7 @@ class SourceStatementWriter(StatementWriter):
     Interface for components that are able to write python statements used when
     reading objects.
     """
-    
+
     # ----------------------------------------------------------------------
     @staticmethod
     @Interface.abstractmethod
@@ -120,21 +120,21 @@ class SourceStatementWriter(StatementWriter):
         and standard children in their implementations.
         """
         raise Exception("Abstract method")
-    
+
     # ----------------------------------------------------------------------
     @staticmethod
     @Interface.abstractmethod
     def GetApplyAdditionalData(dest_writer):
         """Creates the statements for the _ApplyAdditionalData method"""
         raise Exception("Abstract method")
-    
+
     # ----------------------------------------------------------------------
     @staticmethod
     @Interface.extensionmethod
     def GetClassUtilityMethods(dest_writer):
         """Returns any statements that should be written as class methods"""
         return None
-    
+
     # ----------------------------------------------------------------------
     @staticmethod
     @Interface.extensionmethod
@@ -149,49 +149,49 @@ class DestinationStatementWriter(StatementWriter):
     Interface for components that are able to write python statements used when
     writing objects.
     """
-    
+
     # ----------------------------------------------------------------------
     @staticmethod
     @Interface.abstractmethod
     def CreateCompoundElement(element, attributes_var_or_none):
         """Creates a CompoundElement"""
         raise Exception("Abstract method")
-    
+
     # ----------------------------------------------------------------------
     @staticmethod
     @Interface.abstractmethod
     def CreateSimpleElement(element, attributes_var_or_none, fundamental_statement):
         """Creates a SimpleElement"""
         raise Exception("Abstract method")
-    
+
     # ----------------------------------------------------------------------
     @staticmethod
     @Interface.abstractmethod
     def CreateFundamentalElement(element, fundamental_statement):
         """Create a FundamentalElement"""
         raise Exception("Abstract method")
-    
+
     # ----------------------------------------------------------------------
     @staticmethod
     @Interface.abstractmethod
     def AppendChild(child_element, parent_var_name, var_name_or_none):
         """Appends a child to an existing CompoundElement"""
         raise Exception("Abstract method")
-    
+
     # ----------------------------------------------------------------------
     @staticmethod
     @Interface.abstractmethod
     def SerializeToString(var_name):
         """Returns a statement that converts the given var to a string"""
         raise Exception("Abstract method")
-    
+
     # ----------------------------------------------------------------------
     @staticmethod
     @Interface.extensionmethod
     def GetClassUtilityMethods(source_writer):
         """Returns any statements that should be written as class methods"""
         return None
-    
+
     # ----------------------------------------------------------------------
     @staticmethod
     @Interface.extensionmethod

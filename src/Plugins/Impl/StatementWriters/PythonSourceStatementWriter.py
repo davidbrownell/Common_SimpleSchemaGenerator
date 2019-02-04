@@ -176,7 +176,7 @@ class PythonSourceStatementWriter(SourceStatementWriter):
                     raise SerializeException("No items were found")
 
                 return value
-            
+
             # ----------------------------------------------------------------------
             @classmethod
             def _CreateAdditionalDataItem(cls, key, element):
@@ -233,11 +233,7 @@ class PythonSourceStatementWriter(SourceStatementWriter):
                 8,
             ).strip(),
             create_simple_element=StringHelpers.LeftJustify(
-                dest_writer.CreateSimpleElement(
-                    temp_element,
-                    "attributes",
-                    "fundamental_value",
-                ),
+                dest_writer.CreateSimpleElement(temp_element, "attributes", "fundamental_value"),
                 8,
             ).strip(),
             append_list_item=StringHelpers.LeftJustify(
@@ -257,10 +253,7 @@ class PythonSourceStatementWriter(SourceStatementWriter):
                 8,
             ).strip(),
             create_compound_element=StringHelpers.LeftJustify(
-                dest_writer.CreateCompoundElement(
-                    temp_element,
-                    None,
-                ),
+                dest_writer.CreateCompoundElement(temp_element, None),
                 4,
             ).strip(),
             text_key=cls.SIMPLE_ELEMENT_FUNDAMENTAL_ATTRIBUTE_NAME,

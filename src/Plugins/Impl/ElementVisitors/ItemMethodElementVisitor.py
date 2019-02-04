@@ -55,7 +55,7 @@ class ItemMethodElementVisitor(ElementVisitor):
         self._enumerate_children_func       = enumerate_children_func
         self._is_serializer                 = is_serializer
         self._method_prefix                 = "Serialize" if is_serializer else "Deserialize"
-        
+
     # ----------------------------------------------------------------------
     @staticmethod
     @Interface.override
@@ -118,7 +118,7 @@ class ItemMethodElementVisitor(ElementVisitor):
     def OnReference(self, element):
         # Nothing to do here
         pass
-        
+
     # ----------------------------------------------------------------------
     @Interface.override
     def OnList(self, element):
@@ -141,12 +141,15 @@ class ItemMethodElementVisitor(ElementVisitor):
         for child in self._enumerate_children_func(element):
             attribute_names.append(child.Name)
 
-            is_compound_like = isinstance(child.Resolve(), (Elements.CompoundElement, Elements.SimpleElement))
+            is_compound_like = isinstance(
+                child.Resolve(),
+                (Elements.CompoundElement, Elements.SimpleElement),
+            )
 
             # Note that we have to use getattr here, as Compound- and SimpleElements don't support IsAttribute
             if getattr(child, "IsAttribute", False):
                 is_attribute = True
-                
+
                 assert isinstance(child.Resolve(), Elements.FundamentalElement)
                 assert not child.TypeInfo.Arity.IsCollection
 
@@ -158,12 +161,16 @@ class ItemMethodElementVisitor(ElementVisitor):
                         attributes["{name}"] = cls.{python_name}(
                             {get_child_statement},
                         )
-                        """)
+                        """,
+                    )
 
                 statement = statement_template.format(
                     name=child.Name,
                     python_name=ToPythonName(child),
-                    get_child_statement=StringHelpers.LeftJustify(self._source_writer.GetChild("item", child), 4).strip(),
+                    get_child_statement=StringHelpers.LeftJustify(
+                        self._source_writer.GetChild("item", child),
+                        4,
+                    ).strip(),
                 )
 
             else:
@@ -171,7 +178,9 @@ class ItemMethodElementVisitor(ElementVisitor):
 
                 if child.TypeInfo.Arity.Min == 0:
                     if is_compound_like:
-                        statement = "lambda value: cls.{}(value, always_include_optional, process_additional_data)".format(ToPythonName(child))
+                        statement = "lambda value: cls.{}(value, always_include_optional, process_additional_data)".format(
+                            ToPythonName(child),
+                        )
                     else:
                         statement = "cls.{}".format(ToPythonName(child))
 
@@ -191,7 +200,7 @@ class ItemMethodElementVisitor(ElementVisitor):
                         extra_params = StringHelpers.LeftJustify(
                             textwrap.dedent(
                                 """\
-                                    
+
                                 always_include_optional,
                                 process_additional_data
                                 """,
@@ -213,7 +222,10 @@ class ItemMethodElementVisitor(ElementVisitor):
                             """,
                         ).format(
                             python_name=ToPythonName(child),
-                            get_child=StringHelpers.LeftJustify(self._source_writer.GetChild("item", child), 4).strip(),
+                            get_child=StringHelpers.LeftJustify(
+                                self._source_writer.GetChild("item", child),
+                                4,
+                            ).strip(),
                             name=child.Name,
                             extra_params=extra_params,
                         ),
@@ -232,7 +244,7 @@ class ItemMethodElementVisitor(ElementVisitor):
                 ).format(
                     name=child.Name,
                     statement=StringHelpers.LeftJustify(statement, 4).strip(),
-                ),
+                )
             )
 
         if isinstance(element, Elements.SimpleElement):
@@ -249,41 +261,45 @@ class ItemMethodElementVisitor(ElementVisitor):
 
                 result = {}
 
-                """).format(
-                    StringHelpers.LeftJustify(
-                        '{type_info}.{method_prefix}Item(_{python_name}__value__TypeInfo, {value}, **{serialize_args})'.format(
-                            type_info=self._type_info_serialization_name,
-                            method_prefix=self._method_prefix,
-                            python_name=ToPythonName(element),
-                            value=self._source_writer.GetChild(
-                                "item",
-                                self._source_writer.CreateTemporaryElement(
-                                    '"{}"'.format(element.FundamentalAttributeName),
-                                    is_collection=False,
-                                ),
-                                is_simple_schema_fundamental=True,
+                """,
+            ).format(
+                StringHelpers.LeftJustify(
+                    "{type_info}.{method_prefix}Item(_{python_name}__value__TypeInfo, {value}, **{serialize_args})".format(
+                        type_info=self._type_info_serialization_name,
+                        method_prefix=self._method_prefix,
+                        python_name=ToPythonName(element),
+                        value=self._source_writer.GetChild(
+                            "item",
+                            self._source_writer.CreateTemporaryElement(
+                                '"{}"'.format(element.FundamentalAttributeName),
+                                is_collection=False,
                             ),
-                            serialize_args=self._custom_serialize_item_args,
+                            is_simple_schema_fundamental=True,
                         ),
-                        4,
+                        serialize_args=self._custom_serialize_item_args,
                     ),
-                    self._dest_writer.CreateSimpleElement(
-                        element,
-                        "attributes" if attributes else None,
-                        "fundamental_value",
-                    ),
-                )
-                
+                    4,
+                ),
+                self._dest_writer.CreateSimpleElement(
+                    element,
+                    "attributes" if attributes else None,
+                    "fundamental_value",
+                ),
+            )
+
         else:
             statement = textwrap.dedent(
                 """\
                 result = {}
-                
+
                 {}
                 """,
             ).format(
-                self._dest_writer.CreateCompoundElement(element, "attributes" if attributes else None).strip(),
-                ''.join(statements).strip(),
+                self._dest_writer.CreateCompoundElement(
+                    element,
+                    "attributes" if attributes else None,
+                ).strip(),
+                "".join(statements).strip(),
             )
 
         python_name = ToPythonName(element)
@@ -326,12 +342,22 @@ class ItemMethodElementVisitor(ElementVisitor):
                 """,
             ).format(
                 python_name=python_name,
-                prefix=StringHelpers.LeftJustify("{}\n\n".format(prefix.strip()) if prefix else prefix, 4),
+                prefix=StringHelpers.LeftJustify(
+                    "{}\n\n".format(prefix.strip()) if prefix else prefix,
+                    4,
+                ),
                 prefix_whitespace="    " if prefix else "",
-                suffix=StringHelpers.LeftJustify("\n{}\n".format(suffix.strip()) if suffix else suffix, 4),
-                attributes_decl='' if not attributes else "attributes = OrderedDict()\n\n    ",
-                attributes='' if not attributes else "{}\n\n    ".format(StringHelpers.LeftJustify(''.join(attributes), 4).strip()),
+                suffix=StringHelpers.LeftJustify(
+                    "\n{}\n".format(suffix.strip()) if suffix else suffix,
+                    4,
+                ),
+                attributes_decl="" if not attributes else "attributes = OrderedDict()\n\n    ",
+                attributes="" if not attributes else "{}\n\n    ".format(
+                    StringHelpers.LeftJustify("".join(attributes), 4).strip(),
+                ),
                 statement=StringHelpers.LeftJustify(statement, 4).strip(),
-                attribute_names=", ".join(['"{}"'.format(attribute_name) for attribute_name in attribute_names]),
-            ),
+                attribute_names=", ".join(
+                    ['"{}"'.format(attribute_name) for attribute_name in attribute_names],
+                ),
+            )
         )

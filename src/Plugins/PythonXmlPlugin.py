@@ -138,7 +138,10 @@ class Plugin(PythonSerializationImpl):
         @classmethod
         @Interface.override
         def GetApplyAdditionalData(cls, dest_writer):
-            temp_element = cls.CreateTemporaryElement("k", is_collection=False)
+            temp_element = cls.CreateTemporaryElement(
+                "k",
+                is_collection=False,
+            )
 
             return textwrap.dedent(
                 """\
@@ -172,9 +175,25 @@ class Plugin(PythonSerializationImpl):
 
                 """,
             ).format(
-                append_attribute=StringHelpers.LeftJustify(dest_writer.AppendChild(temp_element, "dest", "v"), 4).strip(),
-                append=StringHelpers.LeftJustify(dest_writer.AppendChild(temp_element, "dest", "v[0]"), 8).strip(),
-                append_children=StringHelpers.LeftJustify(dest_writer.AppendChild(cls.CreateTemporaryElement("k", is_collection=True), "dest", "v"), 8).strip(),
+                append_attribute=StringHelpers.LeftJustify(
+                    dest_writer.AppendChild(temp_element, "dest", "v"),
+                    4,
+                ).strip(),
+                append=StringHelpers.LeftJustify(
+                    dest_writer.AppendChild(temp_element, "dest", "v[0]"),
+                    8,
+                ).strip(),
+                append_children=StringHelpers.LeftJustify(
+                    dest_writer.AppendChild(
+                        cls.CreateTemporaryElement(
+                            "k",
+                            is_collection=True,
+                        ),
+                        "dest",
+                        "v",
+                    ),
+                    8,
+                ).strip(),
             )
 
         # ----------------------------------------------------------------------
@@ -234,8 +253,27 @@ class Plugin(PythonSerializationImpl):
 
                 """,
             ).format(
-                create=StringHelpers.LeftJustify(dest_writer.CreateCompoundElement(cls.CreateTemporaryElement("result", is_collection=False), "element.attrib"), 4).strip(),
-                append=StringHelpers.LeftJustify(dest_writer.AppendChild(cls.CreateTemporaryElement("k", is_collection=False), "result", "v"), 4).strip(),
+                create=StringHelpers.LeftJustify(
+                    dest_writer.CreateCompoundElement(
+                        cls.CreateTemporaryElement(
+                            "result",
+                            is_collection=False,
+                        ),
+                        "element.attrib",
+                    ),
+                    4,
+                ).strip(),
+                append=StringHelpers.LeftJustify(
+                    dest_writer.AppendChild(
+                        cls.CreateTemporaryElement(
+                            "k",
+                            is_collection=False,
+                        ),
+                        "result",
+                        "v",
+                    ),
+                    4,
+                ).strip(),
                 text_key=cls.SIMPLE_ELEMENT_FUNDAMENTAL_ATTRIBUTE_NAME,
             )
 
@@ -272,7 +310,7 @@ class Plugin(PythonSerializationImpl):
             ).format(
                 collection_item_name=Plugin.COLLECTION_ITEM_NAME,
             )
-        
+
     # ----------------------------------------------------------------------
     @Interface.staticderived
     class DestinationStatementWriter(PythonSerializationImpl.DestinationStatementWriter):
@@ -297,12 +335,7 @@ class Plugin(PythonSerializationImpl):
         # ----------------------------------------------------------------------
         @classmethod
         @Interface.override
-        def CreateSimpleElement(
-            cls,
-            element,
-            attributes_var_or_none,
-            fundamental_statement,
-        ):
+        def CreateSimpleElement(cls, element, attributes_var_or_none, fundamental_statement):
             return textwrap.dedent(
                 """\
                 _CreateXmlElement(
@@ -344,13 +377,15 @@ class Plugin(PythonSerializationImpl):
                     var_name=var_name_or_none,
                 )
             elif var_name_or_none is None:
-               var_name_or_none = "_CreateXmlElement({})".format(cls.GetElementStatementName(child_element))
+                var_name_or_none = "_CreateXmlElement({})".format(
+                    cls.GetElementStatementName(child_element),
+                )
 
             return "{parent_var_name}.append({var_name})".format(
                 parent_var_name=parent_var_name,
                 var_name=var_name_or_none,
             )
-            
+
         # ----------------------------------------------------------------------
         @staticmethod
         @Interface.override
@@ -362,9 +397,10 @@ class Plugin(PythonSerializationImpl):
                     encoding="utf-8",
                     method="xml",
                 ).decode("utf-8")
-                """).format(
-                    var_name=var_name,
-                )
+                """,
+            ).format(
+                var_name=var_name,
+            )
 
         # ----------------------------------------------------------------------
         @staticmethod
@@ -404,13 +440,13 @@ class Plugin(PythonSerializationImpl):
                     original = elem
 
                     i = "\\n" + level * "  "
-                
+
                     if len(elem):
                         if not elem.text or not elem.text.strip():
                             elem.text = i + "  "
                         if not elem.tail or not elem.tail.strip():
                             elem.tail = i
-                
+
                         for elem in elem:
                             _XmlPrettyPrint(elem, level + 1)
 
@@ -422,7 +458,7 @@ class Plugin(PythonSerializationImpl):
 
                     return original
 
-                """
+                """,
             )
 
     # ----------------------------------------------------------------------
@@ -444,7 +480,7 @@ class Plugin(PythonSerializationImpl):
                 """\
                 import xml.etree.ElementTree as ET
 
-                
+
                 """,
             )
         )

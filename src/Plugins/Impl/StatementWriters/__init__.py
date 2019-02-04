@@ -38,6 +38,8 @@ with InitRelativeImports():
 class StatementWriter(Interface.Interface):
     """Contains helper methods used by all StatementWriter objects."""
 
+    SIMPLE_ELEMENT_FUNDAMENTAL_ATTRIBUTE_NAME           = "text_value__"
+
     # ----------------------------------------------------------------------
     @Interface.abstractproperty
     def ObjectTypeDesc(self):
@@ -117,14 +119,6 @@ class SourceStatementWriter(StatementWriter):
         should account for attributes, collections, optional values, 
         and standard children in their implementations.
         """
-        raise Exception("Abstract method")
-    
-    # ----------------------------------------------------------------------
-    # BugBug: This may not be necessary
-    @staticmethod
-    @Interface.abstractmethod
-    def GetFundamentalString(var_name, child_element, is_attribute):
-        """Gets the string representation of the fundamental child element from a variable"""
         raise Exception("Abstract method")
     
     # ----------------------------------------------------------------------

@@ -19,6 +19,12 @@
   
   <roots>
     <item name="dir1" />
-    <item name="dir2" />
+    <item name="dir2">
+      <extra two="2">value</extra>
+      <extra a="a" b="b">
+        <value one="1">text value</value>
+        <value>another text value</value>
+      </extra>
+    </item>
   </roots>
 </everything>

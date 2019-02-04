@@ -202,6 +202,7 @@ class PythonSerializationImpl(PluginBase):
                         # <Unused import> pylint: disable = W0614
                         from CommonEnvironment.TypeInfo.FundamentalTypes.All import *               # <Wildcard import> pylint: disable = W0401 
 
+                        # <Standard import should be placed before...> pylint: disable = C0411
 
                         # ----------------------------------------------------------------------
                         """,
@@ -507,7 +508,7 @@ class PythonSerializationImpl(PluginBase):
                     result = {}
 
                 """,
-            ).format(StringHelpers.LeftJustify(dest_writer.ToString("result"), 4).strip())
+            ).format(StringHelpers.LeftJustify(dest_writer.SerializeToString("result"), 4).strip())
         else:
             method_name = "Deserialize"
             extra_args = ""
@@ -527,6 +528,8 @@ class PythonSerializationImpl(PluginBase):
                     )
                     if this_result is not DoesNotExist:
                         {append_statement}
+                    elif always_include_optional:
+                        {append_empty_statement}
 
                     """,
                 ).format(
@@ -534,6 +537,10 @@ class PythonSerializationImpl(PluginBase):
                     name=ToPythonName(element),
                     append_statement=StringHelpers.LeftJustify(
                         dest_writer.AppendChild(element, "result", "this_result"),
+                        4,
+                    ).strip(),
+                    append_empty_statement=StringHelpers.LeftJustify(
+                        dest_writer.AppendChild(element, "result", None),
                         4,
                     ).strip(),
                 )
@@ -606,7 +613,7 @@ class PythonSerializationImpl(PluginBase):
             suffix = ""
 
             if is_serialize:
-                to_string_statements = dest_writer.ToString(var_name)
+                to_string_statements = dest_writer.SerializeToString(var_name)
 
                 if to_string_statements:
                     extra_args = textwrap.dedent(
@@ -649,12 +656,12 @@ class PythonSerializationImpl(PluginBase):
                                     process_additional_data=process_additional_data,
                                     always_include_optional=always_include_optional,
                                 )
-                            except SerializationException:
-                                raise
-                            except Exception as ex:
-                                raise {method_name}Exception(ex)
-                        except:
-                            _DecorateActiveException("{name}")
+                            except:
+                                _DecorateActiveException("{name}")
+                        except SerializationException:
+                            raise
+                        except Exception as ex:
+                            raise {method_name}Exception(ex)
                         {suffix}
                         return {var_name}
 
@@ -856,7 +863,7 @@ class PythonSerializationImpl(PluginBase):
                     unique_statement = None
 
                     if hasattr(resolved_element, "unique_key"):
-                        unique_statement = '\n_ValidateUniqueKeys("{unique_key}", {arg_name})\n\n'.format(
+                        unique_statement = '_ValidateUniqueKeys("{unique_key}", {arg_name})\n\n'.format(
                             unique_key=resolved_element.unique_key,
                             arg_name=arg_name if is_serializer else result_name,
                         )
@@ -883,6 +890,7 @@ class PythonSerializationImpl(PluginBase):
                     )
 
                     if unique_statement and not is_serializer:
+                        content_stream.write("\n")
                         content_stream.write(unique_statement)
 
                 # ----------------------------------------------------------------------
@@ -950,12 +958,17 @@ class PythonSerializationImpl(PluginBase):
 
             # Standard content...
             if is_serializer:
+                does_not_exist_items = ["DoesNotExist", "None"]
+
+                if element.TypeInfo.Arity.IsCollection:
+                    does_not_exist_items.append("[]")
+
                 content_stream.write(
                     textwrap.dedent(
                         """\
-                        if {arg_name} in [DoesNotExist, None]:
+                        if {arg_name} in [{does_not_exist_items}]:
                             _{python_name}_TypeInfo.ValidateArity(None)
-                            return {arg_name}
+                            return DoesNotExist
                         
                         _{python_name}_TypeInfo.ValidateArity({arg_name})
 
@@ -963,6 +976,7 @@ class PythonSerializationImpl(PluginBase):
                     ).format(
                         python_name=python_name,
                         arg_name=arg_name,
+                        does_not_exist_items=", ".join(does_not_exist_items),
                     )
                 )
 
@@ -1059,9 +1073,9 @@ class PythonSerializationImpl(PluginBase):
 
                 if value is not DoesNotExist:
                     value = apply_func(value)
-
-                    {add_child}
-                    return
+                    if value is not DoesNotExist:
+                        {add_child}
+                        return
 
                 if always_include_optional:
                     {add_child_empty}
@@ -1081,7 +1095,7 @@ class PythonSerializationImpl(PluginBase):
                 get_statement=StringHelpers.LeftJustify(source_writer.GetChild("item", optional_child_empty_element), 4).strip(),
                 add_child=StringHelpers.LeftJustify(
                     dest_writer.AppendChild(optional_child_empty_element, "dest", "value"),
-                    8,
+                    12,
                 ).strip(),
                 add_child_empty=StringHelpers.LeftJustify(
                     dest_writer.AppendChild(optional_child_empty_element, "dest", None),
@@ -1102,7 +1116,7 @@ class PythonSerializationImpl(PluginBase):
                 get_statement=StringHelpers.LeftJustify(source_writer.GetChild("items", optional_children_empty_element), 4).strip(),
                 add_child=StringHelpers.LeftJustify(
                     dest_writer.AppendChild(optional_children_empty_element, "dest", "value"),
-                    8,
+                    12,
                 ).strip(),
                 add_child_empty=StringHelpers.LeftJustify(
                     dest_writer.AppendChild(optional_children_empty_element, "dest", None),

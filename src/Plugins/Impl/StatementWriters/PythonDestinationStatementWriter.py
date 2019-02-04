@@ -88,7 +88,6 @@ class PythonDestinationStatementWriter(DestinationStatementWriter):
     @staticmethod
     @Interface.override
     def SerializeToString(var_name):
-        return "BugBug"
         raise Exception("This should not be called for python objects")
 
     # ----------------------------------------------------------------------

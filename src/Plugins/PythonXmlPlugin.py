@@ -20,6 +20,7 @@ import textwrap
 
 import CommonEnvironment
 from CommonEnvironment import Interface
+from CommonEnvironment import StringHelpers
 
 from CommonEnvironmentEx.Package import InitRelativeImports
 
@@ -98,7 +99,9 @@ class Plugin(PythonSerializationImpl):
             is_simple_schema_fundamental=False,
         ):
             if is_simple_schema_fundamental:
-                return '{}.text or ""'.format(var_name)
+                return '{var_name}.text if {var_name}.text.strip() else ""'.format(
+                    var_name=var_name,
+                )
 
             if getattr(child_element, "IsAttribute", False):
                 return textwrap.dedent(
@@ -132,25 +135,52 @@ class Plugin(PythonSerializationImpl):
             )
 
         # ----------------------------------------------------------------------
-        @staticmethod
+        @classmethod
         @Interface.override
-        def GetFundamentalString(var_name, child_element, is_attribute):
-            return "BugBug: GetFundmaentalString"
+        def GetApplyAdditionalData(cls, dest_writer):
+            temp_element = cls.CreateTemporaryElement("k", is_collection=False)
 
-        # ----------------------------------------------------------------------
-        @staticmethod
-        @Interface.override
-        def GetApplyAdditionalData(dest_writer):
             return textwrap.dedent(
                 """\
-                pass # BugBug: GetApplyAdditionalData
+                for k, v in six.iteritems(source.attrib):
+                    if k.startswith("_") or k in exclude_names:
+                        continue
+
+                    {append_attribute}
+
+                additional_data_items = {{}}
+
+                for e in source:
+                    if e.tag.startswith("_") or e.tag in exclude_names:
+                        continue
+
+                    try:
+                        additional_data_items.setdefault(e.tag, []).append(cls._CreateAdditionalDataItem(e))
+                    except:
+                        frame_desc = e.tag
+
+                        if e.tag in additional_data_items and additional_data_items[e.tag]:
+                            frame_desc = "{{}} - Index {{}}".format(frame_desc, len(additional_data_items[e.tag]))
+
+                        _DecorateActiveException(frame_desc)
+
+                for k, v in six.iteritems(additional_data_items):
+                    if len(v) == 1:
+                        {append}
+                    else:
+                        {append_children}
+
                 """,
+            ).format(
+                append_attribute=StringHelpers.LeftJustify(dest_writer.AppendChild(temp_element, "dest", "v"), 4).strip(),
+                append=StringHelpers.LeftJustify(dest_writer.AppendChild(temp_element, "dest", "v[0]"), 8).strip(),
+                append_children=StringHelpers.LeftJustify(dest_writer.AppendChild(cls.CreateTemporaryElement("k", is_collection=True), "dest", "v"), 8).strip(),
             )
 
         # ----------------------------------------------------------------------
-        @staticmethod
+        @classmethod
         @Interface.override
-        def GetClassUtilityMethods(dest_writer):
+        def GetClassUtilityMethods(cls, dest_writer):
             return textwrap.dedent(
                 """\
                 # ----------------------------------------------------------------------
@@ -162,11 +192,52 @@ class Plugin(PythonSerializationImpl):
                 ):
                     value = element.attrib.get(attribute_name, DoesNotExist)
                     if value is DoesNotExist and not is_optional:
-                        raise SerializeException("The attribute '{}' does not exist".format(attribute_name))
+                        raise SerializeException("The attribute '{{}}' does not exist".format(attribute_name))
 
                     return value
 
-                """)
+                # ----------------------------------------------------------------------
+                @classmethod
+                def _CreateAdditionalDataItem(cls, element):
+                    children = {{}}
+
+                    for child in element:
+                        try:
+                            children.setdefault(child.tag, []).append(cls._CreateAdditionalDataItem(child))
+                        except:
+                            frame_desc = child.tag
+
+                            if child.tag in children and children[child.tag]:
+                                frame_desc = "{{}} - Index {{}}".format(frame_desc, len(children[child.tag]))
+
+                            _DecorateActiveException(frame_desc)
+
+                    if element.text.strip():
+                        if "{text_key}" in children:
+                            raise SerializeException("'{text_key}' is a child element and can't be used to store the element's text")
+
+                        children["{text_key}"] = [element.text]
+
+                    for k in six.iterkeys(element.attrib):
+                        if k in children:
+                            raise SerializeException("'{{}}' is a child element and can't be used to store an attribute with the same name".format(k))
+
+                    result = {create}
+
+                    for k, v in six.iteritems(children):
+                        if len(v) == 1:
+                            v = v[0]
+
+                        {append}
+
+                    return result
+
+                """,
+            ).format(
+                create=StringHelpers.LeftJustify(dest_writer.CreateCompoundElement(cls.CreateTemporaryElement("result", is_collection=False), "element.attrib"), 4).strip(),
+                append=StringHelpers.LeftJustify(dest_writer.AppendChild(cls.CreateTemporaryElement("k", is_collection=False), "result", "v"), 4).strip(),
+                text_key=cls.SIMPLE_ELEMENT_FUNDAMENTAL_ATTRIBUTE_NAME,
+            )
 
         # ----------------------------------------------------------------------
         @staticmethod
@@ -202,12 +273,6 @@ class Plugin(PythonSerializationImpl):
                 collection_item_name=Plugin.COLLECTION_ITEM_NAME,
             )
         
-        # BugBug # ----------------------------------------------------------------------
-        # BugBug @staticmethod
-        # BugBug @Interface.override
-        # BugBug def GetGlobalUtilityMethods(dest_writer):
-        # BugBug     return None
-
     # ----------------------------------------------------------------------
     @Interface.staticderived
     class DestinationStatementWriter(PythonSerializationImpl.DestinationStatementWriter):
@@ -272,10 +337,15 @@ class Plugin(PythonSerializationImpl):
         @classmethod
         @Interface.override
         def AppendChild(cls, child_element, parent_var_name, var_name_or_none):
-            
-            if var_name_or_none is None:
-                var_name_or_none = "_CreateXmlElement({})".format(cls.GetElementStatementName(child_element))
-            
+            if child_element.TypeInfo.Arity.IsCollection:
+                return "{parent_var_name}.append(_CreateXmlCollection({element_name}, {var_name}))".format(
+                    parent_var_name=parent_var_name,
+                    element_name=cls.GetElementStatementName(child_element),
+                    var_name=var_name_or_none,
+                )
+            elif var_name_or_none is None:
+               var_name_or_none = "_CreateXmlElement({})".format(cls.GetElementStatementName(child_element))
+
             return "{parent_var_name}.append({var_name})".format(
                 parent_var_name=parent_var_name,
                 var_name=var_name_or_none,
@@ -288,12 +358,13 @@ class Plugin(PythonSerializationImpl):
             return textwrap.dedent(
                 """\
                 ET.tostring(
-                    {},
+                    _XmlPrettyPrint({var_name}) if pretty_print else {var_name},
                     encoding="utf-8",
                     method="xml",
-                    pretty_print=pretty_print,
                 ).decode("utf-8")
-                """).format(var_name)
+                """).format(
+                    var_name=var_name,
+                )
 
         # ----------------------------------------------------------------------
         @staticmethod
@@ -309,13 +380,48 @@ class Plugin(PythonSerializationImpl):
                 ):
                     result = ET.Element(
                         element_name,
-                        attrib=attributes,
+                        attrib=attributes or {},
                     )
 
                     if text_value is not None:
                         result.text = text_value
 
                     return result
+
+
+                # ----------------------------------------------------------------------
+                def _CreateXmlCollection(element_name, items_or_none):
+                    result = _CreateXmlElement(element_name)
+
+                    for item in (items_or_none or []):
+                        result.append(item)
+
+                    return result
+
+
+                # ----------------------------------------------------------------------
+                def _XmlPrettyPrint(elem, level=0):
+                    original = elem
+
+                    i = "\\n" + level * "  "
+                
+                    if len(elem):
+                        if not elem.text or not elem.text.strip():
+                            elem.text = i + "  "
+                        if not elem.tail or not elem.tail.strip():
+                            elem.tail = i
+                
+                        for elem in elem:
+                            _XmlPrettyPrint(elem, level + 1)
+
+                        if not elem.tail or not elem.tail.strip():
+                            elem.tail = i
+                    else:
+                        if level and (not elem.tail or not elem.tail.strip()):
+                            elem.tail = i
+
+                    return original
+
                 """
             )
 

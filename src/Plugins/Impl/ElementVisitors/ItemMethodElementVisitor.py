@@ -56,8 +56,6 @@ class ItemMethodElementVisitor(ElementVisitor):
         self._is_serializer                 = is_serializer
         self._method_prefix                 = "Serialize" if is_serializer else "Deserialize"
         
-    # BugBug: Handle optional
-
     # ----------------------------------------------------------------------
     @staticmethod
     @Interface.override
@@ -313,7 +311,7 @@ class ItemMethodElementVisitor(ElementVisitor):
                 # ----------------------------------------------------------------------
                 @classmethod
                 def _{python_name}_Item(cls, item, always_include_optional, process_additional_data):
-                    {prefix}{attributes_decl}{attributes}{statement}{suffix}
+                    {prefix}{prefix_whitespace}{attributes_decl}{attributes}{statement}
 
                     # Additional data
                     if process_additional_data:
@@ -322,14 +320,15 @@ class ItemMethodElementVisitor(ElementVisitor):
                             result,
                             exclude_names={{{attribute_names}}},
                         )
-
+                    {suffix}
                     return result
 
                 """,
             ).format(
                 python_name=python_name,
                 prefix=StringHelpers.LeftJustify("{}\n\n".format(prefix.strip()) if prefix else prefix, 4),
-                suffix=StringHelpers.LeftJustify("\n\n{}".format(suffix.strip()) if suffix else suffix, 4),
+                prefix_whitespace="    " if prefix else "",
+                suffix=StringHelpers.LeftJustify("\n{}\n".format(suffix.strip()) if suffix else suffix, 4),
                 attributes_decl='' if not attributes else "attributes = OrderedDict()\n\n    ",
                 attributes='' if not attributes else "{}\n\n    ".format(StringHelpers.LeftJustify(''.join(attributes), 4).strip()),
                 statement=StringHelpers.LeftJustify(statement, 4).strip(),

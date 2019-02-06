@@ -121,9 +121,6 @@ COLLECTION_REFINES_ARITY_ATTRIBUTE_NAME     = "refines_arity"
 
 OPTIONAL_DEFAULT_ATTRIBUTE_NAME             = "default"
 
-COMPOUND_POLYMORPHIC_ATTRIBUTE_NAME                     = "polymorphic"
-COMPOUND_SUPPRESS_POLYMORPHIC_ATTRIBUTE_NAME            = "suppress_polymorphic"
-
 SIMPLE_FUNDAMENTAL_NAME_ATTRIBUTE_NAME      = "fundamental_name"
 
 CUSTOM_TYPE_ATTRIBUTE_NAME                  = "type"
@@ -135,14 +132,6 @@ def _ValidateUniqueKey(plugin, element):
 
 def _ValidateRefinesArity(plugin, element):
     return __ValidateRefinesArity(plugin, element)
-
-
-def _ValidatePolymorphic(plugin, element):
-    return __ValidatePolymorphic(plugin, element)
-
-
-def _ValidateSuppressPolymorphic(plugin, element):
-    return __ValidateSuppressPolymorphic(plugin, element)
 
 
 def _ValidateFundamentalName(plugin, element):
@@ -201,24 +190,7 @@ OPTIONAL_ATTRIBUTE_INFO                                 = AttributeInfo(
 )
 
 # ----------------------------------------------------------------------
-COMPOUND_ATTRIBUTE_INFO                                                     = AttributeInfo(
-    optional_items=[                                                        # By default, compound objects referencing other compound objects will aggregate the compound element's
-                                                                            # data. Set this value to True if polymorphic behavior is desired instead.
-        Attribute(
-            COMPOUND_POLYMORPHIC_ATTRIBUTE_NAME,
-            BoolTypeInfo(),
-            validate_func=_ValidatePolymorphic,
-            default_value=False,
-        ),
-                                                                            # Compound elements that reference polymorphic elements will be polymorphic as well unless this value
-                                                                            # is provided and set to True
-        Attribute(
-            COMPOUND_SUPPRESS_POLYMORPHIC_ATTRIBUTE_NAME,
-            BoolTypeInfo(),
-            validate_func=_ValidateSuppressPolymorphic,
-        ),
-    ]
-)
+COMPOUND_ATTRIBUTE_INFO                     = AttributeInfo()
 
 SIMPLE_ATTRIBUTE_INFO                                                       = AttributeInfo(
     optional_items=[                                                        # Create a named child with this name for plugins that don't support simple objects
@@ -499,32 +471,6 @@ def __ValidateRefinesArity(plugin, element):                                # <U
         )
 
     return None
-
-
-# ----------------------------------------------------------------------
-def __ValidatePolymorphic(plugin, element):
-    if element.Parent is None and element.IsDefinitionOnly:
-        return "'{}' may not be used on base elements that are definitions".format(
-            COMPOUND_POLYMORPHIC_ATTRIBUTE_NAME,
-        )
-
-    return None
-
-
-# ----------------------------------------------------------------------
-def __ValidateSuppressPolymorphic(plugin, element):     # <Unused argument> pylint: disable = W0613
-                                                        # The attribute 'polymorphic' must appear somewhere in the hierarchy and be set to true
-
-    while isinstance(element, Elements.Element):                                                                                        # <Unused argument> pylint: disable = W0613
-        if COMPOUND_POLYMORPHIC_ATTRIBUTE_NAME in element.Attributes and element.Attributes[COMPOUND_POLYMORPHIC_ATTRIBUTE_NAME].Value:
-            return None
-
-        element = element.Reference
-
-    return "'{}' can only be used on elements that references another element with '{}' set to true".format(
-        COMPOUND_SUPPRESS_POLYMORPHIC_ATTRIBUTE_NAME,
-        COMPOUND_POLYMORPHIC_ATTRIBUTE_NAME,
-    )
 
 
 # ----------------------------------------------------------------------

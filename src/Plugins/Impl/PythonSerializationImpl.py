@@ -217,6 +217,7 @@ class PythonSerializationImpl(PluginBase):
                             # ----------------------------------------------------------------------
                             # <Method name "..." doesn't conform to PascalCase naming style> pylint: disable = C0103
                             # <Line too long> pylint: disable = C0301
+                            # <Too many lines in module> pylint: disable = C0302
                             # <Wrong hanging indentation> pylint: disable = C0330
 
                             # <Too few public methods> pylint: disable = R0903
@@ -230,6 +231,10 @@ class PythonSerializationImpl(PluginBase):
 
 
                             class Object(object):
+                                def __init__(self):
+                                    # BugBug: Populate attribute names
+                                    self._attribute_names                                               = set()
+
                                 def __repr__(self):
                                     return CommonEnvironment.ObjectReprImpl(self)
 

@@ -88,6 +88,7 @@ class PythonSourceStatementWriter(SourceStatementWriter):
     @classmethod
     @Interface.override
     def GetApplyAdditionalData(cls, dest_writer):
+        # TODO: This method could use some refinement; match with PythonXmlPlugin
         temporary_element = dest_writer.CreateTemporaryElement(
             "k",
             is_collection=False,
@@ -149,6 +150,7 @@ class PythonSourceStatementWriter(SourceStatementWriter):
     @classmethod
     @Interface.override
     def GetClassUtilityMethods(cls, dest_writer):
+        # TODO: This method could use some refinement; match with PythonXmlPlugin
         temp_element = cls.CreateTemporaryElement(
             "key",
             is_collection=False,
@@ -190,7 +192,7 @@ class PythonSourceStatementWriter(SourceStatementWriter):
                         try:
                             {append_list_item}
                         except:
-                            _DecorateActiveException("Index {{}}".format(key, item_index))
+                            _DecorateActiveException("Index {{}}".format(item_index))
 
                     return result
 

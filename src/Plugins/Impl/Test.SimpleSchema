@@ -26,6 +26,6 @@
 
     <_any any>
 
-<simple string>:
+<simple string fundamental_name="name">:
     [a int]
     [b bool ?]

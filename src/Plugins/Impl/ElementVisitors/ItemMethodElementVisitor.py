@@ -111,8 +111,23 @@ class ItemMethodElementVisitor(ElementVisitor):
     # ----------------------------------------------------------------------
     @Interface.override
     def OnVariant(self, element):
-        self._output_stream.write("BugBug: OnVariant - {}".format(ToPythonName(element)))
+        python_name = ToPythonName(element)
 
+        self._output_stream.write(
+            textwrap.dedent(
+                """\
+                # ----------------------------------------------------------------------
+                @classmethod
+                def _{python_name}_Item(cls, item):
+                    # BugBug: OnVariant
+                    return
+
+                """,
+            ).format(
+                python_name=python_name,
+            )
+        )
+        
     # ----------------------------------------------------------------------
     @Interface.override
     def OnReference(self, element):
@@ -122,12 +137,42 @@ class ItemMethodElementVisitor(ElementVisitor):
     # ----------------------------------------------------------------------
     @Interface.override
     def OnList(self, element):
-        self._output_stream.write("BugBug: OnList - {}".format(ToPythonName(element)))
+        python_name = ToPythonName(element)
+        
+        self._output_stream.write(
+            textwrap.dedent(
+                """\
+                # ----------------------------------------------------------------------
+                @classmethod
+                def _{python_name}_Item(cls, item):
+                    # BugBug: OnList
+                    return
+
+                """,
+            ).format(
+                python_name=python_name,
+            )
+        )
 
     # ----------------------------------------------------------------------
     @Interface.override
     def OnAny(self, element):
-        self._output_stream.write("BugBug: OnAny - {}".format(ToPythonName(element)))
+        python_name = ToPythonName(element)
+        
+        self._output_stream.write(
+            textwrap.dedent(
+                """\
+                # ----------------------------------------------------------------------
+                @classmethod
+                def _{python_name}_Item(cls, item):
+                    # BugBug: OnAny
+                    return
+
+                """,
+            ).format(
+                python_name=python_name,
+            )
+        )
 
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------

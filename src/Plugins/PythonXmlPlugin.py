@@ -138,6 +138,7 @@ class Plugin(PythonSerializationImpl):
         @classmethod
         @Interface.override
         def GetApplyAdditionalData(cls, dest_writer):
+            # TODO: This method could use some refinement; match with PythonSourceStatementWriter.py
             temp_element = cls.CreateTemporaryElement(
                 "k",
                 is_collection=False,
@@ -200,6 +201,7 @@ class Plugin(PythonSerializationImpl):
         @classmethod
         @Interface.override
         def GetClassUtilityMethods(cls, dest_writer):
+            # TODO: This method could use some refinement; match with PythonSourceStatementWriter.py
             return textwrap.dedent(
                 """\
                 # ----------------------------------------------------------------------
@@ -441,17 +443,18 @@ class Plugin(PythonSerializationImpl):
 
                     i = "\\n" + level * "  "
 
-                    if len(elem):
+                    if elem:
                         if not elem.text or not elem.text.strip():
                             elem.text = i + "  "
                         if not elem.tail or not elem.tail.strip():
                             elem.tail = i
 
-                        for elem in elem:
-                            _XmlPrettyPrint(elem, level + 1)
+                        for child in elem:
+                            _XmlPrettyPrint(child, level + 1)
 
-                        if not elem.tail or not elem.tail.strip():
-                            elem.tail = i
+                        # <Using possibly undefined loop variable 'child'> pylint: disable = W0631
+                        if not child.tail or not child.tail.strip():
+                            child.tail = i
                     else:
                         if level and (not elem.tail or not elem.tail.strip()):
                             elem.tail = i

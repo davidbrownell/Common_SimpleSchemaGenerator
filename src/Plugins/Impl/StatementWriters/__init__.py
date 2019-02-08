@@ -38,7 +38,8 @@ with InitRelativeImports():
 class StatementWriter(Interface.Interface):
     """Contains helper methods used by all StatementWriter objects."""
 
-    SIMPLE_ELEMENT_FUNDAMENTAL_ATTRIBUTE_NAME           = "text_value__"
+    SIMPLE_ELEMENT_FUNDAMENTAL_ATTRIBUTE_NAME           = "_text_attribute_name"
+    ATTRIBUTES_ATTRIBUTE_NAME                           = "_attribute_names"
 
     # ----------------------------------------------------------------------
     @Interface.abstractproperty
@@ -124,8 +125,22 @@ class SourceStatementWriter(StatementWriter):
     # ----------------------------------------------------------------------
     @staticmethod
     @Interface.abstractmethod
-    def GetApplyAdditionalData(dest_writer):
-        """Creates the statements for the _ApplyAdditionalData method"""
+    def GetAdditionalDataChildren():
+        """\
+        Statement that is a list of name/child pairs of all additional data items.
+        The variable `exclude_names: set` can be used to determine what has already been
+        processed.
+        """
+        raise Exception("Abstract method")
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @Interface.abstractmethod
+    def CreateAdditionalDataItem(dest_writer, name_var_name, source_var_name):
+        """\
+        Returns the body of the CreateAdditionalDataItem method, which converts from
+        a source to a dest item.
+        """
         raise Exception("Abstract method")
 
     # ----------------------------------------------------------------------
@@ -174,7 +189,11 @@ class DestinationStatementWriter(StatementWriter):
     # ----------------------------------------------------------------------
     @staticmethod
     @Interface.abstractmethod
-    def AppendChild(child_element, parent_var_name, var_name_or_none):
+    def AppendChild(
+        child_element,
+        parent_var_name,
+        var_name_or_none,
+    ):
         """Appends a child to an existing CompoundElement"""
         raise Exception("Abstract method")
 

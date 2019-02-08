@@ -46,7 +46,7 @@ with InitRelativeImports():
     from ...Plugin import ParseFlag
 
 # ----------------------------------------------------------------------
-# <Wrong hanging indentation> pylint: disable = C0330
+# <Access to a protected member> pylint: disable = W0212
 
 # ----------------------------------------------------------------------
 def Transform(root, plugin):

@@ -16,15 +16,12 @@
 
 import itertools
 import os
-import sys
 
 import six
 
 import CommonEnvironment
-from CommonEnvironment.CallOnExit import CallOnExit
-from CommonEnvironment import StringHelpers
 
-from CommonEnvironment.TypeInfo import Arity, ValidationException
+from CommonEnvironment.TypeInfo import ValidationException
 from CommonEnvironment.TypeInfo.FundamentalTypes.Serialization.StringSerialization import StringSerialization
 
 from CommonEnvironmentEx.Package import InitRelativeImports

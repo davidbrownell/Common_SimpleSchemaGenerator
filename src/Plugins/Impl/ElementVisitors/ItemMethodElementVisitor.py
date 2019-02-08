@@ -111,6 +111,8 @@ class ItemMethodElementVisitor(ElementVisitor):
     # ----------------------------------------------------------------------
     @Interface.override
     def OnVariant(self, element):
+        raise NotImplementedError("TODO: Variant")
+
         python_name = ToPythonName(element)
 
         self._output_stream.write(
@@ -119,7 +121,6 @@ class ItemMethodElementVisitor(ElementVisitor):
                 # ----------------------------------------------------------------------
                 @classmethod
                 def _{python_name}_Item(cls, item):
-                    # BugBug: OnVariant
                     return
 
                 """,
@@ -137,40 +138,53 @@ class ItemMethodElementVisitor(ElementVisitor):
     # ----------------------------------------------------------------------
     @Interface.override
     def OnList(self, element):
-        python_name = ToPythonName(element)
-        
+        raise NotImplementedError("TODO: List")
+
+        # TODO: Verify that this code works
+        # TODO: Validate arity
+
         self._output_stream.write(
             textwrap.dedent(
                 """\
                 # ----------------------------------------------------------------------
                 @classmethod
                 def _{python_name}_Item(cls, item):
-                    # BugBug: OnList
-                    return
+                    results = []
+
+                    for index, child in enumerate(item):
+                        try:
+                            results.append(cls.{reference_name}(child))
+                        except:
+                            _DecorateActiveException("Index {{}}".format(index))
+
+                    return results
 
                 """,
             ).format(
-                python_name=python_name,
+                python_name=ToPythonName(element),
+                reference_name=ToPythonName(element.Reference),
             )
         )
 
     # ----------------------------------------------------------------------
     @Interface.override
     def OnAny(self, element):
-        python_name = ToPythonName(element)
-        
+        raise NotImplementedError("TODO: Any")
+
+        # TODO: Verify that this works
+
         self._output_stream.write(
             textwrap.dedent(
                 """\
                 # ----------------------------------------------------------------------
                 @classmethod
                 def _{python_name}_Item(cls, item):
-                    # BugBug: OnAny
-                    return
+                    return cls._CreateAdditionalDataItem("{name}", item)
 
                 """,
             ).format(
-                python_name=python_name,
+                python_name=ToPythonName(element),
+                name=element.Name,
             )
         )
 

@@ -137,61 +137,90 @@ class Plugin(PythonSerializationImpl):
         # ----------------------------------------------------------------------
         @classmethod
         @Interface.override
-        def GetApplyAdditionalData(cls, dest_writer):
-            # TODO: This method could use some refinement; match with PythonSourceStatementWriter.py
-            temp_element = cls.CreateTemporaryElement(
-                "k",
-                is_collection=False,
-            )
-
+        def GetAdditionalDataChildren(cls):
+            return "cls._GenerateAdditionalDataChildren(source, exclude_names)"
+            
+        # ----------------------------------------------------------------------
+        @classmethod
+        @Interface.override
+        def CreateAdditionalDataItem(cls, dest_writer, name_var_name, source_var_name):
             return textwrap.dedent(
                 """\
-                for k, v in six.iteritems(source.attrib):
-                    if k.startswith("_") or k in exclude_names:
+                attributes = OrderedDict()
+
+                for k, v in six.iteritems({source_var_name}.attrib):
+                    if k.startswith("_"):
                         continue
 
-                    {append_attribute}
+                    attributes[k] = v
 
-                additional_data_items = {{}}
+                if {source_var_name}.text and {source_var_name}.text.strip() and not {source_var_name}:
+                    return {simple_element}
 
-                for e in source:
-                    if e.tag.startswith("_") or e.tag in exclude_names:
-                        continue
+                result = {compound_statement}
 
+                for child_name, child_or_children in cls._GenerateAdditionalDataChildren({source_var_name}, set()):
                     try:
-                        additional_data_items.setdefault(e.tag, []).append(cls._CreateAdditionalDataItem(e))
+                        if isinstance(child_or_children, list):
+                            new_items = []
+
+                            for index, child in enumerate(child_or_children):
+                                try:
+                                    new_items.append(cls._CreateAdditionalDataItem("{item_name}", child))
+                                except:
+                                    _DecorateActiveException("Index {{}}".format(index))
+
+                            {append_children}
+                        else:
+                            new_item = cls._CreateAdditionalDataItem(child_name, child_or_children)
+                            
+                            {append_child}
                     except:
-                        frame_desc = e.tag
+                        _DecorateActiveException(child_name)
 
-                        if e.tag in additional_data_items and additional_data_items[e.tag]:
-                            frame_desc = "{{}} - Index {{}}".format(frame_desc, len(additional_data_items[e.tag]))
-
-                        _DecorateActiveException(frame_desc)
-
-                for k, v in six.iteritems(additional_data_items):
-                    if len(v) == 1:
-                        {append}
-                    else:
-                        {append_children}
+                return result
 
                 """,
             ).format(
-                append_attribute=StringHelpers.LeftJustify(
-                    dest_writer.AppendChild(temp_element, "dest", "v"),
-                    4,
+                source_var_name=source_var_name,
+                item_name=Plugin.COLLECTION_ITEM_NAME,
+                compound_statement=dest_writer.CreateCompoundElement(
+                    cls.CreateTemporaryElement(
+                        "{}.tag".format(source_var_name),
+                        is_collection=False,
+                    ),
+                    "attributes",
                 ).strip(),
-                append=StringHelpers.LeftJustify(
-                    dest_writer.AppendChild(temp_element, "dest", "v[0]"),
-                    8,
+                simple_element=StringHelpers.LeftJustify(
+                    dest_writer.CreateSimpleElement(
+                        cls.CreateTemporaryElement(
+                            "{}.tag".format(source_var_name),
+                            is_collection=False,
+                        ),
+                        "attributes",
+                        "{}.text".format(source_var_name),
+                    ),
+                    4,
                 ).strip(),
                 append_children=StringHelpers.LeftJustify(
                     dest_writer.AppendChild(
                         cls.CreateTemporaryElement(
-                            "k",
+                            "child_name",
                             is_collection=True,
                         ),
-                        "dest",
-                        "v",
+                        "result",
+                        "new_items",
+                    ),
+                    12,
+                ).strip(),
+                append_child=StringHelpers.LeftJustify(
+                    dest_writer.AppendChild(
+                        cls.CreateTemporaryElement(
+                            "child_name",
+                            is_collection=False,
+                        ),
+                        "result",
+                        "new_item",
                     ),
                     8,
                 ).strip(),
@@ -201,7 +230,6 @@ class Plugin(PythonSerializationImpl):
         @classmethod
         @Interface.override
         def GetClassUtilityMethods(cls, dest_writer):
-            # TODO: This method could use some refinement; match with PythonSourceStatementWriter.py
             return textwrap.dedent(
                 """\
                 # ----------------------------------------------------------------------
@@ -218,65 +246,22 @@ class Plugin(PythonSerializationImpl):
                     return value
 
                 # ----------------------------------------------------------------------
-                @classmethod
-                def _CreateAdditionalDataItem(cls, element):
-                    children = {{}}
+                def _GenerateAdditionalDataChildren(element, exclude_names):
+                    children = OrderedDict()
 
                     for child in element:
-                        try:
-                            children.setdefault(child.tag, []).append(cls._CreateAdditionalDataItem(child))
-                        except:
-                            frame_desc = child.tag
+                        if child.tag.startswith("_") or child.tag in exclude_names:
+                            continue
 
-                            if child.tag in children and children[child.tag]:
-                                frame_desc = "{{}} - Index {{}}".format(frame_desc, len(children[child.tag]))
-
-                            _DecorateActiveException(frame_desc)
-
-                    if element.text.strip():
-                        if "{text_key}" in children:
-                            raise SerializeException("'{text_key}' is a child element and can't be used to store the element's text")
-
-                        children["{text_key}"] = [element.text]
-
-                    for k in six.iterkeys(element.attrib):
-                        if k in children:
-                            raise SerializeException("'{{}}' is a child element and can't be used to store an attribute with the same name".format(k))
-
-                    result = {create}
+                        children.setdefault(child.tag, []).append(child)
 
                     for k, v in six.iteritems(children):
                         if len(v) == 1:
-                            v = v[0]
-
-                        {append}
-
-                    return result
+                            yield k, v[0]
+                        else:
+                            yield k, v
 
                 """,
-            ).format(
-                create=StringHelpers.LeftJustify(
-                    dest_writer.CreateCompoundElement(
-                        cls.CreateTemporaryElement(
-                            "result",
-                            is_collection=False,
-                        ),
-                        "element.attrib",
-                    ),
-                    4,
-                ).strip(),
-                append=StringHelpers.LeftJustify(
-                    dest_writer.AppendChild(
-                        cls.CreateTemporaryElement(
-                            "k",
-                            is_collection=False,
-                        ),
-                        "result",
-                        "v",
-                    ),
-                    4,
-                ).strip(),
-                text_key=cls.SIMPLE_ELEMENT_FUNDAMENTAL_ATTRIBUTE_NAME,
             )
 
         # ----------------------------------------------------------------------
@@ -371,7 +356,12 @@ class Plugin(PythonSerializationImpl):
         # ----------------------------------------------------------------------
         @classmethod
         @Interface.override
-        def AppendChild(cls, child_element, parent_var_name, var_name_or_none):
+        def AppendChild(
+            cls,
+            child_element,
+            parent_var_name,
+            var_name_or_none,
+        ):
             if child_element.TypeInfo.Arity.IsCollection:
                 return "{parent_var_name}.append(_CreateXmlCollection({element_name}, {var_name}))".format(
                     parent_var_name=parent_var_name,
@@ -418,7 +408,7 @@ class Plugin(PythonSerializationImpl):
                 ):
                     result = ET.Element(
                         element_name,
-                        attrib=attributes or {},
+                        attrib=attributes or {{}},
                     )
 
                     if text_value is not None:
@@ -432,6 +422,7 @@ class Plugin(PythonSerializationImpl):
                     result = _CreateXmlElement(element_name)
 
                     for item in (items_or_none or []):
+                        item.tag = "{item_name}"
                         result.append(item)
 
                     return result
@@ -462,6 +453,8 @@ class Plugin(PythonSerializationImpl):
                     return original
 
                 """,
+            ).format(
+                item_name=Plugin.COLLECTION_ITEM_NAME,
             )
 
     # ----------------------------------------------------------------------

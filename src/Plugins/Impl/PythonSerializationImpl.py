@@ -227,18 +227,6 @@ class PythonSerializationImpl(PluginBase):
 
 
                             # ----------------------------------------------------------------------
-                            class DoesNotExist(object):                                                 pass
-
-
-                            class Object(object):
-                                def __init__(self):
-                                    # BugBug: Populate attribute names
-                                    self._attribute_names                                               = set()
-
-                                def __repr__(self):
-                                    return CommonEnvironment.ObjectReprImpl(self)
-
-
                             class SerializationException(Exception):
                                 def __init__(self, ex_or_string):
                                     if isinstance(ex_or_string, six.string_types):
@@ -254,6 +242,9 @@ class PythonSerializationImpl(PluginBase):
                             class DeserializeException(SerializationException):                         pass
 
 
+                            class DoesNotExist(object):                                                 pass
+                                
+                            
                             """,
                         )
                     )
@@ -582,7 +573,7 @@ class PythonSerializationImpl(PluginBase):
                 create_compound=StringHelpers.LeftJustify(
                     dest_writer.CreateCompoundElement(
                         dest_writer.CreateTemporaryElement(
-                            '"<root>"',
+                            '"_"',
                             is_collection=False,
                         ),
                         None,
@@ -1045,32 +1036,11 @@ class PythonSerializationImpl(PluginBase):
             is_serializer,
         ).Accept(elements)
 
-        # _ApplyAdditionalData
-        indented_stream.write(
-            textwrap.dedent(
-                """\
-                # ----------------------------------------------------------------------
-                # ----------------------------------------------------------------------
-                # ----------------------------------------------------------------------
-                @classmethod
-                def _ApplyAdditionalData(
-                    cls,
-                    source,
-                    dest,
-                    exclude_names=None,
-                ):
-                    exclude_names = exclude_names or set()
-
-                    {}
-
-                """,
-            ).format(
-                StringHelpers.LeftJustify(
-                    source_writer.GetApplyAdditionalData(dest_writer).strip(),
-                    4,
-                ).strip(),
-            )
-        )
+        indented_stream.write(textwrap.dedent(
+            """\
+            # ----------------------------------------------------------------------
+            # ----------------------------------------------------------------------
+            """))
 
         # _ApplyOptionalChild/_ApplyOptionalChildren/_ApplyOptionalAttribute
         content_template = textwrap.dedent(
@@ -1157,6 +1127,86 @@ class PythonSerializationImpl(PluginBase):
                 add_child="dest[attribute_name] = value",
                 add_child_empty="dest[attribute_name] = None",
             )
+        )
+
+        # _ApplyAdditionalData
+        indented_stream.write(
+            textwrap.dedent(
+                """\
+                # ----------------------------------------------------------------------
+                @classmethod
+                def _ApplyAdditionalData(
+                    cls,
+                    source,
+                    dest,
+                    exclude_names,
+                ):
+                    for name, child in {get_additional_children}:
+                        try:
+                            if isinstance(child, list):
+                                children = []
+
+                                for index, item in enumerate(child):
+                                    item_name = "Index {{}}".format(index)
+
+                                    try:
+                                        children.append(cls._CreateAdditionalDataItem(item_name, item))
+                                    except:
+                                        _DecorateActiveException(item_name)
+
+                                {append_children}
+                            else:
+                                {append}
+                        except:
+                            _DecorateActiveException(name)
+
+                """,
+            ).format(
+                get_additional_children=StringHelpers.LeftJustify(
+                    source_writer.GetAdditionalDataChildren(),
+                    4,
+                ).strip(),
+                append=StringHelpers.LeftJustify(
+                    dest_writer.AppendChild(
+                        source_writer.CreateTemporaryElement(
+                            "name",
+                            is_collection=False,
+                        ),
+                        "dest",
+                        "cls._CreateAdditionalDataItem(name, child)",
+                    ),
+                    12,
+                ).strip(),
+                append_children=StringHelpers.LeftJustify(
+                    dest_writer.AppendChild(
+                        source_writer.CreateTemporaryElement(
+                            "name",
+                            is_collection=True,
+                        ),
+                        "dest",
+                        "children",
+                    ),
+                    12,
+                ).strip(),
+            )
+        )
+
+        # _CreateAdditionalDataItem
+        indented_stream.write(
+            textwrap.dedent(
+                """\
+                # ----------------------------------------------------------------------
+                @classmethod
+                def _CreateAdditionalDataItem(cls, name, source):
+                    {statements}
+
+                """,
+            ).format(
+                statements=StringHelpers.LeftJustify(
+                    source_writer.CreateAdditionalDataItem(dest_writer, "name", "source"),
+                    4,
+                ).strip(),
+            ),
         )
 
         # Write the utility funcs

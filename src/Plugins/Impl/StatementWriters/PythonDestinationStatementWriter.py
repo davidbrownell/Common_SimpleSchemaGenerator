@@ -60,13 +60,14 @@ class PythonDestinationStatementWriter(DestinationStatementWriter):
             """\
             _CreatePythonObject(
                 attributes={attributes},
-                **{{"{value_name}": {fundamental}}},
+                **{{"{value_name}": {fundamental}, "{simple_element_fundamental}": "{value_name}"}},
             )
             """,
         ).format(
             attributes=attributes_var_or_none or "None",
-            value_name=element.FundamentalAttributeName,
+            value_name=getattr(element, "FundamentalAttributeName", "simple_value"),
             fundamental=fundamental_statement,
+            simple_element_fundamental=cls.SIMPLE_ELEMENT_FUNDAMENTAL_ATTRIBUTE_NAME,
         )
 
     # ----------------------------------------------------------------------
@@ -78,7 +79,12 @@ class PythonDestinationStatementWriter(DestinationStatementWriter):
     # ----------------------------------------------------------------------
     @classmethod
     @Interface.override
-    def AppendChild(cls, child_element, parent_var_name, var_name_or_none):
+    def AppendChild(
+        cls,
+        child_element,
+        parent_var_name,
+        var_name_or_none,
+    ):
         if var_name_or_none is None:
             var_name_or_none = "[]" if child_element.TypeInfo.Arity.IsCollection else "None"
 
@@ -95,23 +101,39 @@ class PythonDestinationStatementWriter(DestinationStatementWriter):
         raise Exception("This should not be called for python objects")
 
     # ----------------------------------------------------------------------
-    @staticmethod
+    @classmethod
     @Interface.override
-    def GetGlobalUtilityMethods(source_writer):
+    def GetGlobalUtilityMethods(cls, source_writer):
         return textwrap.dedent(
             """\
+            # ----------------------------------------------------------------------
+            class Object(object):
+                def __init__(self):
+                    self.{additional_data} = set()
+            
+                def __repr__(self):
+                    return CommonEnvironment.ObjectReprImpl(self)
+
+
             # ----------------------------------------------------------------------
             def _CreatePythonObject(
                 attributes=None,
                 **kwargs
             ):
+                attributes = attributes or {{}}
+
                 result = Object()
 
-                for d in [attributes or {}, kwargs]:
+                for d in [attributes, kwargs]:
                     for k, v in six.iteritems(d):
                         setattr(result, k, v)
+
+                for k in six.iterkeys(attributes):
+                    result.{additional_data}.add(k)
 
                 return result
 
             """,
+        ).format(
+            additional_data=cls.ATTRIBUTES_ATTRIBUTE_NAME,
         )

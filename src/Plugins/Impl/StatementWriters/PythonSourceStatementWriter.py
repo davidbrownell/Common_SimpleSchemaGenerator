@@ -87,51 +87,77 @@ class PythonSourceStatementWriter(SourceStatementWriter):
     # ----------------------------------------------------------------------
     @classmethod
     @Interface.override
-    def GetApplyAdditionalData(cls, dest_writer):
-        # TODO: This method could use some refinement; match with PythonXmlPlugin
-        temporary_element = dest_writer.CreateTemporaryElement(
-            "k",
+    def GetAdditionalDataChildren(cls):
+        return '[(k, v) for k, v in six.iteritems(source if isinstance(source, dict) else source.__dict__) if not k.startswith("_") and k not in exclude_names]'
+
+    # ----------------------------------------------------------------------
+    @classmethod
+    @Interface.override
+    def CreateAdditionalDataItem(cls, dest_writer, name_var_name, source_var_name):
+        temporary_element = cls.CreateTemporaryElement(
+            name_var_name,
             is_collection=False,
         )
 
         return textwrap.dedent(
             """\
-            if not isinstance(source, dict):
-                source = source.__dict__
+            if not isinstance({source_var_name}, dict):
+                {source_var_name} = {source_var_name}.__dict__
 
-            additional_data_items = {{}}
+            attributes = OrderedDict()
+            items = OrderedDict()
 
             for k, v in six.iteritems(source):
-                if k.startswith("_") or k in exclude_names:
+                if k.startswith("_"):
                     continue
 
-                try:
-                    additional_data_items.setdefault(k, []).append(cls._CreateAdditionalDataItem(k, v))
-                except:
-                    frame_desc = k
-
-                    if k in additional_data_items and additional_data_items[k]:
-                        frame_desc = "{{}} - Index {{}}".format(frame_desc, len(additional_data_items[k]))
-
-                    _DecorateActiveException(frame_desc)
-
-            for k, v in six.iteritems(additional_data_items):
-                if len(v) == 1:
-                    {append}
+                if k in {source_var_name}["{attribute_names}"]:
+                    attributes[k] = v
                 else:
-                    {append_children}
+                    items[k] = v
+
+            if len(items) == 1 and next(six.iterkeys(items)) == {source_var_name}.get("{fundamental_name}", None):
+                return {simple_statement}
+
+            result = {compound_statement}
+
+            for k, v in six.iteritems(items):
+                try:
+                    if isinstance(v, list):
+                        new_items = []
+
+                        for index, child in enumerate(v):
+                            try:
+                                new_items.append(cls._CreateAdditionalDataItem("item", child))
+                            except:
+                                _DecorateActiveException("Index {{}}".format(index))
+                        
+                        {append_children}
+                    else:
+                        new_item = cls._CreateAdditionalDataItem(k, v)
+
+                        {append_child}
+                except:
+                    _DecorateActiveException(k)
+
+            return result
+
             """,
         ).format(
-            append=StringHelpers.LeftJustify(
-                dest_writer.AppendChild(
-                    cls.CreateTemporaryElement(
-                        "k",
-                        is_collection=False,
-                    ),
-                    "dest",
-                    "v[0]",
+            source_var_name=source_var_name,
+            attribute_names=cls.ATTRIBUTES_ATTRIBUTE_NAME,
+            fundamental_name=cls.SIMPLE_ELEMENT_FUNDAMENTAL_ATTRIBUTE_NAME,
+            simple_statement=StringHelpers.LeftJustify(
+                dest_writer.CreateSimpleElement(
+                    temporary_element,
+                    "attributes",
+                    '{}[{}["{}"]]'.format(source_var_name, source_var_name, cls.SIMPLE_ELEMENT_FUNDAMENTAL_ATTRIBUTE_NAME),
                 ),
-                8,
+                4,
+            ).strip(),
+            compound_statement=dest_writer.CreateCompoundElement(
+                temporary_element,
+                "attributes",
             ).strip(),
             append_children=StringHelpers.LeftJustify(
                 dest_writer.AppendChild(
@@ -139,8 +165,19 @@ class PythonSourceStatementWriter(SourceStatementWriter):
                         "k",
                         is_collection=True,
                     ),
-                    "dest",
-                    "v",
+                    "result",
+                    "new_items",
+                ),
+                12,
+            ).strip(),
+            append_child=StringHelpers.LeftJustify(
+                dest_writer.AppendChild(
+                    cls.CreateTemporaryElement(
+                        "k",
+                        is_collection=False,
+                    ),
+                    "result",
+                    "new_item",
                 ),
                 8,
             ).strip(),
@@ -150,17 +187,6 @@ class PythonSourceStatementWriter(SourceStatementWriter):
     @classmethod
     @Interface.override
     def GetClassUtilityMethods(cls, dest_writer):
-        # TODO: This method could use some refinement; match with PythonXmlPlugin
-        temp_element = cls.CreateTemporaryElement(
-            "key",
-            is_collection=False,
-        )
-
-        result_temp_element = cls.CreateTemporaryElement(
-            "result",
-            is_collection=False,
-        )
-
         return textwrap.dedent(
             """\
             # ----------------------------------------------------------------------
@@ -179,84 +205,5 @@ class PythonSourceStatementWriter(SourceStatementWriter):
 
                 return value
 
-            # ----------------------------------------------------------------------
-            @classmethod
-            def _CreateAdditionalDataItem(cls, key, element):
-                if isinstance(element, six.string_types):
-                    return {create_string_element}
-
-                if isinstance(element, list):
-                    result = {create_list_element}
-
-                    for item_index, item in enumerate(element):
-                        try:
-                            {append_list_item}
-                        except:
-                            _DecorateActiveException("Index {{}}".format(item_index))
-
-                    return result
-
-                if not isinstance(element, dict):
-                    element = element.__dict__
-
-                if "{text_key}" in element:
-                    attributes = {{}}
-                    fundamental_value = None
-
-                    for k, v in six.iteritems(element):
-                        if k == "{text_key}":
-                            fundamental_value = v
-                        else:
-                            if not isinstance(v, six.string_types):
-                                raise SerializeException("SimpleElement attributes must by string values ({{}}: {{}})".format(k, v))
-
-                            attributes[k] = v
-
-                    return {create_simple_element}
-
-                result = {create_compound_element}
-
-                for k, v in six.iteritems(element):
-                    try:
-                        {append_standard_item}
-                    except:
-                        _DecorateActiveException(key)
-
-                return result
-
             """,
-        ).format(
-            create_string_element=StringHelpers.LeftJustify(
-                dest_writer.CreateSimpleElement(temp_element, None, "element"),
-                8,
-            ).strip(),
-            create_list_element=StringHelpers.LeftJustify(
-                dest_writer.CreateCompoundElement(temp_element, None),
-                8,
-            ).strip(),
-            create_simple_element=StringHelpers.LeftJustify(
-                dest_writer.CreateSimpleElement(temp_element, "attributes", "fundamental_value"),
-                8,
-            ).strip(),
-            append_list_item=StringHelpers.LeftJustify(
-                dest_writer.AppendChild(
-                    result_temp_element,
-                    "result",
-                    'cls._CreateAdditionalDataItem("item", item)',
-                ),
-                16,
-            ).strip(),
-            append_standard_item=StringHelpers.LeftJustify(
-                dest_writer.AppendChild(
-                    result_temp_element,
-                    "result",
-                    "cls._CreateAdditionalDataItem(k, v)",
-                ),
-                8,
-            ).strip(),
-            create_compound_element=StringHelpers.LeftJustify(
-                dest_writer.CreateCompoundElement(temp_element, None),
-                4,
-            ).strip(),
-            text_key=cls.SIMPLE_ELEMENT_FUNDAMENTAL_ATTRIBUTE_NAME,
         )

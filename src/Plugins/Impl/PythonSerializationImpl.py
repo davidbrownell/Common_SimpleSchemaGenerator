@@ -206,7 +206,7 @@ class PythonSerializationImpl(PluginBase):
 
                         # ----------------------------------------------------------------------
                         """,
-                    )
+                    ),
                 )
 
                 cls._WriteFileHeader(f)
@@ -243,10 +243,10 @@ class PythonSerializationImpl(PluginBase):
 
 
                             class DoesNotExist(object):                                                 pass
-                                
-                            
+
+
                             """,
-                        )
+                        ),
                     )
 
                     if no_serialization and no_deserialization:
@@ -281,7 +281,7 @@ class PythonSerializationImpl(PluginBase):
                             # |  Utility Methods
                             # |
                             """,
-                        )
+                        ),
                     )
 
                     if not no_serialization:
@@ -376,7 +376,7 @@ class PythonSerializationImpl(PluginBase):
                                 # <The raise statement is not inside an except clause> pylint: disable = E0704
                                 raise
                             """,
-                        )
+                        ),
                     )
 
             # Open the file again and trim all empty lines; this
@@ -540,7 +540,7 @@ class PythonSerializationImpl(PluginBase):
                         dest_writer.AppendChild(element, "result", None),
                         4,
                     ).strip(),
-                )
+                ),
             )
 
         output_stream.write(
@@ -584,7 +584,7 @@ class PythonSerializationImpl(PluginBase):
                     StringHelpers.LeftJustify("{}\n\n".format(suffix), 4).strip(),
                 ) if suffix else "",
                 statements=StringHelpers.LeftJustify("".join(statements), 4).strip(),
-            )
+            ),
         )
 
     # ----------------------------------------------------------------------
@@ -682,7 +682,7 @@ class PythonSerializationImpl(PluginBase):
                     dest_type=dest_writer.ObjectTypeDesc,
                     convenience=StringHelpers.LeftJustify(convenience_conversions, 4).strip(),
                     suffix=StringHelpers.LeftJustify(suffix, 4),
-                )
+                ),
             )
 
     # ----------------------------------------------------------------------
@@ -697,7 +697,7 @@ class PythonSerializationImpl(PluginBase):
                 # |
                 # ----------------------------------------------------------------------
                 """,
-            )
+            ),
         )
 
         type_info_template = "{0:<75} = {1}\n"
@@ -774,7 +774,7 @@ class PythonSerializationImpl(PluginBase):
                 class Serializer(object):
 
                 """,
-            )
+            ),
         )
 
         cls._WriteImpl(
@@ -812,7 +812,7 @@ class PythonSerializationImpl(PluginBase):
                 class Deserializer(object):
 
                 """,
-            )
+            ),
         )
 
         cls._WriteImpl(
@@ -886,7 +886,7 @@ class PythonSerializationImpl(PluginBase):
                             result_name=result_name,
                             arg_name=arg_name,
                             statement=statement,
-                        )
+                        ),
                     )
 
                     if unique_statement and not is_serializer:
@@ -910,7 +910,7 @@ class PythonSerializationImpl(PluginBase):
                         ).format(
                             result_name=result_name,
                             statement=statement,
-                        )
+                        ),
                     )
 
                 # ----------------------------------------------------------------------
@@ -937,7 +937,7 @@ class PythonSerializationImpl(PluginBase):
                     python_name=python_name,
                     arg_name=arg_name,
                     extra_params=extra_params,
-                )
+                ),
             )
 
             # Reference content...
@@ -952,7 +952,7 @@ class PythonSerializationImpl(PluginBase):
                         reference_python_name=ToPythonName(element.Reference),
                         arg_name=arg_name,
                         extra_params=extra_params,
-                    )
+                    ),
                 )
                 return
 
@@ -977,7 +977,7 @@ class PythonSerializationImpl(PluginBase):
                         python_name=python_name,
                         arg_name=arg_name,
                         does_not_exist_items=", ".join(does_not_exist_items),
-                    )
+                    ),
                 )
 
             ApplyContent(
@@ -997,7 +997,7 @@ class PythonSerializationImpl(PluginBase):
                     ).format(
                         python_name=python_name,
                         result_name=result_name,
-                    )
+                    ),
                 )
 
             content_stream.write(
@@ -1009,7 +1009,7 @@ class PythonSerializationImpl(PluginBase):
                     """,
                 ).format(
                     result_name=result_name,
-                )
+                ),
             )
 
         # ----------------------------------------------------------------------
@@ -1022,7 +1022,7 @@ class PythonSerializationImpl(PluginBase):
                 # ----------------------------------------------------------------------
                 # ----------------------------------------------------------------------
                 """,
-            )
+            ),
         )
 
         # Item_ methods
@@ -1036,11 +1036,14 @@ class PythonSerializationImpl(PluginBase):
             is_serializer,
         ).Accept(elements)
 
-        indented_stream.write(textwrap.dedent(
-            """\
-            # ----------------------------------------------------------------------
-            # ----------------------------------------------------------------------
-            """))
+        indented_stream.write(
+            textwrap.dedent(
+                """\
+                # ----------------------------------------------------------------------
+                # ----------------------------------------------------------------------
+                """,
+            ),
+        )
 
         # _ApplyOptionalChild/_ApplyOptionalChildren/_ApplyOptionalAttribute
         content_template = textwrap.dedent(
@@ -1188,7 +1191,7 @@ class PythonSerializationImpl(PluginBase):
                     ),
                     12,
                 ).strip(),
-            )
+            ),
         )
 
         # _CreateAdditionalDataItem

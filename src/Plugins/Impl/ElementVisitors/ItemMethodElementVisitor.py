@@ -95,7 +95,7 @@ class ItemMethodElementVisitor(ElementVisitor):
             ).format(
                 python_name=python_name,
                 statement=StringHelpers.LeftJustify(statement, 4).strip(),
-            )
+            ),
         )
 
     # ----------------------------------------------------------------------
@@ -126,9 +126,9 @@ class ItemMethodElementVisitor(ElementVisitor):
                 """,
             ).format(
                 python_name=python_name,
-            )
+            ),
         )
-        
+
     # ----------------------------------------------------------------------
     @Interface.override
     def OnReference(self, element):
@@ -163,7 +163,7 @@ class ItemMethodElementVisitor(ElementVisitor):
             ).format(
                 python_name=ToPythonName(element),
                 reference_name=ToPythonName(element.Reference),
-            )
+            ),
         )
 
     # ----------------------------------------------------------------------
@@ -185,7 +185,7 @@ class ItemMethodElementVisitor(ElementVisitor):
             ).format(
                 python_name=ToPythonName(element),
                 name=element.Name,
-            )
+            ),
         )
 
     # ----------------------------------------------------------------------
@@ -303,7 +303,7 @@ class ItemMethodElementVisitor(ElementVisitor):
                 ).format(
                     name=child.Name,
                     statement=StringHelpers.LeftJustify(statement, 4).strip(),
-                )
+                ),
             )
 
         if isinstance(element, Elements.SimpleElement):
@@ -418,5 +418,5 @@ class ItemMethodElementVisitor(ElementVisitor):
                 attribute_names=", ".join(
                     ['"{}"'.format(attribute_name) for attribute_name in attribute_names],
                 ),
-            )
+            ),
         )

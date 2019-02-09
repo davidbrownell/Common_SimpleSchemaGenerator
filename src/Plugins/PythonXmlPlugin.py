@@ -139,7 +139,7 @@ class Plugin(PythonSerializationImpl):
         @Interface.override
         def GetAdditionalDataChildren(cls):
             return "cls._GenerateAdditionalDataChildren(source, exclude_names)"
-            
+
         # ----------------------------------------------------------------------
         @classmethod
         @Interface.override
@@ -173,7 +173,7 @@ class Plugin(PythonSerializationImpl):
                             {append_children}
                         else:
                             new_item = cls._CreateAdditionalDataItem(child_name, child_or_children)
-                            
+
                             {append_child}
                     except:
                         _DecorateActiveException(child_name)
@@ -356,12 +356,7 @@ class Plugin(PythonSerializationImpl):
         # ----------------------------------------------------------------------
         @classmethod
         @Interface.override
-        def AppendChild(
-            cls,
-            child_element,
-            parent_var_name,
-            var_name_or_none,
-        ):
+        def AppendChild(cls, child_element, parent_var_name, var_name_or_none):
             if child_element.TypeInfo.Arity.IsCollection:
                 return "{parent_var_name}.append(_CreateXmlCollection({element_name}, {var_name}))".format(
                     parent_var_name=parent_var_name,
@@ -478,7 +473,7 @@ class Plugin(PythonSerializationImpl):
 
 
                 """,
-            )
+            ),
         )
 
     # ----------------------------------------------------------------------

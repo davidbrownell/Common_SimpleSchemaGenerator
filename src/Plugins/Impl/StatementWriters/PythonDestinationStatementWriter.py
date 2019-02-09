@@ -79,12 +79,7 @@ class PythonDestinationStatementWriter(DestinationStatementWriter):
     # ----------------------------------------------------------------------
     @classmethod
     @Interface.override
-    def AppendChild(
-        cls,
-        child_element,
-        parent_var_name,
-        var_name_or_none,
-    ):
+    def AppendChild(cls, child_element, parent_var_name, var_name_or_none):
         if var_name_or_none is None:
             var_name_or_none = "[]" if child_element.TypeInfo.Arity.IsCollection else "None"
 
@@ -110,7 +105,7 @@ class PythonDestinationStatementWriter(DestinationStatementWriter):
             class Object(object):
                 def __init__(self):
                     self.{additional_data} = set()
-            
+
                 def __repr__(self):
                     return CommonEnvironment.ObjectReprImpl(self)
 

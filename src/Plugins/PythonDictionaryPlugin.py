@@ -101,7 +101,7 @@ class Plugin(PluginBase):
                         cls._GenerateFileHeader(
                             prefix="# ",
                         ),
-                    )
+                    ),
                 )
 
                 nonlocals = CommonEnvironment.Nonlocals(
@@ -167,7 +167,7 @@ class Plugin(PluginBase):
                                 len(reversed_prefix),
                             ),
                             reversed_name=reversed_name,
-                        )
+                        ),
                     )
 
                     nonlocals.wrote_value = True

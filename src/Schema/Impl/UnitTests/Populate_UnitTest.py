@@ -72,7 +72,7 @@ class EnhancedStringSuite(unittest.TestCase):
                           test.
                           """
                 ''',
-            )
+            ),
         )
         self.assertTrue("config_name" in content.config)
         self.assertEqual(len(content.config["config_name"]), 1)
@@ -96,7 +96,7 @@ class EnhancedStringSuite(unittest.TestCase):
                           test.
                           '''
                 """,
-            )
+            ),
         )
         self.assertTrue("config_name" in content.config)
         self.assertEqual(len(content.config["config_name"]), 1)
@@ -116,7 +116,7 @@ class EnhancedStringSuite(unittest.TestCase):
                     simple_schema_config("test"):
                         one = '''Must be an initial newline'''
                     """,
-                )
+                ),
             ),
         )
 
@@ -131,7 +131,7 @@ class EnhancedStringSuite(unittest.TestCase):
                         one = '''
                               Must be trailing newline'''
                     """,
-                )
+                ),
             ),
         )
 
@@ -147,7 +147,7 @@ class EnhancedStringSuite(unittest.TestCase):
                               Misaligned footer
                         '''
                     """,
-                )
+                ),
             ),
         )
 
@@ -162,7 +162,7 @@ class EnhancedStringSuite(unittest.TestCase):
                             prefix
                               '''
                     """,
-                )
+                ),
             ),
         )
 
@@ -177,7 +177,7 @@ class EnhancedStringSuite(unittest.TestCase):
                   \t\tLine 2
                           '''
                 """,
-            )
+            ),
         )
         self.assertTrue("config_name" in content.config)
         self.assertEqual(len(content.config["config_name"]), 1)
@@ -196,7 +196,7 @@ class EnhancedStringSuite(unittest.TestCase):
                           Line 2
                           '''
                 """,
-            )
+            ),
         )
         self.assertTrue("config_name" in content.config)
         self.assertEqual(len(content.config["config_name"]), 1)
@@ -219,7 +219,7 @@ class StringListSuite(unittest.TestCase):
                 simple_schema_config("test"):
                     one = [ 'a', 'b', 'c', ]
                 """,
-            )
+            ),
         )
 
         self.assertTrue("test" in content.config)
@@ -233,7 +233,7 @@ class StringListSuite(unittest.TestCase):
                 simple_schema_config("test"):
                     one = [ "one", "two", "three", ]
                 """,
-            )
+            ),
         )
 
         self.assertTrue("test" in content.config)
@@ -275,7 +275,7 @@ class MetadataSuite(unittest.TestCase):
                 <foo     one='two'  three   =4
                     five=    6.5>
                 """,
-            )
+            ),
         ).items[0]
 
         self.assertEqual(list(item.metadata.Values.keys()), ["one", "three", "five"])
@@ -292,7 +292,7 @@ class MetadataSuite(unittest.TestCase):
                     """\
                     <foo one="two" one=3>
                     """,
-                )
+                ),
             ),
         )
 
@@ -359,7 +359,7 @@ class IncludeSuite(unittest.TestCase):
                     """\
                     <a_string string>
                     """,
-                )
+                ),
             )
 
         with CallOnExit(lambda: os.remove(include_filename)):
@@ -384,7 +384,7 @@ class IncludeSuite(unittest.TestCase):
 
                     <a_string1 string>
                     """,
-                ).format(include_filename2)
+                ).format(include_filename2),
             )
 
         with CallOnExit(lambda: os.remove(include_filename1)):
@@ -394,7 +394,7 @@ class IncludeSuite(unittest.TestCase):
                         """\
                         <a_string2 string>
                         """,
-                    )
+                    ),
                 )
 
             with CallOnExit(lambda: os.remove(include_filename2)):
@@ -435,7 +435,7 @@ class ConfigSuite(unittest.TestCase):
                     one = "two"
                     three = 4
                 """,
-            )
+            ),
         )
 
         self.assertEqual(list(root.config.keys()), ["test"])
@@ -456,7 +456,7 @@ class ConfigSuite(unittest.TestCase):
                     five = 6.0
 
                 """,
-            )
+            ),
         )
 
         self.assertEqual(list(root.config.keys()), ["test", "another"])
@@ -531,7 +531,7 @@ class UnnamedObjSuite(unittest.TestCase):
                     <>: pass
                     <>: pass
                 """,
-            )
+            ),
         )
 
         self.assertEqual(len(root.items), 1)
@@ -587,7 +587,7 @@ class UnnamedObjSuite(unittest.TestCase):
                     <one='two' three="four">:
                         pass
                     """,
-                )
+                ),
             )
         )
 
@@ -601,7 +601,7 @@ class UnnamedObjSuite(unittest.TestCase):
                     <one='two' three="four">:
                         pass
                     """,
-                )
+                ),
             )
         )
 
@@ -622,7 +622,7 @@ class UnnamedObjSuite(unittest.TestCase):
 
 
                     """,
-                )
+                ),
             )
         )
 
@@ -634,7 +634,7 @@ class UnnamedObjSuite(unittest.TestCase):
                     <one="two">: pass
                     <one='two' three="four">: pass
                     """,
-                )
+                ),
             )
         )
 
@@ -645,7 +645,7 @@ class UnnamedObjSuite(unittest.TestCase):
                 """\
                 <?>: pass
                 """,
-            )
+            ),
         )
 
         self.assertEqual(len(content.items), 1)
@@ -715,7 +715,7 @@ class NamedObjSuite(unittest.TestCase):
                     <bar>: pass
                     <baz>: pass
                 """,
-            )
+            ),
         )
 
         self.assertEqual(len(root.items), 1)
@@ -792,7 +792,7 @@ class NamedObjSuite(unittest.TestCase):
                     <bar one='two' three="four">:
                         pass
                     """,
-                )
+                ),
             )
         )
 
@@ -806,7 +806,7 @@ class NamedObjSuite(unittest.TestCase):
                     <bar one='two' three="four">:
                         pass
                     """,
-                )
+                ),
             )
         )
 
@@ -827,7 +827,7 @@ class NamedObjSuite(unittest.TestCase):
 
 
                     """,
-                )
+                ),
             )
         )
 
@@ -839,7 +839,7 @@ class NamedObjSuite(unittest.TestCase):
                     <foo one="two">: pass
                     <bar one='two' three="four">: pass
                     """,
-                )
+                ),
             )
         )
 
@@ -851,7 +851,7 @@ class NamedObjSuite(unittest.TestCase):
                 <foo bar>: pass
                 <baz biz one="two">: pass
                 """,
-            )
+            ),
         )
 
         self.assertEqual(len(root.items), 2)
@@ -1128,7 +1128,7 @@ class ExtensionSuite(unittest.TestCase):
                 """\
                 an_extension(1, 2, 3)
                 """,
-            )
+            ),
         )
         self.assertEqual(len(content.items), 1)
         self.assertEqual(content.items[0].name, "an_extension")
@@ -1143,7 +1143,7 @@ class ExtensionSuite(unittest.TestCase):
                 """\
                 an_extension(one=1, two=2, three=3)
                 """,
-            )
+            ),
         )
         self.assertEqual(len(content.items), 1)
         self.assertEqual(content.items[0].name, "an_extension")
@@ -1165,7 +1165,7 @@ class ExtensionSuite(unittest.TestCase):
                 """\
                 an_extension(1, 2, three=3, four=4)
                 """,
-            )
+            ),
         )
         self.assertEqual(len(content.items), 1)
         self.assertEqual(content.items[0].name, "an_extension")
@@ -1186,7 +1186,7 @@ class ExtensionSuite(unittest.TestCase):
                 """\
                 an_extension(1, 2, three=3, four=4)?
                 """,
-            )
+            ),
         )
         self.assertEqual(len(content.items), 1)
         self.assertEqual(content.items[0].name, "an_extension")
@@ -1223,7 +1223,7 @@ class ExtensionSuite(unittest.TestCase):
                     """\
                     an_extension(one=1, one=2)
                     """,
-                )
+                ),
             ),
         )
 
@@ -1239,7 +1239,7 @@ class MiscSuite(unittest.TestCase):
                 <obj>:
                     [a string]
                 """,
-            )
+            ),
         )
 
         self.assertEqual(len(content.items), 1)
@@ -1255,7 +1255,7 @@ class MiscSuite(unittest.TestCase):
                 <obj>:
                     (a string)
                 """,
-            )
+            ),
         )
 
         self.assertEqual(len(content.items), 1)
@@ -1272,7 +1272,7 @@ class MiscSuite(unittest.TestCase):
                     """\
                     <string string>
                     """,
-                )
+                ),
             ),
         )
 

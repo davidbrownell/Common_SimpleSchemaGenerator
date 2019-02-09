@@ -131,7 +131,7 @@ class PythonSourceStatementWriter(SourceStatementWriter):
                                 new_items.append(cls._CreateAdditionalDataItem("item", child))
                             except:
                                 _DecorateActiveException("Index {{}}".format(index))
-                        
+
                         {append_children}
                     else:
                         new_item = cls._CreateAdditionalDataItem(k, v)
@@ -151,14 +151,15 @@ class PythonSourceStatementWriter(SourceStatementWriter):
                 dest_writer.CreateSimpleElement(
                     temporary_element,
                     "attributes",
-                    '{}[{}["{}"]]'.format(source_var_name, source_var_name, cls.SIMPLE_ELEMENT_FUNDAMENTAL_ATTRIBUTE_NAME),
+                    '{}[{}["{}"]]'.format(
+                        source_var_name,
+                        source_var_name,
+                        cls.SIMPLE_ELEMENT_FUNDAMENTAL_ATTRIBUTE_NAME,
+                    ),
                 ),
                 4,
             ).strip(),
-            compound_statement=dest_writer.CreateCompoundElement(
-                temporary_element,
-                "attributes",
-            ).strip(),
+            compound_statement=dest_writer.CreateCompoundElement(temporary_element, "attributes").strip(),
             append_children=StringHelpers.LeftJustify(
                 dest_writer.AppendChild(
                     cls.CreateTemporaryElement(

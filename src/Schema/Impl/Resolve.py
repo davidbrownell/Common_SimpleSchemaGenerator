@@ -1,16 +1,16 @@
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Resolve.py
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-07-12 12:50:27
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-19.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 """Functionality that resolves references information associated with Items"""
 
@@ -31,18 +31,13 @@ from CommonEnvironment.TypeInfo.FundamentalTypes.Serialization.StringSerializati
 from CommonEnvironmentEx.Package import InitRelativeImports
 
 # ----------------------------------------------------------------------
-_script_fullpath = CommonEnvironment.ThisFullpath()
-_script_dir, _script_name = os.path.split(_script_fullpath)
+_script_fullpath                            = CommonEnvironment.ThisFullpath()
+_script_dir, _script_name                   = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
 with InitRelativeImports():
-    from .Item import Item, \
-                      MetadataSource, \
-                      MetadataValue, \
-                      Metadata, \
-                      ResolvedMetadata, \
-                      ItemVisitor
-    
+    from .Item import Item, MetadataSource, MetadataValue, Metadata, ResolvedMetadata, ItemVisitor
+
     from .. import Attributes
     from .. import Elements
     from .. import Exceptions
@@ -60,7 +55,7 @@ def Resolve(root, plugin):
 
     # ----------------------------------------------------------------------
 
-    config_metadata = root.config.get(plugin.Name, [ {}, ])
+    config_metadata = root.config.get(plugin.Name, [{}])
 
     # Flatten the config metadata
     if len(config_metadata) > 1:
@@ -72,7 +67,7 @@ def Resolve(root, plugin):
 
     assert config_metadata
     config_metadata = config_metadata[0]
-    
+
     reference_states = {}
 
     Impl(root, _ResolveReference)
@@ -82,17 +77,14 @@ def Resolve(root, plugin):
     Impl(root, lambda item: _ResolveMetadata(plugin, config_metadata, item))
     Impl(root, lambda item: _ResolveReferenceType(reference_states, item))
     Impl(root, _ResolveMetadataDefaults)
-    
+
     return root
+
 
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
-_ReferenceState                             = namedtuple( "ReferenceState",
-                                                          [ "HasArity",
-                                                            "MetadataKeys",
-                                                          ],
-                                                        )
+_ReferenceState                             = namedtuple("ReferenceState", ["HasArity", "MetadataKeys"])
 
 # ----------------------------------------------------------------------
 def _ResolveReference(item):
@@ -104,20 +96,20 @@ def _ResolveReference(item):
     # ----------------------------------------------------------------------
     def Impl(ref):
         assert isinstance(ref, six.string_types), ref
-    
+
         if ref in Attributes.FUNDAMENTAL_ATTRIBUTE_INFO_MAP:
             return Attributes.FUNDAMENTAL_ATTRIBUTE_INFO_MAP[ref]
         elif ref == "any":
             return Attributes.ANY_ATTRIBUTE_INFO
         elif ref == "custom":
             return Attributes.CUSTOM_ATTRIBUTE_INFO
-    
-        name_parts = ref.split('.')
-    
+
+        name_parts = ref.split(".")
+
         i = item
         while i:
             query = i
-    
+
             for name_part in name_parts:
                 # The second clause in the statement below prevents self references. This
                 # can help in situations such as:
@@ -127,47 +119,53 @@ def _ResolveReference(item):
                 #   <obj>:
                 #       <foo foo> # Foo should not reference itself
                 #
-                query = next((qi for qi in query.items if qi.name == name_part and qi != item), None)
+                query = next(
+                    (qi for qi in query.items if qi.name == name_part and qi != item),
+                    None,
+                )
                 if query is None:
                     break
-    
+
             if query:
                 query.referenced_by.append(item)
                 return query
-    
+
             # Try again at a higher level
-            i = i .Parent
-    
-        raise Exceptions.ResolveInvalidReferenceException( item.Source,
-                                                           item.Line,
-                                                           item.Column,
-                                                           name=ref,
-                                                         )
-    
+            i = i.Parent
+
+        raise Exceptions.ResolveInvalidReferenceException(
+            item.Source,
+            item.Line,
+            item.Column,
+            name=ref,
+        )
+
     # ----------------------------------------------------------------------
-    
+
     if isinstance(item.reference, list):
         new_items = []
 
         for var_index, (var, var_metadata) in enumerate(item.reference):
-            new_item = Item( Item.DeclarationType.Declaration,
-                             Item.ItemType.Standard,
-                             item,
-                             item.Source,
-                             item.Line,
-                             item.Column,
-                             item.IsExternal,
-                           )
+            new_item = Item(
+                Item.DeclarationType.Declaration,
+                Item.ItemType.Standard,
+                item,
+                item.Source,
+                item.Line,
+                item.Column,
+                item.IsExternal,
+            )
 
             new_item.name = str(var_index)
             new_item.reference = Impl(var)
             new_item.metadata = var_metadata
-            
+
             new_items.append(new_item)
-        
+
         item.reference = new_items
     else:
         item.reference = Impl(item.reference)
+
 
 # ----------------------------------------------------------------------
 def _ResolveName(item):
@@ -178,18 +176,20 @@ def _ResolveName(item):
         return bool(value)
 
     # ----------------------------------------------------------------------
-    
+
     if Attributes.UNIVERSAL_NAME_OVERRIDE_ATTRIBUTE_NAME in item.metadata.Values:
         metadata_value = item.metadata.Values[Attributes.UNIVERSAL_NAME_OVERRIDE_ATTRIBUTE_NAME]
         if not IsValidName(metadata_value.Value):
-            raise Exceptions.ResolveInvalidCustomNameException( metadata_value.Source,
-                                                                metadata_value.Line,
-                                                                metadata_value.Column,
-                                                                name=metadata_value.Value,
-                                                              )
+            raise Exceptions.ResolveInvalidCustomNameException(
+                metadata_value.Source,
+                metadata_value.Line,
+                metadata_value.Column,
+                name=metadata_value.Value,
+            )
 
         item.name = metadata_value.Value
         del item.metadata.Values[Attributes.UNIVERSAL_NAME_OVERRIDE_ATTRIBUTE_NAME]
+
 
 # ----------------------------------------------------------------------
 def _ResolveElementType(plugin, reference_states, item):
@@ -199,7 +199,7 @@ def _ResolveElementType(plugin, reference_states, item):
         item.element_type = Elements.VariantElement
         items = item.reference
     else:
-        items = [ item, ]
+        items = [item]
 
     for item in items:
         if item.DeclarationType == Item.DeclarationType.Extension:
@@ -222,17 +222,23 @@ def _ResolveElementType(plugin, reference_states, item):
             if IsSimple():
                 if not plugin.Flags & ParseFlag.SupportSimpleObjectElements and Attributes.SIMPLE_FUNDAMENTAL_NAME_ATTRIBUTE_NAME in item.metadata.Values:
                     # Convert this item into a compound element
-                    fundamental_name = item.metadata.Values.pop(Attributes.SIMPLE_FUNDAMENTAL_NAME_ATTRIBUTE_NAME).Value
+                    fundamental_name = item.metadata.Values.pop(
+                        Attributes.SIMPLE_FUNDAMENTAL_NAME_ATTRIBUTE_NAME,
+                    ).Value
 
                     # Extract all metadata values that aren't associated with the item itself
                     simple_object_metadata_names = set()
-                    
-                    for attributes in [ Attributes.UNIVERSAL_ATTRIBUTE_INFO,
-                                        Attributes.SIMPLE_ATTRIBUTE_INFO,
-                                        Attributes.COLLECTION_ATTRIBUTE_INFO,
-                                        Attributes.OPTIONAL_ATTRIBUTE_INFO,
-                                      ]:
-                        for md in itertools.chain(attributes.RequiredItems, attributes.OptionalItems):
+
+                    for attributes in [
+                        Attributes.UNIVERSAL_ATTRIBUTE_INFO,
+                        Attributes.SIMPLE_ATTRIBUTE_INFO,
+                        Attributes.COLLECTION_ATTRIBUTE_INFO,
+                        Attributes.OPTIONAL_ATTRIBUTE_INFO,
+                    ]:
+                        for md in itertools.chain(
+                            attributes.RequiredItems,
+                            attributes.OptionalItems,
+                        ):
                             simple_object_metadata_names.add(md.Name)
 
                     new_metadata = OrderedDict()
@@ -243,36 +249,33 @@ def _ResolveElementType(plugin, reference_states, item):
                             new_metadata[metadata_key] = item.metadata.Values.pop(metadata_key)
 
                     # Create the new item
-                    new_item = Item( Item.DeclarationType.Declaration,
-                                     Item.ItemType.Attribute,
-                                     item,
-                                     item.Source,
-                                     item.Line,
-                                     item.Column,
-                                     item.IsExternal,
-                                   )
+                    new_item = Item(
+                        Item.DeclarationType.Declaration,
+                        Item.ItemType.Attribute,
+                        item,
+                        item.Source,
+                        item.Line,
+                        item.Column,
+                        item.IsExternal,
+                    )
 
                     new_item.name = fundamental_name
                     new_item.reference = item.reference
-                    new_item.metadata = Metadata( new_metadata,
-                                                  item.Source,
-                                                  item.Line,
-                                                  item.Column,
-                                                )
-                    
+                    new_item.metadata = Metadata(new_metadata, item.Source, item.Line, item.Column)
+
                     # Apply the change
                     item.is_converted = True
                     item.reference = None
 
                     item.items.insert(0, new_item)
-                    
+
                     element_type = Elements.CompoundElement
                 else:
                     element_type = Elements.SimpleElement
 
             else:
                 element_type = Elements.CompoundElement
-            
+
         elif item.DeclarationType == Item.DeclarationType.Declaration:
             assert item.reference is not None
 
@@ -286,7 +289,7 @@ def _ResolveElementType(plugin, reference_states, item):
                     #   3) The referenced item (or one of its descendants) has an arity
                     #   4) The referenced item's arity (or one of its descendants) is a collection.
                     #   5) 'refines_arity' is not provided or set to False
-                    
+
                     # 1 and 2
                     if item.arity is None or not item.arity.IsCollection:
                         return False
@@ -305,13 +308,20 @@ def _ResolveElementType(plugin, reference_states, item):
                         del item.metadata.Values[Attributes.COLLECTION_REFINES_ARITY_ATTRIBUTE_NAME]
 
                         try:
-                            refines_arity = StringSerialization.DeserializeItem(BoolTypeInfo(), refines_arity)
+                            refines_arity = StringSerialization.DeserializeItem(
+                                BoolTypeInfo(),
+                                refines_arity,
+                            )
                         except ValidationException as ex:
-                            raise Exceptions.InvalidAttributeException( item.Source,
-                                                                        item.Line,
-                                                                        item.Column,
-                                                                        desc="'{}' is not valid: {}".fromat(Attributes.COLLECTION_REFINES_ARITY_ATTRIBUTE_NAME, str(ex)),
-                                                                      )
+                            raise Exceptions.InvalidAttributeException(
+                                item.Source,
+                                item.Line,
+                                item.Column,
+                                desc="'{}' is not valid: {}".fromat(
+                                    Attributes.COLLECTION_REFINES_ARITY_ATTRIBUTE_NAME,
+                                    str(ex),
+                                ),
+                            )
 
                         if refines_arity:
                             return False
@@ -322,16 +332,17 @@ def _ResolveElementType(plugin, reference_states, item):
 
                 if IsList():
                     element_type = Elements.ListElement
-                else: 
+                else:
                     element_type = Elements.ReferenceElement
 
                     # This reference may be a simple reference or an item that augments
                     # another. Unfortunately, we don't have the context here to differentiate
                     # between the two, so capture state information that can be used later
                     # when we do have the necessary context.
-                    reference_states[item] = _ReferenceState( item.arity is not None,
-                                                              list(six.iterkeys(item.metadata.Values)),
-                                                            )
+                    reference_states[item] = _ReferenceState(
+                        item.arity is not None,
+                        list(six.iterkeys(item.metadata.Values)),
+                    )
 
             elif isinstance(item.reference, Attributes.FundamentalAttributeInfo):
                 element_type = Elements.FundamentalElement
@@ -347,9 +358,12 @@ def _ResolveElementType(plugin, reference_states, item):
 
         item.element_type = element_type
 
+
 # ----------------------------------------------------------------------
 def _ResolveArity(item):
-    for sub_item in item.Enumerate(variant_includes_self=True):
+    for sub_item in item.Enumerate(
+        variant_includes_self=True,
+    ):
         if sub_item.arity is not None:
             continue
 
@@ -358,14 +372,15 @@ def _ResolveArity(item):
             sub_item.arity = sub_item.reference.arity
         else:
             sub_item.arity = Arity(1, 1)
-    
+
+
 # ----------------------------------------------------------------------
 def _ResolveMetadata(plugin, config_values, item):
     if isinstance(item.metadata, ResolvedMetadata):
         return
 
     metadata = item.metadata.Values
-    
+
     # Augment the data with configuration values
     for k, v in six.iteritems(config_values):
         if k not in metadata:
@@ -374,10 +389,15 @@ def _ResolveMetadata(plugin, config_values, item):
     # Get the metadata info
     metadata_info = _MetadataInfoVisitor.Accept(item)
 
-    item.metadata = ResolvedMetadata( metadata,
-                                      Attributes.UNIVERSAL_ATTRIBUTE_INFO.RequiredItems + metadata_info.RequiredItems + plugin.GetRequiredMetadataItems(item),
-                                      Attributes.UNIVERSAL_ATTRIBUTE_INFO.OptionalItems + metadata_info.OptionalItems + plugin.GetOptionalMetadataItems(item),
-                                    )
+    item.metadata = ResolvedMetadata(
+        metadata,
+        Attributes.UNIVERSAL_ATTRIBUTE_INFO.RequiredItems + metadata_info.RequiredItems + plugin.GetRequiredMetadataItems(
+            item,
+        ),
+        Attributes.UNIVERSAL_ATTRIBUTE_INFO.OptionalItems + metadata_info.OptionalItems + plugin.GetOptionalMetadataItems(
+            item,
+        ),
+    )
 
     if item.arity.IsOptional:
         item.metadata = item.metadata.Clone(Attributes.OPTIONAL_ATTRIBUTE_INFO)
@@ -398,12 +418,13 @@ def _ResolveMetadata(plugin, config_values, item):
 
             assert isinstance(ref, Attributes.FundamentalAttributeInfo), ref
             item.metadata = item.metadata.Clone(ref)
-            
+
         # Reference items may be decorated with metadata associated with the referenced type
         if item.element_type == Elements.ReferenceElement:
             _ResolveMetadata(plugin, config_values, item.reference)
 
             item.metadata = item.metadata.Clone(item.reference.metadata)
+
 
 # ----------------------------------------------------------------------
 def _ResolveReferenceType(reference_states, item):
@@ -414,9 +435,7 @@ def _ResolveReferenceType(reference_states, item):
         if state.HasArity:
             return True
 
-        for attribute in itertools.chain( item.metadata.RequiredItems,
-                                          item.metadata.OptionalItems,
-                                        ):
+        for attribute in itertools.chain(item.metadata.RequiredItems, item.metadata.OptionalItems):
             if attribute.IsMetadata:
                 continue
 
@@ -435,25 +454,26 @@ def _ResolveReferenceType(reference_states, item):
             continue
 
         item.is_augmenting_reference = IsAugmenting(item)
-        
+
+
 # ----------------------------------------------------------------------
 def _ResolveMetadataDefaults(item):
     for item in item.Enumerate():
-        for attribute in itertools.chain( item.metadata.RequiredItems,
-                                          item.metadata.OptionalItems,
-                                        ):
+        for attribute in itertools.chain(item.metadata.RequiredItems, item.metadata.OptionalItems):
             if attribute.Name not in item.metadata.Values and attribute.DefaultValue != Attributes.Attribute.DoesNotExist:
                 if callable(attribute.DefaultValue):
                     value = attribute.DefaultValue(item)
                 else:
                     value = attribute.DefaultValue
 
-                item.metadata.Values[attribute.Name] = MetadataValue( value,
-                                                                      MetadataSource.Default,
-                                                                      item.Source,
-                                                                      item.Line,
-                                                                      item.Column
-                                                                    )
+                item.metadata.Values[attribute.Name] = MetadataValue(
+                    value,
+                    MetadataSource.Default,
+                    item.Source,
+                    item.Line,
+                    item.Column,
+                )
+
 
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------

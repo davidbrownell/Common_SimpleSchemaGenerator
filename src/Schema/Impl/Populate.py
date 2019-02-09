@@ -1,16 +1,16 @@
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Populate.py
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-07-09 13:19:21
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-19.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 """Uses ANTLR-generated functionality to populate items"""
 
@@ -32,8 +32,8 @@ from CommonEnvironmentEx.Antlr4Helpers.ErrorListener import ErrorListener
 from CommonEnvironmentEx.Package import InitRelativeImports
 
 # ----------------------------------------------------------------------
-_script_fullpath = CommonEnvironment.ThisFullpath()
-_script_dir, _script_name = os.path.split(_script_fullpath)
+_script_fullpath                            = CommonEnvironment.ThisFullpath()
+_script_dir, _script_name                   = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
 sys.path.insert(0, os.path.join(_script_dir, "..", "Grammar", "GeneratedCode"))
@@ -44,26 +44,25 @@ with CallOnExit(lambda: sys.path.pop(0)):
 
 with InitRelativeImports():
     from .Item import Item, Metadata, MetadataValue, MetadataSource, ResolvedMetadata
-    
+
     from ..Attributes import FUNDAMENTAL_ATTRIBUTE_INFO_MAP
-    from .. import Exceptions    
-    
+    from .. import Exceptions
+
     from ...Plugin import ParseFlag
 
 # ----------------------------------------------------------------------
-def Populate( source_name_content_generators,           # { "name" : def Func() -> content, }
-              parse_flags,
-            ):
+def Populate(source_name_content_generators, parse_flags):                  # { "name" : def Func() -> content, }
     include_filenames = []
 
-    root = Item( declaration_type=Item.DeclarationType.Object,
-                 item_type=Item.ItemType.Standard,
-                 parent=None,
-                 source="<root>",
-                 line=-1,
-                 column=-1,
-                 is_external=False,
-               )
+    root = Item(
+        declaration_type=Item.DeclarationType.Object,
+        item_type=Item.ItemType.Standard,
+        parent=None,
+        source="<root>",
+        line=-1,
+        column=-1,
+        is_external=False,
+    )
 
     root.name = "<root>"
     root.declaration_type = None
@@ -80,7 +79,7 @@ def Populate( source_name_content_generators,           # { "name" : def Func() 
             self._source_name               = source_name
             self._is_external               = is_external
 
-            self._stack                     = [ root, ]
+            self._stack                     = [root]
 
         # ----------------------------------------------------------------------
         def visitIdRule(self, ctx):
@@ -112,10 +111,8 @@ def Populate( source_name_content_generators,           # { "name" : def Func() 
 
             # At the very least, we should have a beginning and ending quote
             assert len(value) >= 2, value
-        
-            if ( (value.startswith('"""') and value.endswith('"""')) or
-                 (value.startswith("'''") and value.endswith("'''"))
-               ):
+
+            if (value.startswith('"""') and value.endswith('"""')) or (value.startswith("'''") and value.endswith("'''")):
                 initial_whitespace = token.column
 
                 # ----------------------------------------------------------------------
@@ -124,42 +121,45 @@ def Populate( source_name_content_generators,           # { "name" : def Func() 
                     whitespace = 0
 
                     while index < len(line) and whitespace < initial_whitespace:
-                        if line[index] == ' ':
+                        if line[index] == " ":
                             whitespace += 1
-                        elif line[index] == '\t':
+                        elif line[index] == "\t":
                             whitespace += 4
-                        elif line[index] == '\r':
+                        elif line[index] == "\r":
                             break
                         else:
-                            raise Exceptions.PopulateInvalidTripleStringPrefixException( self._source_name,
-                                                                                         token.line + line_offset,
-                                                                                         token.column + 1 + whitespace,
-                                                                                       )
+                            raise Exceptions.PopulateInvalidTripleStringPrefixException(
+                                self._source_name,
+                                token.line + line_offset,
+                                token.column + 1 + whitespace,
+                            )
                         index += 1
 
                     return line[index:]
 
                 # ----------------------------------------------------------------------
 
-                lines = value.split('\n')
+                lines = value.split("\n")
 
                 initial_line = lines[0].rstrip()
                 if len(initial_line) != 3:
-                    raise Exceptions.PopulateInvalidTripleStringHeaderException( self._source_name,
-                                                                                 token.line,
-                                                                                 token.column + 1,
-                                                                               )
+                    raise Exceptions.PopulateInvalidTripleStringHeaderException(
+                        self._source_name,
+                        token.line,
+                        token.column + 1,
+                    )
 
                 final_line = lines[-1]
                 if len(TrimPrefix(final_line, len(lines))) != 3:
-                    raise Exceptions.PopulateInvalidTripleStringFooterException( self._source_name,
-                                                                                 token.line,
-                                                                                 token.column + 1,
-                                                                               )
+                    raise Exceptions.PopulateInvalidTripleStringFooterException(
+                        self._source_name,
+                        token.line,
+                        token.column + 1,
+                    )
 
-                lines = [ TrimPrefix(line, index + 1) for index, line in enumerate(lines[1:-1]) ]
+                lines = [TrimPrefix(line, index + 1) for index, line in enumerate(lines[1:-1])]
 
-                value = '\n'.join(lines)
+                value = "\n".join(lines)
 
             elif value[0] == '"' and value[-1] == '"':
                 value = value[1:-1].replace('\\"', '"')
@@ -181,17 +181,12 @@ def Populate( source_name_content_generators,           # { "name" : def Func() 
         def visitMetadata(self, ctx):
             values = self._GetChildValues(ctx)
             assert len(values) == 2, values
-            
+
             name, value = values
 
-            self._stack.append(( name,
-                                 MetadataValue( value,
-                                                MetadataSource.Explicit,
-                                                self._source_name,
-                                                ctx.start.line,
-                                                ctx.start.column + 1,
-                                              ),
-                               ))
+            self._stack.append(
+                (name, MetadataValue(value, MetadataSource.Explicit, self._source_name, ctx.start.line, ctx.start.column + 1)),
+            )
 
         # ----------------------------------------------------------------------
         def visitMetadataList(self, ctx):
@@ -201,34 +196,33 @@ def Populate( source_name_content_generators,           # { "name" : def Func() 
 
             for name, value in values:
                 if name in metadata:
-                    raise Exceptions.PopulateDuplicateMetadataException( value.Source,
-                                                                         value.Line,
-                                                                         value.Column,
-                                                                         name=name,
-                                                                         original_source=metadata[name].Source,
-                                                                         original_line=metadata[name].Line,
-                                                                         original_column=metadata[name].Column,
-                                                                       )
+                    raise Exceptions.PopulateDuplicateMetadataException(
+                        value.Source,
+                        value.Line,
+                        value.Column,
+                        name=name,
+                        original_source=metadata[name].Source,
+                        original_line=metadata[name].Line,
+                        original_column=metadata[name].Column,
+                    )
 
                 metadata[name] = value
 
-            self._stack.append(Metadata( metadata,
-                                         self._source_name,
-                                         ctx.start.line,
-                                         ctx.start.column + 1,
-                                       ))
+            self._stack.append(
+                Metadata(metadata, self._source_name, ctx.start.line, ctx.start.column + 1),
+            )
 
         # ----------------------------------------------------------------------
         def visitArityOptional(self, ctx):
-            self._stack.append(Arity.FromString('?'))
+            self._stack.append(Arity.FromString("?"))
 
         # ----------------------------------------------------------------------
         def visitArityZeroOrMore(self, ctx):
-            self._stack.append(Arity.FromString('*'))
+            self._stack.append(Arity.FromString("*"))
 
         # ----------------------------------------------------------------------
         def visitArityOneOrMore(self, ctx):
-            self._stack.append(Arity.FromString('+'))
+            self._stack.append(Arity.FromString("+"))
 
         # ----------------------------------------------------------------------
         def visitArityFixed(self, ctx):
@@ -238,11 +232,12 @@ def Populate( source_name_content_generators,           # { "name" : def Func() 
             value = values[0]
 
             if value <= 0:
-                raise Exceptions.PopulateInvalidArityException( self._source_name,
-                                                                ctx.start.line,
-                                                                ctx.start.column + 1,
-                                                                value=value,
-                                                              )
+                raise Exceptions.PopulateInvalidArityException(
+                    self._source_name,
+                    ctx.start.line,
+                    ctx.start.column + 1,
+                    value=value,
+                )
 
             self._stack.append(Arity(value, value))
 
@@ -254,61 +249,65 @@ def Populate( source_name_content_generators,           # { "name" : def Func() 
             min_value, max_value = values
 
             if min_value <= 0:
-                raise Exceptions.PopulateInvalidArityException( self._source_name,
-                                                                ctx.start.line,
-                                                                ctx.start.column + 1,
-                                                                value=min_value,
-                                                              )
+                raise Exceptions.PopulateInvalidArityException(
+                    self._source_name,
+                    ctx.start.line,
+                    ctx.start.column + 1,
+                    value=min_value,
+                )
 
             if max_value <= 0:
-                raise Exceptions.PopulateInvalidArityException( self._source_name,
-                                                                ctx.start.line,
-                                                                ctx.start.column + 1,
-                                                                value=max_value,
-                                                              )
+                raise Exceptions.PopulateInvalidArityException(
+                    self._source_name,
+                    ctx.start.line,
+                    ctx.start.column + 1,
+                    value=max_value,
+                )
 
             if max_value < min_value:
-                raise Exceptions.PopulateInvalidMaxArityException( self._source_name,
-                                                                   ctx.start.line,
-                                                                   ctx.start.column + 1,
-                                                                   min=min_value,
-                                                                   max=max_value,
-                                                                 )
+                raise Exceptions.PopulateInvalidMaxArityException(
+                    self._source_name,
+                    ctx.start.line,
+                    ctx.start.column + 1,
+                    min=min_value,
+                    max=max_value,
+                )
 
             self._stack.append(Arity(min_value, max_value))
 
         # ----------------------------------------------------------------------
         def visitIncludeStatement(self, ctx):
             if not parse_flags & ParseFlag.SupportIncludeStatements:
-                raise Exceptions.PopulateUnsupportedIncludeStatementsException( self._source_name,
-                                                                                ctx.start.line,
-                                                                                ctx.start.column + 1,
-                                                                              )
+                raise Exceptions.PopulateUnsupportedIncludeStatementsException(
+                    self._source_name,
+                    ctx.start.line,
+                    ctx.start.column + 1,
+                )
 
             values = self._GetChildValues(ctx)
             assert len(values) == 1, values
             filename = values[0]
-            
+
             filename = os.path.normpath(os.path.join(os.path.dirname(self._source_name), filename))
             if not os.path.isfile(filename):
-                raise Exceptions.PopulateInvalidIncludeFilenameException( self._source_name,
-                                                                          ctx.start.line,
-                                                                          ctx.start.column + 1,
-                                                                          name=filename,
-                                                                        )
+                raise Exceptions.PopulateInvalidIncludeFilenameException(
+                    self._source_name,
+                    ctx.start.line,
+                    ctx.start.column + 1,
+                    name=filename,
+                )
 
-            if ( filename not in source_name_content_generators and
-                 filename not in include_filenames
-               ):
+            if filename not in source_name_content_generators and filename not in include_filenames:
                 include_filenames.append(filename)
 
         # ----------------------------------------------------------------------
         def visitConfigStatement(self, ctx):
             if not parse_flags & ParseFlag.SupportConfigStatements:
-                raise Exceptions.PopulateUnsupportedConfigStatementsException( self._source_name,
-                                                                               ctx.start.line,
-                                                                               ctx.start.column + 1,
-                                                                             )
+                raise Exceptions.PopulateUnsupportedConfigStatementsException(
+                    self._source_name,
+                    ctx.start.line,
+                    ctx.start.column + 1,
+                )
             values = self._GetChildValues(ctx)
 
             # There should be at least the name and 1 metadata item
@@ -316,32 +315,47 @@ def Populate( source_name_content_generators,           # { "name" : def Func() 
 
             name = values.pop(0)
 
-            root.config.setdefault(name, []).append(Metadata( OrderedDict([ ( k, v._replace(Source=MetadataSource.Config) ) for k, v in values ]),
-                                                              self._source_name,
-                                                              ctx.start.line,
-                                                              ctx.start.column + 1,
-                                                            ))
+            root.config.setdefault(name, []).append(
+                Metadata(
+                    OrderedDict(
+                        [
+                            (
+                                k,
+                                v._replace(
+                                    Source=MetadataSource.Config,
+                                ),
+                            ) for k, v in values
+                        ],
+                    ),
+                    self._source_name,
+                    ctx.start.line,
+                    ctx.start.column + 1,
+                ),
+            )
 
         # ----------------------------------------------------------------------
         def visitUnnamedObj(self, ctx):
             if not parse_flags & ParseFlag.SupportUnnamedObjects:
-                raise Exceptions.PopulateUnsupportedUnnamedObjectsException( self._source_name,
-                                                                             ctx.start.line,
-                                                                             ctx.start.column + 1,
-                                                                           )
+                raise Exceptions.PopulateUnsupportedUnnamedObjectsException(
+                    self._source_name,
+                    ctx.start.line,
+                    ctx.start.column + 1,
+                )
 
             if len(self._stack) == 1:
                 if not parse_flags & ParseFlag.SupportRootObjects:
-                    raise Exceptions.PopulateUnsupportedRootObjectsException( self._source_name,
-                                                                              ctx.start.line,
-                                                                              ctx.start.column + 1,
-                                                                            )
+                    raise Exceptions.PopulateUnsupportedRootObjectsException(
+                        self._source_name,
+                        ctx.start.line,
+                        ctx.start.column + 1,
+                    )
             else:
                 if not parse_flags & ParseFlag.SupportChildObjects:
-                    raise Exceptions.PopulateUnsupportedChildObjectsException( self._source_name,
-                                                                               ctx.start.line,
-                                                                               ctx.start.column + 1,
-                                                                             )
+                    raise Exceptions.PopulateUnsupportedChildObjectsException(
+                        self._source_name,
+                        ctx.start.line,
+                        ctx.start.column + 1,
+                    )
 
             with self._PushNewStackItem(ctx, Item.DeclarationType.Object):
                 values = self._GetChildValues(ctx)
@@ -350,23 +364,26 @@ def Populate( source_name_content_generators,           # { "name" : def Func() 
         # ----------------------------------------------------------------------
         def visitObj(self, ctx):
             if not parse_flags & ParseFlag.SupportNamedObjects:
-                raise Exceptions.PopulateUnsupportedNamedObjectsException( self._source_name,
-                                                                           ctx.start.line,
-                                                                           ctx.start.column + 1,
-                                                                         )
+                raise Exceptions.PopulateUnsupportedNamedObjectsException(
+                    self._source_name,
+                    ctx.start.line,
+                    ctx.start.column + 1,
+                )
 
             if len(self._stack) == 1:
                 if not parse_flags & ParseFlag.SupportRootObjects:
-                    raise Exceptions.PopulateUnsupportedRootObjectsException( self._source_name,
-                                                                              ctx.start.line,
-                                                                              ctx.start.column + 1,
-                                                                            )
+                    raise Exceptions.PopulateUnsupportedRootObjectsException(
+                        self._source_name,
+                        ctx.start.line,
+                        ctx.start.column + 1,
+                    )
             else:
                 if not parse_flags & ParseFlag.SupportChildObjects:
-                    raise Exceptions.PopulateUnsupportedChildObjectsException( self._source_name,
-                                                                               ctx.start.line,
-                                                                               ctx.start.column + 1,
-                                                                             )
+                    raise Exceptions.PopulateUnsupportedChildObjectsException(
+                        self._source_name,
+                        ctx.start.line,
+                        ctx.start.column + 1,
+                    )
 
             with self._PushNewStackItem(ctx, Item.DeclarationType.Object) as item:
                 values = self._GetChildValues(ctx)
@@ -394,44 +411,47 @@ def Populate( source_name_content_generators,           # { "name" : def Func() 
 
             if len(values) == 2:
                 metadata, arity = values
-                
+
                 assert self._IsMetadata(metadata), metadata
                 assert self._IsArity(arity), arity
 
             elif len(values) == 1:
                 metadata = values[0]
                 assert self._IsMetadata(values[0]), values[0]
-                
+
                 arity = None
 
             else:
                 assert False, values
 
             parent = self._GetStackParent()
-            
+
             parent.metadata = metadata
             parent.arity = arity
 
         # ----------------------------------------------------------------------
         def visitUnnamedDeclaration(self, ctx):
             if not parse_flags & ParseFlag.SupportUnnamedDeclarations:
-                raise Exceptions.PopulateUnsupportedUnnamedDeclarationsException( self._source_name,
-                                                                                  ctx.start.line,
-                                                                                  ctx.start.column + 1,
-                                                                                )
+                raise Exceptions.PopulateUnsupportedUnnamedDeclarationsException(
+                    self._source_name,
+                    ctx.start.line,
+                    ctx.start.column + 1,
+                )
 
             if len(self._stack) == 1:
                 if not parse_flags & ParseFlag.SupportRootDeclarations:
-                    raise Exceptions.PopulateUnsupportedRootDeclarationsException( self._source_name,
-                                                                                   ctx.start.line,
-                                                                                   ctx.start.column + 1,
-                                                                                 )
+                    raise Exceptions.PopulateUnsupportedRootDeclarationsException(
+                        self._source_name,
+                        ctx.start.line,
+                        ctx.start.column + 1,
+                    )
             else:
                 if not parse_flags & ParseFlag.SupportChildDeclarations:
-                    raise Exceptions.PopulateUnsupportedChildDeclarationsException( self._source_name,
-                                                                                    ctx.start.line,
-                                                                                    ctx.start.column + 1,
-                                                                                  )
+                    raise Exceptions.PopulateUnsupportedChildDeclarationsException(
+                        self._source_name,
+                        ctx.start.line,
+                        ctx.start.column + 1,
+                    )
 
             with self._PushNewStackItem(ctx, Item.DeclarationType.Declaration):
                 values = self._GetChildValues(ctx)
@@ -440,27 +460,30 @@ def Populate( source_name_content_generators,           # { "name" : def Func() 
         # ----------------------------------------------------------------------
         def visitDeclaration(self, ctx):
             if not parse_flags & ParseFlag.SupportNamedDeclarations:
-                raise Exceptions.PopulateUnsupportedNamedDeclarationsException( self._source_name,
-                                                                                ctx.start.line,
-                                                                                ctx.start.column + 1,
-                                                                              )
+                raise Exceptions.PopulateUnsupportedNamedDeclarationsException(
+                    self._source_name,
+                    ctx.start.line,
+                    ctx.start.column + 1,
+                )
 
             if len(self._stack) == 1:
                 if not parse_flags & ParseFlag.SupportRootDeclarations:
-                    raise Exceptions.PopulateUnsupportedRootDeclarationsException( self._source_name,
-                                                                                   ctx.start.line,
-                                                                                   ctx.start.column + 1,
-                                                                                 )
+                    raise Exceptions.PopulateUnsupportedRootDeclarationsException(
+                        self._source_name,
+                        ctx.start.line,
+                        ctx.start.column + 1,
+                    )
             else:
                 if not parse_flags & ParseFlag.SupportChildDeclarations:
-                    raise Exceptions.PopulateUnsupportedChildDeclarationsException( self._source_name,
-                                                                                    ctx.start.line,
-                                                                                    ctx.start.column + 1,
-                                                                                  )
+                    raise Exceptions.PopulateUnsupportedChildDeclarationsException(
+                        self._source_name,
+                        ctx.start.line,
+                        ctx.start.column + 1,
+                    )
 
             with self._PushNewStackItem(ctx, Item.DeclarationType.Declaration) as item:
                 values = self._GetChildValues(ctx)
-                
+
                 assert len(values) == 1, values
                 name = values[0]
 
@@ -477,9 +500,9 @@ def Populate( source_name_content_generators,           # { "name" : def Func() 
 
             # First item will always be the id or attributes list
             item.reference = values.pop(0)
-            
+
             assert values, "Metadata is always present"
-            
+
             if len(values) == 1:
                 metadata = values[0]
                 assert self._IsMetadata(metadata), metadata
@@ -509,7 +532,7 @@ def Populate( source_name_content_generators,           # { "name" : def Func() 
 
             index = 0
             while index < len(values):
-                result.append(( values[index], values[index + 1] ))
+                result.append((values[index], values[index + 1]))
                 index += 2
 
             self._stack.append(result)
@@ -517,24 +540,25 @@ def Populate( source_name_content_generators,           # { "name" : def Func() 
         # ----------------------------------------------------------------------
         def visitExtension(self, ctx):
             if not parse_flags & ParseFlag.SupportExtensionsStatements:
-                raise Exceptions.PopulateUnsupportedExtensionStatementException( self._source_name,
-                                                                                 ctx.start.line,
-                                                                                 ctx.start.column + 1,
-                                                                               )
+                raise Exceptions.PopulateUnsupportedExtensionStatementException(
+                    self._source_name,
+                    ctx.start.line,
+                    ctx.start.column + 1,
+                )
 
             with self._PushNewStackItem(ctx, Item.DeclarationType.Extension) as item:
                 values = self._GetChildValues(ctx)
-                assert len(values) in [ 1, 2, ], values
+                assert len(values) in [1, 2], values
 
                 name = values[0]
                 self._ValidateName(item, name)
 
                 item.name = name
                 item.metadata = ResolvedMetadata({}, [], [])
-                
+
                 if len(values) > 1:
                     item.arity = values[1]
-                    
+
         # ----------------------------------------------------------------------
         def visitExtensionContentPositional(self, ctx):
             values = self._GetChildValues(ctx)
@@ -547,20 +571,21 @@ def Populate( source_name_content_generators,           # { "name" : def Func() 
         # ----------------------------------------------------------------------
         def visitExtensionContentKeyword(self, ctx):
             values = self._GetChildValues(ctx)
-            
+
             assert len(values) == 2, values
             key, value = values
 
             item = self._GetStackParent()
 
             if key in item.keyword_arguments:
-                raise Exceptions.PopulateDuplicateKeywordArgumentException( self._source_name,
-                                                                            ctx.start.line,
-                                                                            ctx.start.column + 1,
-                                                                            name=key,
-                                                                            value=value,
-                                                                            original_value=item.keyword_arguments[key],
-                                                                          )
+                raise Exceptions.PopulateDuplicateKeywordArgumentException(
+                    self._source_name,
+                    ctx.start.line,
+                    ctx.start.column + 1,
+                    name=key,
+                    value=value,
+                    original_value=item.keyword_arguments[key],
+                )
 
             item.keyword_arguments[key] = value
 
@@ -589,14 +614,15 @@ def Populate( source_name_content_generators,           # { "name" : def Func() 
 
             parent = self._GetStackParent()
 
-            item = Item( declaration_type,
-                         item_type,
-                         parent,
-                         self._source_name,
-                         ctx.start.line,
-                         ctx.start.column + 1,
-                         is_external=self._is_external,
-                       )
+            item = Item(
+                declaration_type,
+                item_type,
+                parent,
+                self._source_name,
+                ctx.start.line,
+                ctx.start.column + 1,
+                is_external=self._is_external,
+            )
 
             parent.items.append(item)
 
@@ -610,7 +636,7 @@ def Populate( source_name_content_generators,           # { "name" : def Func() 
             # didn't modify the _stack. Strange.
             with CallOnExit(lambda: self._stack.pop()):
                 yield item
-            
+
         # ----------------------------------------------------------------------
         def _GetStackParent(self):
             """\
@@ -646,12 +672,13 @@ def Populate( source_name_content_generators,           # { "name" : def Func() 
             # Validating name here rather than in Validate.py as the name is used
             # during Resolution (in Resolve.py), which happens before Validate is
             # called.
-            if name in FUNDAMENTAL_ATTRIBUTE_INFO_MAP or name in [ "any", "custom", ]:
-                raise Exceptions.PopulateReservedNameException( item.Source,
-                                                                item.Line,
-                                                                item.Column, 
-                                                                name=name,
-                                                              )
+            if name in FUNDAMENTAL_ATTRIBUTE_INFO_MAP or name in ["any", "custom"]:
+                raise Exceptions.PopulateReservedNameException(
+                    item.Source,
+                    item.Line,
+                    item.Column,
+                    name=name,
+                )
 
     # ----------------------------------------------------------------------
     def Impl(name, antlr_stream, is_external):
@@ -677,20 +704,22 @@ def Populate( source_name_content_generators,           # { "name" : def Func() 
         antlr_stream = antlr4.InputStream(content)
         antlr_stream.filename = source_name
 
-        Impl( source_name,
-              antlr_stream,
-              is_external=False,
-            )
+        Impl(
+            source_name,
+            antlr_stream,
+            is_external=False,
+        )
 
     # Iterating via index rather than by element as processing the content may update
     # the list.
     index = 0
 
     while index < len(include_filenames):
-        Impl( include_filenames[0],
-              antlr4.FileStream(include_filenames[index]),
-              is_external=True,
-            )
+        Impl(
+            include_filenames[0],
+            antlr4.FileStream(include_filenames[index]),
+            is_external=True,
+        )
 
         index += 1
 

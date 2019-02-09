@@ -1,16 +1,16 @@
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Plugin.py
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-07-09 16:28:46
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-19.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 """Contains the Plugin object"""
 
@@ -28,8 +28,8 @@ from CommonEnvironment.Interface import abstractproperty, abstractmethod, extens
 from CommonEnvironmentEx.CompilerImpl.GeneratorPluginFrameworkImpl.PluginBase import PluginBase
 
 # ----------------------------------------------------------------------
-_script_fullpath = CommonEnvironment.ThisFullpath()
-_script_dir, _script_name = os.path.split(_script_fullpath)
+_script_fullpath                            = CommonEnvironment.ThisFullpath()
+_script_dir, _script_name                   = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
 # ----------------------------------------------------------------------
@@ -40,7 +40,7 @@ class ParseFlag(BitFlagEnum):
     SupportIncludeStatements                = auto()
     SupportConfigStatements                 = auto()
     SupportExtensionsStatements             = auto()
-    
+
     SupportUnnamedDeclarations              = auto()
     SupportUnnamedObjects                   = auto()
     SupportNamedDeclarations                = auto()
@@ -57,7 +57,7 @@ class ParseFlag(BitFlagEnum):
     SupportListElements                     = auto()
     SupportSimpleObjectElements             = auto()
     SupportVariantElements                  = auto()
-    
+
     # Parse behavior
     ResolveReferences                       = auto()
 
@@ -68,6 +68,7 @@ class ParseFlag(BitFlagEnum):
     SupportDeclarations                     = SupportUnnamedDeclarations | SupportNamedDeclarations
     SupportObjects                          = SupportUnnamedObjects | SupportNamedObjects
 
+
 # ----------------------------------------------------------------------
 class Extension(object):
     """
@@ -77,10 +78,11 @@ class Extension(object):
     """
 
     # ----------------------------------------------------------------------
-    def __init__( self, 
-                  name, 
-                  allow_duplicates=False,
-                ):
+    def __init__(
+        self,
+        name,
+        allow_duplicates=False,
+    ):
         self.Name                           = name
         self.AllowDuplicates                = allow_duplicates
 
@@ -88,14 +90,15 @@ class Extension(object):
     def __repr__(self):
         return CommonEnvironment.ObjectReprImpl(self)
 
+
 # ----------------------------------------------------------------------
 class Plugin(PluginBase):
     """Abstract base class for SimpleSchema plugins"""
 
     # ----------------------------------------------------------------------
-    # |  
+    # |
     # |  Public Properties
-    # |  
+    # |
     # ----------------------------------------------------------------------
     @abstractproperty
     def Flags(self):
@@ -103,13 +106,13 @@ class Plugin(PluginBase):
         raise Exception("Abstract Property")
 
     # ----------------------------------------------------------------------
-    # |  
+    # |
     # |  Public Methods
-    # |  
+    # |
     # ----------------------------------------------------------------------
     def VerifyFlags(self):
         flags = self.Flags
-        
+
         if flags & ParseFlag.SupportSimpleObjectElements and not flags & ParseFlag.SupportAttributes:
             raise Exception("Attributes are required by SimpleObjects")
 
@@ -137,34 +140,62 @@ class Plugin(PluginBase):
     # ----------------------------------------------------------------------
     @staticmethod
     @abstractmethod
-    def Generate( simple_schema_code_generator,
-                  invoke_reason,
-                  input_filenames,
-                  output_filenames,
-                  name,
-                  elements,
-                  include_indexes,
-                  status_stream,
-                  verbose_stream,
-                  verbose,
-
-                  **custom_settings
-                ):
+    def Generate(
+        simple_schema_code_generator,
+        invoke_reason,
+        input_filenames,
+        output_filenames,
+        name,
+        elements,
+        include_indexes,
+        status_stream,
+        verbose_stream,
+        verbose,
+        **custom_settings
+    ):
         raise Exception("Abstract method")
 
     # ----------------------------------------------------------------------
-    # |  
+    # |
     # |  Protected Methods
-    # |  
+    # |
+    # ----------------------------------------------------------------------
+    @staticmethod
+    def _EnumerateChildren(
+        element,
+        include_standard=True,
+        include_definitions=True,
+        recurse=True,
+    ):                                                                      # Include non-definitions  # Include definitions
+        if include_standard and include_definitions:
+            filter_func = lambda element: True
+        elif include_standard:
+            filter_func = lambda element: not element.IsDefinitionOnly
+        elif include_definitions:
+            filter_func = lambda element: element.IsDefinitionOnly
+        else:
+            filter_func = lambda element: False
+
+        while element:
+            for child in element.Children:
+                if filter_func(child):
+                    yield child
+
+            if not recurse:
+                break
+
+            element = getattr(element, "Base", None)
+
     # ----------------------------------------------------------------------
     class IncludeMapType(Enum):
         """Indicates why an element was part of an include map"""
+
         Standard                            = auto()    # The element was explicitly included
         Referenced                          = auto()    # The element was included because something that referenced it was included
         Parent                              = auto()    # The element was included because it is an ancestor of an element that was explicitly included
 
     class IncludeMapValue(object):
-        
+
         # ----------------------------------------------------------------------
         def __init__(self, element, include_map_type):
             self.Element                    = element
@@ -214,20 +245,25 @@ class Plugin(PluginBase):
             # Ensure that all children are included
             stack.append(element)
             with CallOnExit(lambda: stack.pop()):
-                for potential_item_name in [ "Children", "Base", "Derived", "Reference", ]:
+                for potential_item_name in [
+                    "Children",
+                    "Base",
+                    "Derived",
+                    "Reference",
+                ]:
                     potential_items = getattr(element, potential_item_name, None)
                     if potential_items is None:
                         continue
 
                     if not isinstance(potential_items, list):
-                        potential_items = [ potential_items, ]
+                        potential_items = [potential_items]
 
                     for item in potential_items:
                         Impl(item, cls.IncludeMapType.Referenced)
 
         # ----------------------------------------------------------------------
 
-        for element in [ elements[include_index] for include_index in include_indexes ]:
+        for element in [elements[include_index] for include_index in include_indexes]:
             Impl(element, cls.IncludeMapType.Standard)
 
         return include_map

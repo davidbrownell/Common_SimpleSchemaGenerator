@@ -1,16 +1,16 @@
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Activate_custom.py
-# |  
+# |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2018-05-07 08:59:57
-# |  
+# |
 # ----------------------------------------------------------------------
-# |  
+# |
 # |  Copyright David Brownell 2018-19.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-# |  
+# |
 # ----------------------------------------------------------------------
 """Performs repository-specific activation activities."""
 
@@ -20,12 +20,13 @@ import sys
 import CommonEnvironment
 
 # ----------------------------------------------------------------------
-_script_fullpath = CommonEnvironment.ThisFullpath()
-_script_dir, _script_name = os.path.split(_script_fullpath)
+_script_fullpath                            = CommonEnvironment.ThisFullpath()
+_script_dir, _script_name                   = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
 sys.path.insert(0, os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"))
 from RepositoryBootstrap.SetupAndActivate import CurrentShell
+
 del sys.path[0]
 
 # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
@@ -33,16 +34,17 @@ del sys.path[0]
 # <Unused argument> pylint: disable = W0613
 
 # ----------------------------------------------------------------------
-def GetCustomActions( output_stream,
-                      configuration,
-                      version_specs,
-                      generated_dir,
-                      debug,
-                      verbose,
-                      fast,
-                      repositories,
-                      is_mixin_repo,
-                    ):
+def GetCustomActions(
+    output_stream,
+    configuration,
+    version_specs,
+    generated_dir,
+    debug,
+    verbose,
+    fast,
+    repositories,
+    is_mixin_repo,
+):
     """
     Returns an action or list of actions that should be invoked as part of the activation process.
 
@@ -53,6 +55,7 @@ def GetCustomActions( output_stream,
     """
 
     return []
+
 
 # ----------------------------------------------------------------------
 def GetCustomScriptExtractors():
@@ -93,5 +96,5 @@ def GetCustomScriptExtractors():
     See <Common_Environment>/Activate_custom.py for an example of how script extractors
     are used to process Python and PowerShell scripts.
     """
-    
+
     return

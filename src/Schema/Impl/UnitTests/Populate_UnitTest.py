@@ -588,7 +588,7 @@ class UnnamedObjSuite(unittest.TestCase):
                         pass
                     """,
                 ),
-            )
+            ),
         )
 
         # No sep
@@ -602,7 +602,7 @@ class UnnamedObjSuite(unittest.TestCase):
                         pass
                     """,
                 ),
-            )
+            ),
         )
 
         # Wonky spacing
@@ -623,7 +623,7 @@ class UnnamedObjSuite(unittest.TestCase):
 
                     """,
                 ),
-            )
+            ),
         )
 
         # Inline
@@ -635,7 +635,7 @@ class UnnamedObjSuite(unittest.TestCase):
                     <one='two' three="four">: pass
                     """,
                 ),
-            )
+            ),
         )
 
     # ----------------------------------------------------------------------
@@ -793,7 +793,7 @@ class NamedObjSuite(unittest.TestCase):
                         pass
                     """,
                 ),
-            )
+            ),
         )
 
         # No sep
@@ -807,7 +807,7 @@ class NamedObjSuite(unittest.TestCase):
                         pass
                     """,
                 ),
-            )
+            ),
         )
 
         # Wonky spacing
@@ -828,7 +828,7 @@ class NamedObjSuite(unittest.TestCase):
 
                     """,
                 ),
-            )
+            ),
         )
 
         # Inline
@@ -840,7 +840,7 @@ class NamedObjSuite(unittest.TestCase):
                     <bar one='two' three="four">: pass
                     """,
                 ),
-            )
+            ),
         )
 
     # ----------------------------------------------------------------------

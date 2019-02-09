@@ -87,7 +87,7 @@ class PythonSerializationImpl(PluginBase):
             | ParseFlag.SupportListElements
             | (ParseFlag.SupportSimpleObjectElements if cls._SupportAttributes else 0)
             | ParseFlag.SupportVariantElements
-            | ParseFlag.ResolveReferences
+            | ParseFlag.ResolveReferences,
         )
 
     # ----------------------------------------------------------------------
@@ -1086,7 +1086,7 @@ class PythonSerializationImpl(PluginBase):
                     dest_writer.AppendChild(optional_child_empty_element, "dest", None),
                     8,
                 ).strip(),
-            )
+            ),
         )
 
         optional_children_empty_element = dest_writer.CreateTemporaryElement(
@@ -1110,7 +1110,7 @@ class PythonSerializationImpl(PluginBase):
                     dest_writer.AppendChild(optional_children_empty_element, "dest", None),
                     8,
                 ).strip(),
-            )
+            ),
         )
 
         optional_attribute_empty_element = dest_writer.CreateTemporaryElement(
@@ -1129,7 +1129,7 @@ class PythonSerializationImpl(PluginBase):
                 ).strip(),
                 add_child="dest[attribute_name] = value",
                 add_child_empty="dest[attribute_name] = None",
-            )
+            ),
         )
 
         # _ApplyAdditionalData

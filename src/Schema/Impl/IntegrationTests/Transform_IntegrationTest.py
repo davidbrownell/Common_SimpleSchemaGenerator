@@ -92,7 +92,7 @@ class InternalPlugin(Plugin):
         |
                                                                             # ParseFlag.SupportSimpleObjectElements |
         ParseFlag.SupportVariantElements
-        | ParseFlag.ResolveReferences
+        | ParseFlag.ResolveReferences,
     )
 
     # ----------------------------------------------------------------------

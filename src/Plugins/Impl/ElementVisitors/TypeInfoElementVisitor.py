@@ -110,8 +110,8 @@ class TypeInfoElementVisitor(ElementVisitor):
                             comma_prefix=False,
                         ),
                     ) for k, v in six.iteritems(element.TypeInfo.Items) if k is not None
-                ]
-            )
+                ],
+            ),
         )
 
         if children_statement not in self._cached_children_statements:

@@ -1,0 +1,31 @@
+<test_base *>:
+    <a string *>
+
+<test_derived test_base>:
+    <optional bool ?>
+    <b bool>
+    <c string min_length=12 *>
+    
+    <v1 (b|string|int min=20)>
+    <v2 (bool|v1)>
+    <v3 (uri|v2|filename ensure_exists=true) +>
+    
+    <c_ref0 c>                                          # Plain reference
+    <c_ref05 c?>
+    <c_ref1 c max_length=20>                            # Reference with augmented metadata
+    <c_ref2 c refines_arity=true {20}>                  # Reference updating arity
+    <c_ref25 c max_length=20 refines_arity=true {20}>   # Reference with augmented metadata and updated arity
+    <c_ref3 c {5}>                                      # List of strings
+    <c_ref4 c_ref3 {10}>                                # List of list of strings
+    
+    <test_derived_ref1 test_derived>
+    <test_derived_ref2 test_derived {10}>
+    <test_derived_ref3 test_derived_ref2>
+    <test_derived_ref4 test_derived_ref2 refines_arity=true *>
+    <test_derived_ref5 test_derived_ref2 {20}>
+
+    <_any any>
+
+<simple string fundamental_name="name">:
+    [a int]
+    [b bool ?]

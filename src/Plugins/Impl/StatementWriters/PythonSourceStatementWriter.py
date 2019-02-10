@@ -85,9 +85,9 @@ class PythonSourceStatementWriter(SourceStatementWriter):
         )
 
     # ----------------------------------------------------------------------
-    @classmethod
+    @staticmethod
     @Interface.override
-    def GetAdditionalDataChildren(cls):
+    def GetAdditionalDataChildren():
         return '[(k, v) for k, v in six.iteritems(source if isinstance(source, dict) else source.__dict__) if not k.startswith("_") and k not in exclude_names]'
 
     # ----------------------------------------------------------------------
@@ -96,7 +96,7 @@ class PythonSourceStatementWriter(SourceStatementWriter):
     def CreateAdditionalDataItem(cls, dest_writer, name_var_name, source_var_name):
         temporary_element = cls.CreateTemporaryElement(
             name_var_name,
-            is_collection=False,
+            "1",
         )
 
         return textwrap.dedent(
@@ -164,7 +164,7 @@ class PythonSourceStatementWriter(SourceStatementWriter):
                 dest_writer.AppendChild(
                     cls.CreateTemporaryElement(
                         "k",
-                        is_collection=True,
+                        "+",
                     ),
                     "result",
                     "new_items",
@@ -175,7 +175,7 @@ class PythonSourceStatementWriter(SourceStatementWriter):
                 dest_writer.AppendChild(
                     cls.CreateTemporaryElement(
                         "k",
-                        is_collection=False,
+                        "1",
                     ),
                     "result",
                     "new_item",

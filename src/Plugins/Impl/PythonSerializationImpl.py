@@ -196,7 +196,6 @@ class PythonSerializationImpl(PluginBase):
                         from CommonEnvironment.TypeInfo.ListTypeInfo import ListTypeInfo
 
                         from CommonEnvironment.TypeInfo.FundamentalTypes.Serialization.PythonCodeVisitor import PythonCodeVisitor
-                        from CommonEnvironment.TypeInfo.FundamentalTypes.Serialization.StringSerialization import StringSerialization
 
                         # <Unused import> pylint: disable = W0611
                         # <Unused import> pylint: disable = W0614
@@ -574,7 +573,7 @@ class PythonSerializationImpl(PluginBase):
                     dest_writer.CreateCompoundElement(
                         dest_writer.CreateTemporaryElement(
                             '"_"',
-                            is_collection=False,
+                            "1",
                         ),
                         None,
                     ),
@@ -1067,7 +1066,7 @@ class PythonSerializationImpl(PluginBase):
 
         optional_child_empty_element = source_writer.CreateTemporaryElement(
             "attribute_name",
-            is_collection=False,
+            "?",
         )
 
         indented_stream.write(
@@ -1091,7 +1090,7 @@ class PythonSerializationImpl(PluginBase):
 
         optional_children_empty_element = dest_writer.CreateTemporaryElement(
             "attribute_name",
-            is_collection=True,
+            "*",
         )
 
         indented_stream.write(
@@ -1115,7 +1114,7 @@ class PythonSerializationImpl(PluginBase):
 
         optional_attribute_empty_element = dest_writer.CreateTemporaryElement(
             "attribute_name",
-            is_collection=False,
+            "?",
             is_attribute=True,
         )
 
@@ -1173,7 +1172,7 @@ class PythonSerializationImpl(PluginBase):
                     dest_writer.AppendChild(
                         source_writer.CreateTemporaryElement(
                             "name",
-                            is_collection=False,
+                            "1",
                         ),
                         "dest",
                         "cls._CreateAdditionalDataItem(name, child)",
@@ -1184,7 +1183,7 @@ class PythonSerializationImpl(PluginBase):
                     dest_writer.AppendChild(
                         source_writer.CreateTemporaryElement(
                             "name",
-                            is_collection=True,
+                            "+",
                         ),
                         "dest",
                         "children",
@@ -1213,11 +1212,11 @@ class PythonSerializationImpl(PluginBase):
         )
 
         # Write the utility funcs
-        result = source_writer.GetClassUtilityMethods(dest_writer)
+        result = dest_writer.GetClassUtilityMethods(source_writer)
         if result is not None:
             indented_stream.write("{}\n\n".format(result.strip()))
 
-        result = dest_writer.GetClassUtilityMethods(source_writer)
+        result = source_writer.GetClassUtilityMethods(dest_writer)
         if result is not None:
             indented_stream.write("{}\n\n".format(result.strip()))
 

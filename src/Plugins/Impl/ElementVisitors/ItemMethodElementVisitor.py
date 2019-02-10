@@ -331,7 +331,7 @@ class ItemMethodElementVisitor(ElementVisitor):
                             "item",
                             self._source_writer.CreateTemporaryElement(
                                 '"{}"'.format(element.FundamentalAttributeName),
-                                is_collection=False,
+                                "1",
                             ),
                             is_simple_schema_fundamental=True,
                         ),

@@ -30,6 +30,8 @@ _script_dir, _script_name                   = os.path.split(_script_fullpath)
 #  ----------------------------------------------------------------------
 
 with InitRelativeImports():
+    from ....Schema import Elements
+
     from ..ElementVisitors import ElementVisitor, ToPythonName
 
 # ----------------------------------------------------------------------
@@ -100,6 +102,20 @@ class TypeInfoElementVisitor(ElementVisitor):
         # that can process classes or dictionaries. Also, handle the processing of
         # recursive data structure by creating a TypeInfo object that only parses one
         # level deep.
+
+        # ----------------------------------------------------------------------
+        def GenerateChildren(element):
+            while isinstance(element, Elements.CompoundElement):
+                for k, v in six.iteritems(element.TypeInfo.Items):
+                    if k is None:
+                        continue
+
+                    yield k, v
+
+                element = element.Base
+
+        # ----------------------------------------------------------------------
+
         children_statement = "OrderedDict([{}])".format(
             ", ".join(
                 [
@@ -109,7 +125,7 @@ class TypeInfoElementVisitor(ElementVisitor):
                             v.Arity,
                             comma_prefix=False,
                         ),
-                    ) for k, v in six.iteritems(element.TypeInfo.Items) if k is not None
+                    ) for k, v in GenerateChildren(element)
                 ],
             ),
         )

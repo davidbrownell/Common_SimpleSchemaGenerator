@@ -144,6 +144,8 @@ class Plugin(PythonSerializationImpl):
         @classmethod
         @Interface.override
         def CreateAdditionalDataItem(cls, dest_writer, name_var_name, source_var_name):
+            temporary_element = cls.CreateTemporaryElement("{}.tag".format(source_var_name), "1")
+
             return textwrap.dedent(
                 """\
                 attributes = OrderedDict()
@@ -185,18 +187,12 @@ class Plugin(PythonSerializationImpl):
                 source_var_name=source_var_name,
                 item_name=Plugin.COLLECTION_ITEM_NAME,
                 compound_statement=dest_writer.CreateCompoundElement(
-                    cls.CreateTemporaryElement(
-                        "{}.tag".format(source_var_name),
-                        is_collection=False,
-                    ),
+                    temporary_element,
                     "attributes",
                 ).strip(),
                 simple_element=StringHelpers.LeftJustify(
                     dest_writer.CreateSimpleElement(
-                        cls.CreateTemporaryElement(
-                            "{}.tag".format(source_var_name),
-                            is_collection=False,
-                        ),
+                        temporary_element,
                         "attributes",
                         "{}.text".format(source_var_name),
                     ),
@@ -204,10 +200,7 @@ class Plugin(PythonSerializationImpl):
                 ).strip(),
                 append_children=StringHelpers.LeftJustify(
                     dest_writer.AppendChild(
-                        cls.CreateTemporaryElement(
-                            "child_name",
-                            is_collection=True,
-                        ),
+                        cls.CreateTemporaryElement("child_name", "+"),
                         "result",
                         "new_items",
                     ),
@@ -215,10 +208,7 @@ class Plugin(PythonSerializationImpl):
                 ).strip(),
                 append_child=StringHelpers.LeftJustify(
                     dest_writer.AppendChild(
-                        cls.CreateTemporaryElement(
-                            "child_name",
-                            is_collection=False,
-                        ),
+                        cls.CreateTemporaryElement("child_name", "1"),
                         "result",
                         "new_item",
                     ),
@@ -458,8 +448,8 @@ class Plugin(PythonSerializationImpl):
     _SupportAnyElements                     = Interface.DerivedProperty(True)
     _TypeInfoSerializationName              = Interface.DerivedProperty("StringSerialization")
 
-    _DestinationStatementWriter             = Interface.DerivedProperty(DestinationStatementWriter)
     _SourceStatementWriter                  = Interface.DerivedProperty(SourceStatementWriter)
+    _DestinationStatementWriter             = Interface.DerivedProperty(DestinationStatementWriter)
 
     # ----------------------------------------------------------------------
     # |  Private Methods
@@ -471,6 +461,7 @@ class Plugin(PythonSerializationImpl):
                 """\
                 import xml.etree.ElementTree as ET
 
+                from CommonEnvironment.TypeInfo.FundamentalTypes.Serialization.StringSerialization import StringSerialization
 
                 """,
             ),

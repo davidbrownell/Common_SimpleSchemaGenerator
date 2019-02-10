@@ -85,19 +85,16 @@ class PythonSourceStatementWriter(SourceStatementWriter):
         )
 
     # ----------------------------------------------------------------------
-    @classmethod
+    @staticmethod
     @Interface.override
-    def GetAdditionalDataChildren(cls):
+    def GetAdditionalDataChildren():
         return '[(k, v) for k, v in six.iteritems(source if isinstance(source, dict) else source.__dict__) if not k.startswith("_") and k not in exclude_names]'
 
     # ----------------------------------------------------------------------
     @classmethod
     @Interface.override
     def CreateAdditionalDataItem(cls, dest_writer, name_var_name, source_var_name):
-        temporary_element = cls.CreateTemporaryElement(
-            name_var_name,
-            is_collection=False,
-        )
+        temporary_element = cls.CreateTemporaryElement(name_var_name, "1")
 
         return textwrap.dedent(
             """\
@@ -161,25 +158,11 @@ class PythonSourceStatementWriter(SourceStatementWriter):
             ).strip(),
             compound_statement=dest_writer.CreateCompoundElement(temporary_element, "attributes").strip(),
             append_children=StringHelpers.LeftJustify(
-                dest_writer.AppendChild(
-                    cls.CreateTemporaryElement(
-                        "k",
-                        is_collection=True,
-                    ),
-                    "result",
-                    "new_items",
-                ),
+                dest_writer.AppendChild(cls.CreateTemporaryElement("k", "+"), "result", "new_items"),
                 12,
             ).strip(),
             append_child=StringHelpers.LeftJustify(
-                dest_writer.AppendChild(
-                    cls.CreateTemporaryElement(
-                        "k",
-                        is_collection=False,
-                    ),
-                    "result",
-                    "new_item",
-                ),
+                dest_writer.AppendChild(cls.CreateTemporaryElement("k", "1"), "result", "new_item"),
                 8,
             ).strip(),
         )

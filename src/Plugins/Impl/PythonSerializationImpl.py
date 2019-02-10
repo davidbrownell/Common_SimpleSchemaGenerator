@@ -571,10 +571,7 @@ class PythonSerializationImpl(PluginBase):
                 ),
                 create_compound=StringHelpers.LeftJustify(
                     dest_writer.CreateCompoundElement(
-                        dest_writer.CreateTemporaryElement(
-                            '"_"',
-                            "1",
-                        ),
+                        dest_writer.CreateTemporaryElement('"_"', "1"),
                         None,
                     ),
                     4,
@@ -1064,10 +1061,7 @@ class PythonSerializationImpl(PluginBase):
             """,
         )
 
-        optional_child_empty_element = source_writer.CreateTemporaryElement(
-            "attribute_name",
-            "?",
-        )
+        optional_child_empty_element = source_writer.CreateTemporaryElement("attribute_name", "?")
 
         indented_stream.write(
             content_template.format(
@@ -1088,10 +1082,7 @@ class PythonSerializationImpl(PluginBase):
             ),
         )
 
-        optional_children_empty_element = dest_writer.CreateTemporaryElement(
-            "attribute_name",
-            "*",
-        )
+        optional_children_empty_element = dest_writer.CreateTemporaryElement("attribute_name", "*")
 
         indented_stream.write(
             content_template.format(
@@ -1170,10 +1161,7 @@ class PythonSerializationImpl(PluginBase):
                 ).strip(),
                 append=StringHelpers.LeftJustify(
                     dest_writer.AppendChild(
-                        source_writer.CreateTemporaryElement(
-                            "name",
-                            "1",
-                        ),
+                        source_writer.CreateTemporaryElement("name", "1"),
                         "dest",
                         "cls._CreateAdditionalDataItem(name, child)",
                     ),
@@ -1181,10 +1169,7 @@ class PythonSerializationImpl(PluginBase):
                 ).strip(),
                 append_children=StringHelpers.LeftJustify(
                     dest_writer.AppendChild(
-                        source_writer.CreateTemporaryElement(
-                            "name",
-                            "+",
-                        ),
+                        source_writer.CreateTemporaryElement("name", "+"),
                         "dest",
                         "children",
                     ),

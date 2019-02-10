@@ -102,7 +102,7 @@ class TypeInfoElementVisitor(ElementVisitor):
         # that can process classes or dictionaries. Also, handle the processing of
         # recursive data structure by creating a TypeInfo object that only parses one
         # level deep.
-        
+
         # ----------------------------------------------------------------------
         def GenerateChildren(element):
             while isinstance(element, Elements.CompoundElement):

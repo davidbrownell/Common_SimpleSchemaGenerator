@@ -144,10 +144,7 @@ class Plugin(PythonSerializationImpl):
         @classmethod
         @Interface.override
         def CreateAdditionalDataItem(cls, dest_writer, name_var_name, source_var_name):
-            temporary_element = cls.CreateTemporaryElement(
-                "{}.tag".format(source_var_name),
-                "1",
-            )
+            temporary_element = cls.CreateTemporaryElement("{}.tag".format(source_var_name), "1")
 
             return textwrap.dedent(
                 """\
@@ -203,10 +200,7 @@ class Plugin(PythonSerializationImpl):
                 ).strip(),
                 append_children=StringHelpers.LeftJustify(
                     dest_writer.AppendChild(
-                        cls.CreateTemporaryElement(
-                            "child_name",
-                            "+",
-                        ),
+                        cls.CreateTemporaryElement("child_name", "+"),
                         "result",
                         "new_items",
                     ),
@@ -214,10 +208,7 @@ class Plugin(PythonSerializationImpl):
                 ).strip(),
                 append_child=StringHelpers.LeftJustify(
                     dest_writer.AppendChild(
-                        cls.CreateTemporaryElement(
-                            "child_name",
-                            "1",
-                        ),
+                        cls.CreateTemporaryElement("child_name", "1"),
                         "result",
                         "new_item",
                     ),
@@ -459,7 +450,7 @@ class Plugin(PythonSerializationImpl):
 
     _SourceStatementWriter                  = Interface.DerivedProperty(SourceStatementWriter)
     _DestinationStatementWriter             = Interface.DerivedProperty(DestinationStatementWriter)
-    
+
     # ----------------------------------------------------------------------
     # |  Private Methods
     @staticmethod
@@ -471,7 +462,7 @@ class Plugin(PythonSerializationImpl):
                 import xml.etree.ElementTree as ET
 
                 from CommonEnvironment.TypeInfo.FundamentalTypes.Serialization.StringSerialization import StringSerialization
-                
+
                 """,
             ),
         )

@@ -157,7 +157,7 @@ UNIVERSAL_ATTRIBUTE_INFO                                = AttributeInfo(
             default_value="",
             is_metadata=True,
         ),
-    ]
+    ],
 )
 
 COLLECTION_ATTRIBUTE_INFO                               = AttributeInfo(
@@ -176,7 +176,7 @@ COLLECTION_ATTRIBUTE_INFO                               = AttributeInfo(
             validate_func=_ValidateRefinesArity,
             is_metadata=True,
         ),
-    ]
+    ],
 )
 
 OPTIONAL_ATTRIBUTE_INFO                                 = AttributeInfo(
@@ -199,7 +199,7 @@ SIMPLE_ATTRIBUTE_INFO                                                       = At
             StringTypeInfo(),
             missing_validate_func=_ValidateFundamentalName,
         )
-    ]
+    ],
 )
 
 ANY_ATTRIBUTE_INFO                          = AttributeInfo()

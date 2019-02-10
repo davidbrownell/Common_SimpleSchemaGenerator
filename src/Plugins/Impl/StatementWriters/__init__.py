@@ -64,12 +64,12 @@ class StatementWriter(Interface.Interface):
     @staticmethod
     def CreateTemporaryElement(
         name,
-        is_collection,
+        arity,
         is_attribute=None,
     ):
         result = Elements.Element(
             StringTypeInfo(
-                arity="*" if is_collection else "1",
+                arity=arity,
             ),
             lambda: name,
             parent=None,

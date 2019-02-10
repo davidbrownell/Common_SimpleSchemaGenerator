@@ -901,7 +901,6 @@ class PythonSerializationImpl(PluginBase):
                         textwrap.dedent(
                             """\
                             {result_name} = {statement}
-
                             """,
                         ).format(
                             result_name=result_name,

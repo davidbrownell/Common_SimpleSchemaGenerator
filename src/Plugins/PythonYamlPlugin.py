@@ -1,9 +1,9 @@
 # ----------------------------------------------------------------------
 # |
-# |  PythonJsonPlugin.py
+# |  PythonYamlPlugin.py
 # |
 # |  David Brownell <db@DavidBrownell.com>
-# |      2019-02-09 13:19:16
+# |      2019-02-10 08:36:02
 # |
 # ----------------------------------------------------------------------
 # |
@@ -40,9 +40,9 @@ with InitRelativeImports():
 class Plugin(PythonSerializationImpl):
     # ----------------------------------------------------------------------
     # |  Properties
-    Name                                                                                        = Interface.DerivedProperty("PythonJson")
+    Name                                                                                        = Interface.DerivedProperty("PythonYaml")
     Description                                                                                 = Interface.DerivedProperty(
-        "Creates python code that is able to serialize and deserialize python objects to JSON",
+        "Creates python code that is able to serialize and deserialize python objects to YAML",
     )
 
     # ----------------------------------------------------------------------
@@ -60,8 +60,8 @@ class Plugin(PythonSerializationImpl):
     @Interface.staticderived
     class SourceStatementWriter(PythonSourceStatementWriter):
         # ----------------------------------------------------------------------
-        # |  Public Properties
-        ObjectTypeDesc                      = Interface.DerivedProperty("a JSON object")
+        # |  Properties
+        ObjectTypeDesc                      = Interface.DerivedProperty("a YAML object")
 
         # ----------------------------------------------------------------------
         # |  Methods
@@ -73,9 +73,9 @@ class Plugin(PythonSerializationImpl):
                 if isinstance({var_name}, six.string_types):
                     if os.path.isfile({var_name}):
                         with open({var_name}) as f:
-                            {var_name} = json.load(f)
+                            {var_name} = rtyaml.load(f)
                     else:
-                        {var_name} = json.loads({var_name})
+                        {var_name} = rtyaml.load({var_name})
 
                 {super}
                 """,
@@ -91,32 +91,16 @@ class Plugin(PythonSerializationImpl):
     @Interface.staticderived
     class DestinationStatementWriter(PythonDestinationStatementWriter):
         # ----------------------------------------------------------------------
-        # |  Public Properties
-        ObjectTypeDesc                      = Interface.DerivedProperty("a JSON object")
+        # |  Properties
+        ObjectTypeDesc                      = Interface.DerivedProperty("a YAML object")
 
         # ----------------------------------------------------------------------
         # |  Methods
         @staticmethod
         @Interface.override
         def SerializeToString(var_name):
-            return "_JsonToString({var_name}, pretty_print)".format(
+            return "rtyaml.dump({var_name})".format(
                 var_name=var_name,
-            )
-
-        # ----------------------------------------------------------------------
-        @staticmethod
-        @Interface.override
-        def GetGlobalUtilityMethods(source_writer):
-            return textwrap.dedent(
-                """\
-                # ----------------------------------------------------------------------
-                def _JsonToString(obj, pretty_print):
-                    if pretty_print:
-                        return json.dumps(obj, cls=JsonEncoder, indent=2, separators=[", ", " : "])
-                    else:
-                        return json.dumps(obj, cls=JsonEncoder)
-
-                """,
             )
 
     # ----------------------------------------------------------------------
@@ -136,14 +120,9 @@ class Plugin(PythonSerializationImpl):
         output_stream.write(
             textwrap.dedent(
                 """\
-                import json
+                import rtyaml
 
                 from CommonEnvironment.TypeInfo.FundamentalTypes.Serialization.JsonSerialization import JsonSerialization
-
-                # ----------------------------------------------------------------------
-                class JsonEncoder(json.JSONEncoder):
-                    def default(self, o):
-                        return o.__dict__
 
 
                 """,

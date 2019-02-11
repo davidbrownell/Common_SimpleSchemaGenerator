@@ -189,6 +189,13 @@ class DestinationStatementWriter(StatementWriter):
     # ----------------------------------------------------------------------
     @staticmethod
     @Interface.abstractmethod
+    def CreateCollection(element, result_name):
+        """Creates a collection out of the given element"""
+        raise Exception("Abstract method")
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @Interface.abstractmethod
     def AppendChild(child_element, parent_var_name, var_name_or_none):
         """Appends a child to an existing CompoundElement"""
         raise Exception("Abstract method")

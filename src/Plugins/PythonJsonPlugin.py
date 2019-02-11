@@ -112,7 +112,11 @@ class Plugin(PythonSerializationImpl):
                 # ----------------------------------------------------------------------
                 def _JsonToString(obj, pretty_print):
                     if pretty_print:
-                        return json.dumps(obj, cls=JsonEncoder, indent=2, separators=[", ", " : "])
+                        content = json.dumps(obj, cls=JsonEncoder, indent=2, separators=[", ", " : "])
+
+                        # Remove trailing whitespace
+                        return "\\n".join([line.rstrip() for line in content.split("\\n")])
+
                     else:
                         return json.dumps(obj, cls=JsonEncoder)
 
@@ -143,7 +147,16 @@ class Plugin(PythonSerializationImpl):
                 # ----------------------------------------------------------------------
                 class JsonEncoder(json.JSONEncoder):
                     def default(self, o):
-                        return o.__dict__
+                        if isinstance(o, Object):
+                            d = copy.deepcopy(o.__dict__)
+
+                            for k in list(six.iterkeys(d)):
+                                if k.startswith("_"):
+                                    del d[k]
+
+                            return d
+
+                        return getattr(o, "__dict__", o)
 
 
                 """,

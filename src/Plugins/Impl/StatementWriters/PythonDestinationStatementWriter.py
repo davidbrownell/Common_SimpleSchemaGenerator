@@ -77,6 +77,12 @@ class PythonDestinationStatementWriter(DestinationStatementWriter):
         return fundamental_statement
 
     # ----------------------------------------------------------------------
+    @staticmethod
+    @Interface.override
+    def CreateCollection(element, result_name):
+        return result_name
+
+    # ----------------------------------------------------------------------
     @classmethod
     @Interface.override
     def AppendChild(cls, child_element, parent_var_name, var_name_or_none):

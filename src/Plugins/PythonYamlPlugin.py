@@ -99,8 +99,31 @@ class Plugin(PythonSerializationImpl):
         @staticmethod
         @Interface.override
         def SerializeToString(var_name):
-            return "rtyaml.dump({var_name})".format(
+            return "_YamlToString({var_name})".format(
                 var_name=var_name,
+            )
+
+        # ----------------------------------------------------------------------
+        @staticmethod
+        @Interface.override
+        def GetGlobalUtilityMethods(source_writer):
+            return textwrap.dedent(
+                """\
+                # ----------------------------------------------------------------------
+                def _YamlToString(obj):
+                    previous_tag_emitter = yaml.emitter.Emitter.process_tag
+
+                    # ----------------------------------------------------------------------
+                    def RestoreTagEmitter():
+                        yaml.emitter.Emitter.process_tag = previous_tag_emitter
+
+                    # ----------------------------------------------------------------------
+
+                    yaml.emitter.Emitter.process_tag = (lambda *args, **kwargs: None)
+                    with CallOnExit(RestoreTagEmitter):
+                        return rtyaml.dump(obj)
+
+                """,
             )
 
     # ----------------------------------------------------------------------
@@ -121,7 +144,9 @@ class Plugin(PythonSerializationImpl):
             textwrap.dedent(
                 """\
                 import rtyaml
+                import yaml
 
+                from CommonEnvironment.CallOnExit import CallOnExit
                 from CommonEnvironment.TypeInfo.FundamentalTypes.Serialization.JsonSerialization import JsonSerialization
 
 
@@ -133,5 +158,22 @@ class Plugin(PythonSerializationImpl):
     @staticmethod
     @Interface.override
     def _WriteFileFooter(output_stream):
-        # Nothing to do here
-        pass
+        output_stream.write(
+            textwrap.dedent(
+                """\
+
+
+                # ----------------------------------------------------------------------
+                def _ObjectToYaml(dumper, data):
+                    d = dict(data.__dict__)
+                    for k in list(six.iterkeys(d)):
+                        if k.startswith("_"):
+                            del d[k]
+
+                    return dumper.represent_dict(d)
+
+
+                yaml.add_representer(Object, _ObjectToYaml)
+                """,
+            ),
+        )

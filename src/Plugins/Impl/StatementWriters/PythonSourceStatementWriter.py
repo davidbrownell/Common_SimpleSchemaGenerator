@@ -95,6 +95,7 @@ class PythonSourceStatementWriter(SourceStatementWriter):
     @Interface.override
     def CreateAdditionalDataItem(cls, dest_writer, name_var_name, source_var_name):
         temporary_element = cls.CreateTemporaryElement(name_var_name, "1")
+        temporary_children_element = cls.CreateTemporaryElement("k", "+")
 
         return textwrap.dedent(
             """\
@@ -158,7 +159,11 @@ class PythonSourceStatementWriter(SourceStatementWriter):
             ).strip(),
             compound_statement=dest_writer.CreateCompoundElement(temporary_element, "attributes").strip(),
             append_children=StringHelpers.LeftJustify(
-                dest_writer.AppendChild(cls.CreateTemporaryElement("k", "+"), "result", "new_items"),
+                dest_writer.AppendChild(
+                    temporary_children_element,
+                    "result",
+                    dest_writer.CreateCollection(temporary_children_element, "new_items"),
+                ),
                 12,
             ).strip(),
             append_child=StringHelpers.LeftJustify(

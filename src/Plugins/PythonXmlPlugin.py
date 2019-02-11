@@ -43,7 +43,7 @@ class Plugin(PythonSerializationImpl):
     # |  Properties
     Name                                                                                       = Interface.DerivedProperty("PythonXml")
     Description                                                                                = Interface.DerivedProperty(
-        "Creates Python code that is able to serialize and deserialize python objects to Xml",
+        "Creates Python code that is able to serialize and deserialize python objects to XML",
     )
 
     # ----------------------------------------------------------------------
@@ -172,8 +172,13 @@ class Plugin(PythonSerializationImpl):
                                 except:
                                     _DecorateActiveException("Index {{}}".format(index))
 
+                            if child_name is None:
+                                result = new_items
+                                break
+
                             {append_children}
                         else:
+                            assert child_name is not None
                             new_item = cls._CreateAdditionalDataItem(child_name, child_or_children)
 
                             {append_child}
@@ -245,13 +250,24 @@ class Plugin(PythonSerializationImpl):
 
                         children.setdefault(child.tag, []).append(child)
 
-                    for k, v in six.iteritems(children):
-                        if len(v) == 1:
-                            yield k, v[0]
-                        else:
-                            yield k, v
+                    if len(children) == 1 and next(six.iterkeys(children)) == "{item_name}":
+                        value = next(six.itervalues(children))
+
+                        if not isinstance(value, list):
+                            value = [value]
+
+                        yield None, value
+
+                    else:
+                        for k, v in six.iteritems(children):
+                            if len(v) == 1:
+                                yield k, v[0]
+                            else:
+                                yield k, v
 
                 """,
+            ).format(
+                item_name=Plugin.COLLECTION_ITEM_NAME,
             )
 
         # ----------------------------------------------------------------------
@@ -346,14 +362,17 @@ class Plugin(PythonSerializationImpl):
         # ----------------------------------------------------------------------
         @classmethod
         @Interface.override
+        def CreateCollection(cls, element, result_name):
+            return "cls._CreateXmlCollection({}, {})".format(
+                cls.GetElementStatementName(element),
+                result_name,
+            )
+
+        # ----------------------------------------------------------------------
+        @classmethod
+        @Interface.override
         def AppendChild(cls, child_element, parent_var_name, var_name_or_none):
-            if child_element.TypeInfo.Arity.IsCollection:
-                return "{parent_var_name}.append(_CreateXmlCollection({element_name}, {var_name}))".format(
-                    parent_var_name=parent_var_name,
-                    element_name=cls.GetElementStatementName(child_element),
-                    var_name=var_name_or_none,
-                )
-            elif var_name_or_none is None:
+            if var_name_or_none is None:
                 var_name_or_none = "_CreateXmlElement({})".format(
                     cls.GetElementStatementName(child_element),
                 )
@@ -382,6 +401,28 @@ class Plugin(PythonSerializationImpl):
         # ----------------------------------------------------------------------
         @staticmethod
         @Interface.override
+        def GetClassUtilityMethods(source_writer):
+            return textwrap.dedent(
+                """\
+                # ----------------------------------------------------------------------
+                @staticmethod
+                def _CreateXmlCollection(element_name, items_or_none):
+                    result = _CreateXmlElement(element_name)
+
+                    for item in (items_or_none or []):
+                        item.tag = "{item_name}"
+                        result.append(item)
+
+                    return result
+
+                """,
+            ).format(
+                item_name=Plugin.COLLECTION_ITEM_NAME,
+            )
+
+        # ----------------------------------------------------------------------
+        @staticmethod
+        @Interface.override
         def GetGlobalUtilityMethods(source_writer):
             return textwrap.dedent(
                 """\
@@ -393,22 +434,11 @@ class Plugin(PythonSerializationImpl):
                 ):
                     result = ET.Element(
                         element_name,
-                        attrib=attributes or {{}},
+                        attrib=attributes or {},
                     )
 
                     if text_value is not None:
                         result.text = text_value
-
-                    return result
-
-
-                # ----------------------------------------------------------------------
-                def _CreateXmlCollection(element_name, items_or_none):
-                    result = _CreateXmlElement(element_name)
-
-                    for item in (items_or_none or []):
-                        item.tag = "{item_name}"
-                        result.append(item)
 
                     return result
 
@@ -438,8 +468,6 @@ class Plugin(PythonSerializationImpl):
                     return original
 
                 """,
-            ).format(
-                item_name=Plugin.COLLECTION_ITEM_NAME,
             )
 
     # ----------------------------------------------------------------------

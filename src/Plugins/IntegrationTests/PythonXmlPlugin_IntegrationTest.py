@@ -92,6 +92,40 @@ class FileSystemSuite(SuiteImpl):
         self._xml_content = xml_content
 
     # ----------------------------------------------------------------------
+    def test_Standard(self):
+        obj = XmlSerialization.Deserialize(self._xml_filename)
+
+        # root
+        self.assertEqual(obj.root.name, "one")
+        self.assertEqual(obj.root.directories[0].name, "two")
+        self.assertEqual(obj.root.directories[0].directories[0].name, "three")
+        self.assertEqual(obj.root.directories[0].directories[0].files[0].name, "file1")
+        self.assertEqual(obj.root.directories[0].directories[0].files[0].size, 10)
+        self.assertEqual(obj.root.directories[0].directories[0].files[1].name, "file2")
+        self.assertEqual(obj.root.directories[0].directories[0].files[1].size, 200)
+        self.assertEqual(obj.root.files[0].name, "file10")
+        self.assertEqual(obj.root.files[0].size, 20)
+
+        # roots
+        self.assertEqual(obj.roots[0].name, "dir1")
+        self.assertEqual(obj.roots[1].name, "dir2")
+
+    # ----------------------------------------------------------------------
+    def test_StandardAdditionalData(self):
+        obj = XmlSerialization.Deserialize(
+            self._xml_filename,
+            process_additional_data=True,
+        )
+
+        self.assertEqual(obj.roots[1].extra[0].two, "2")
+        self.assertEqual(obj.roots[1].extra[0].simple_value, "value")
+        self.assertEqual(obj.roots[1].extra[1].a, "a")
+        self.assertEqual(obj.roots[1].extra[1].b, "b")
+        self.assertEqual(obj.roots[1].extra[1].value[0].one, "1")
+        self.assertEqual(obj.roots[1].extra[1].value[0].simple_value, "text value")
+        self.assertEqual(obj.roots[1].extra[1].value[1].simple_value, "another text value")
+
+    # ----------------------------------------------------------------------
     def test_All(self):
         python_object = XmlSerialization.Deserialize(self._xml_filename)
 

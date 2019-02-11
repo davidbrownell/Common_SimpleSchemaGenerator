@@ -105,14 +105,14 @@ class TypeInfoElementVisitor(ElementVisitor):
 
         # ----------------------------------------------------------------------
         def GenerateChildren(element):
-            while isinstance(element, Elements.CompoundElement):
+            while isinstance(element, (Elements.CompoundElement, Elements.SimpleElement)):
                 for k, v in six.iteritems(element.TypeInfo.Items):
                     if k is None:
                         continue
 
                     yield k, v
 
-                element = element.Base
+                element = getattr(element, "Base", None)
 
         # ----------------------------------------------------------------------
 

@@ -995,15 +995,20 @@ class PythonSerializationImpl(PluginBase):
                     ),
                 )
 
+            if element.TypeInfo.Arity.IsCollection:
+                return_statement = dest_writer.CreateCollection(element, result_name)
+            else:
+                return_statement = result_name
+
             content_stream.write(
                 textwrap.dedent(
                     """\
 
-                    return {result_name}
+                    return {return_statement}
 
                     """,
                 ).format(
-                    result_name=result_name,
+                    return_statement=return_statement,
                 ),
             )
 
@@ -1122,6 +1127,8 @@ class PythonSerializationImpl(PluginBase):
         )
 
         # _ApplyAdditionalData
+        temporary_children_element = source_writer.CreateTemporaryElement("name", "+")
+
         indented_stream.write(
             textwrap.dedent(
                 """\
@@ -1168,9 +1175,9 @@ class PythonSerializationImpl(PluginBase):
                 ).strip(),
                 append_children=StringHelpers.LeftJustify(
                     dest_writer.AppendChild(
-                        source_writer.CreateTemporaryElement("name", "+"),
+                        temporary_children_element,
                         "dest",
-                        "children",
+                        dest_writer.CreateCollection(temporary_children_element, "children"),
                     ),
                     12,
                 ).strip(),

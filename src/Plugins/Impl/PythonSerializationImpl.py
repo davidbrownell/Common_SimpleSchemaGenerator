@@ -94,9 +94,10 @@ class PythonSerializationImpl(PluginBase):
     @classmethod
     @Interface.override
     def GetAdditionalGeneratorItems(cls, context):
-        return [_script_fullpath] + super(PythonSerializationImpl, cls).GetAdditionalGeneratorItems(
-            context,
-        )
+        return [_script_fullpath, ItemMethodElementVisitor, TypeInfoElementVisitor, PythonDestinationStatementWriter, PythonSourceStatementWriter] + super(
+            PythonSerializationImpl,
+            cls,
+        ).GetAdditionalGeneratorItems(context)
 
     # ----------------------------------------------------------------------
     @staticmethod
@@ -491,12 +492,20 @@ class PythonSerializationImpl(PluginBase):
         if is_serialization:
             method_name = "Serialize"
 
+            to_string_statements = dest_writer.SerializeToString("result")
+
             extra_args = textwrap.dedent(
                 """\
                 to_string=False,
-                pretty_print=False,
                 """,
             )
+
+            if "pretty_print" in to_string_statements:
+                extra_args += textwrap.dedent(
+                    """\
+                    pretty_print=False,
+                    """,
+                )
 
             suffix = textwrap.dedent(
                 """\
@@ -504,7 +513,7 @@ class PythonSerializationImpl(PluginBase):
                     result = {}
 
                 """,
-            ).format(StringHelpers.LeftJustify(dest_writer.SerializeToString("result"), 4).strip())
+            ).format(StringHelpers.LeftJustify(to_string_statements, 4).strip())
         else:
             method_name = "Deserialize"
             extra_args = ""

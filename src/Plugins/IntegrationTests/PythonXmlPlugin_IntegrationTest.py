@@ -13,16 +13,19 @@
 # |  http://www.boost.org/LICENSE_1_0.txt.
 # |
 # ----------------------------------------------------------------------
-"""Integration test for PythonXmlPlugin"""
+"""Integration tests for PythonXmlPlugin"""
 
 import os
 import sys
+import textwrap
 import unittest
 
 import xml.etree.ElementTree as ET
 
 import CommonEnvironment
 from CommonEnvironment.CallOnExit import CallOnExit
+
+from CommonEnvironmentEx.Package import InitRelativeImports
 
 # ----------------------------------------------------------------------
 _script_fullpath                            = CommonEnvironment.ThisFullpath()
@@ -34,8 +37,12 @@ with CallOnExit(lambda: sys.path.pop(0)):
     import FileSystemTest_PythonXmlSerialization as XmlSerialization
 
 
+with InitRelativeImports():
+    from .Impl.FileSystemTestUtils import FileSystemUtilsMixin
+
+
 # ----------------------------------------------------------------------
-class SuiteImpl(unittest.TestCase):
+class SuiteImpl(unittest.TestCase, FileSystemUtilsMixin):
     # ----------------------------------------------------------------------
     def Match(
         self,
@@ -95,20 +102,8 @@ class FileSystemSuite(SuiteImpl):
     def test_Standard(self):
         obj = XmlSerialization.Deserialize(self._xml_filename)
 
-        # root
-        self.assertEqual(obj.root.name, "one")
-        self.assertEqual(obj.root.directories[0].name, "two")
-        self.assertEqual(obj.root.directories[0].directories[0].name, "three")
-        self.assertEqual(obj.root.directories[0].directories[0].files[0].name, "file1")
-        self.assertEqual(obj.root.directories[0].directories[0].files[0].size, 10)
-        self.assertEqual(obj.root.directories[0].directories[0].files[1].name, "file2")
-        self.assertEqual(obj.root.directories[0].directories[0].files[1].size, 200)
-        self.assertEqual(obj.root.files[0].name, "file10")
-        self.assertEqual(obj.root.files[0].size, 20)
-
-        # roots
-        self.assertEqual(obj.roots[0].name, "dir1")
-        self.assertEqual(obj.roots[1].name, "dir2")
+        self.ValidateRoot(obj.root)
+        self.ValidateRoots(obj.roots)
 
     # ----------------------------------------------------------------------
     def test_StandardAdditionalData(self):
@@ -117,13 +112,15 @@ class FileSystemSuite(SuiteImpl):
             process_additional_data=True,
         )
 
-        self.assertEqual(obj.roots[1].extra[0].two, "2")
-        self.assertEqual(obj.roots[1].extra[0].simple_value, "value")
-        self.assertEqual(obj.roots[1].extra[1].a, "a")
-        self.assertEqual(obj.roots[1].extra[1].b, "b")
-        self.assertEqual(obj.roots[1].extra[1].value[0].one, "1")
-        self.assertEqual(obj.roots[1].extra[1].value[0].simple_value, "text value")
-        self.assertEqual(obj.roots[1].extra[1].value[1].simple_value, "another text value")
+        self.ValidateRoot(
+            obj.root,
+            process_additional_data=True,
+        )
+
+        self.ValidateRoots(
+            obj.roots,
+            process_additional_data=True,
+        )
 
     # ----------------------------------------------------------------------
     def test_All(self):
@@ -211,6 +208,248 @@ class FileSystemSuite(SuiteImpl):
             xml_object,
             self._xml_content.findall("roots")[0],
             include_extra=True,
+        )
+
+    # ----------------------------------------------------------------------
+    def test_AllToString(self):
+        python_obj = XmlSerialization.Deserialize(self._xml_filename)
+
+        s = XmlSerialization.Serialize(
+            python_obj,
+            to_string=True,
+            pretty_print=True,
+        )
+
+        self.assertEqual(
+            s,
+            textwrap.dedent(
+                """\
+                <_>
+                  <root name="one">
+                    <directories>
+                      <item name="two">
+                        <directories>
+                          <item name="three">
+                            <files>
+                              <item size="10">file1</item>
+                              <item size="200">file2</item>
+                            </files>
+                          </item>
+                        </directories>
+                      </item>
+                    </directories>
+                    <files>
+                      <item size="20">file10</item>
+                    </files>
+                  </root>
+                  <roots>
+                    <item name="dir1" />
+                    <item name="dir2" />
+                  </roots>
+                </_>
+                """,
+            ),
+        )
+
+    # ----------------------------------------------------------------------
+    def test_AllToStringNoPrettyPrint(self):
+        python_obj = XmlSerialization.Deserialize(self._xml_filename)
+
+        s = XmlSerialization.Serialize(
+            python_obj,
+            to_string=True,
+        )
+
+        self.assertEqual(
+            s,
+            """<_><root name="one"><directories><item name="two"><directories><item name="three"><files><item size="10">file1</item><item size="200">file2</item></files></item></directories></item></directories><files><item size="20">file10</item></files></root><roots><item name="dir1" /><item name="dir2" /></roots></_>""",
+        )
+
+    # ----------------------------------------------------------------------
+    def test_AllAdditionalDataToString(self):
+        python_obj = XmlSerialization.Deserialize(
+            self._xml_filename,
+            process_additional_data=True,
+        )
+
+        s = XmlSerialization.Serialize(
+            python_obj,
+            process_additional_data=True,
+            to_string=True,
+            pretty_print=True,
+        )
+
+        self.assertEqual(
+            s,
+            textwrap.dedent(
+                """\
+                <_>
+                  <root name="one">
+                    <directories>
+                      <item name="two">
+                        <directories>
+                          <item name="three">
+                            <files>
+                              <item size="10">file1</item>
+                              <item size="200">file2</item>
+                            </files>
+                          </item>
+                        </directories>
+                      </item>
+                    </directories>
+                    <files>
+                      <item size="20">file10</item>
+                    </files>
+                  </root>
+                  <roots>
+                    <item name="dir1" />
+                    <item name="dir2">
+                      <extra>
+                        <item two="2">value</item>
+                        <item a="a" b="b">
+                          <value>
+                            <item one="1">text value</item>
+                            <item>another text value</item>
+                          </value>
+                        </item>
+                      </extra>
+                    </item>
+                  </roots>
+                </_>
+                """,
+            ),
+        )
+
+    # ----------------------------------------------------------------------
+    def test_RootToString(self):
+        python_obj = XmlSerialization.Deserialize_root(self._xml_filename)
+
+        s = XmlSerialization.Serialize_root(
+            python_obj,
+            to_string=True,
+            pretty_print=True,
+        )
+
+        self.assertEqual(
+            s,
+            textwrap.dedent(
+                """\
+                <root name="one">
+                  <directories>
+                    <item name="two">
+                      <directories>
+                        <item name="three">
+                          <files>
+                            <item size="10">file1</item>
+                            <item size="200">file2</item>
+                          </files>
+                        </item>
+                      </directories>
+                    </item>
+                  </directories>
+                  <files>
+                    <item size="20">file10</item>
+                  </files>
+                </root>
+                """,
+            ),
+        )
+
+    # ----------------------------------------------------------------------
+    def test_RootAdditionalDataToString(self):
+        python_obj = XmlSerialization.Deserialize_root(
+            self._xml_filename,
+            process_additional_data=True,
+        )
+
+        s = XmlSerialization.Serialize_root(
+            python_obj,
+            process_additional_data=True,
+            to_string=True,
+            pretty_print=True,
+        )
+
+        self.assertEqual(
+            s,
+            textwrap.dedent(
+                """\
+                <root name="one">
+                  <directories>
+                    <item name="two">
+                      <directories>
+                        <item name="three">
+                          <files>
+                            <item size="10">file1</item>
+                            <item size="200">file2</item>
+                          </files>
+                        </item>
+                      </directories>
+                    </item>
+                  </directories>
+                  <files>
+                    <item size="20">file10</item>
+                  </files>
+                </root>
+                """,
+            ),
+        )
+
+    # ----------------------------------------------------------------------
+    def test_RootsToString(self):
+        python_obj = XmlSerialization.Deserialize_roots(self._xml_filename)
+
+        s = XmlSerialization.Serialize_roots(
+            python_obj,
+            to_string=True,
+            pretty_print=True,
+        )
+
+        self.assertEqual(
+            s,
+            textwrap.dedent(
+                """\
+                <roots>
+                  <item name="dir1" />
+                  <item name="dir2" />
+                </roots>
+                """,
+            ),
+        )
+
+    # ----------------------------------------------------------------------
+    def test_RootsAdditionalDataToString(self):
+        python_obj = XmlSerialization.Deserialize_roots(
+            self._xml_filename,
+            process_additional_data=True,
+        )
+
+        s = XmlSerialization.Serialize_roots(
+            python_obj,
+            process_additional_data=True,
+            to_string=True,
+            pretty_print=True,
+        )
+
+        self.assertEqual(
+            s,
+            textwrap.dedent(
+                """\
+                <roots>
+                  <item name="dir1" />
+                  <item name="dir2">
+                    <extra>
+                      <item two="2">value</item>
+                      <item a="a" b="b">
+                        <value>
+                          <item one="1">text value</item>
+                          <item>another text value</item>
+                        </value>
+                      </item>
+                    </extra>
+                  </item>
+                </roots>
+                """,
+            ),
         )
 
 

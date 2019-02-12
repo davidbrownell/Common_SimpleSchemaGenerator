@@ -94,9 +94,10 @@ class PythonSerializationImpl(PluginBase):
     @classmethod
     @Interface.override
     def GetAdditionalGeneratorItems(cls, context):
-        return [_script_fullpath] + super(PythonSerializationImpl, cls).GetAdditionalGeneratorItems(
-            context,
-        )
+        return [_script_fullpath, ItemMethodElementVisitor, TypeInfoElementVisitor, PythonDestinationStatementWriter, PythonSourceStatementWriter] + super(
+            PythonSerializationImpl,
+            cls,
+        ).GetAdditionalGeneratorItems(context)
 
     # ----------------------------------------------------------------------
     @staticmethod
@@ -491,12 +492,20 @@ class PythonSerializationImpl(PluginBase):
         if is_serialization:
             method_name = "Serialize"
 
+            to_string_statements = dest_writer.SerializeToString("result")
+
             extra_args = textwrap.dedent(
                 """\
                 to_string=False,
-                pretty_print=False,
                 """,
             )
+
+            if "pretty_print" in to_string_statements:
+                extra_args += textwrap.dedent(
+                    """\
+                    pretty_print=False,
+                    """,
+                )
 
             suffix = textwrap.dedent(
                 """\
@@ -504,7 +513,7 @@ class PythonSerializationImpl(PluginBase):
                     result = {}
 
                 """,
-            ).format(StringHelpers.LeftJustify(dest_writer.SerializeToString("result"), 4).strip())
+            ).format(StringHelpers.LeftJustify(to_string_statements, 4).strip())
         else:
             method_name = "Deserialize"
             extra_args = ""
@@ -995,15 +1004,20 @@ class PythonSerializationImpl(PluginBase):
                     ),
                 )
 
+            if element.TypeInfo.Arity.IsCollection:
+                return_statement = dest_writer.CreateCollection(element, result_name)
+            else:
+                return_statement = result_name
+
             content_stream.write(
                 textwrap.dedent(
                     """\
 
-                    return {result_name}
+                    return {return_statement}
 
                     """,
                 ).format(
-                    result_name=result_name,
+                    return_statement=return_statement,
                 ),
             )
 
@@ -1122,6 +1136,8 @@ class PythonSerializationImpl(PluginBase):
         )
 
         # _ApplyAdditionalData
+        temporary_children_element = source_writer.CreateTemporaryElement("name", "+")
+
         indented_stream.write(
             textwrap.dedent(
                 """\
@@ -1168,9 +1184,9 @@ class PythonSerializationImpl(PluginBase):
                 ).strip(),
                 append_children=StringHelpers.LeftJustify(
                     dest_writer.AppendChild(
-                        source_writer.CreateTemporaryElement("name", "+"),
+                        temporary_children_element,
                         "dest",
-                        "children",
+                        dest_writer.CreateCollection(temporary_children_element, "children"),
                     ),
                     12,
                 ).strip(),

@@ -16,9 +16,12 @@
 """Integration tests for PythonYamlPlugin"""
 
 import os
+import re
 import sys
 import textwrap
 import unittest
+
+import rtyaml
 
 import CommonEnvironment
 from CommonEnvironment.CallOnExit import CallOnExit
@@ -30,14 +33,220 @@ _script_fullpath                            = CommonEnvironment.ThisFullpath()
 _script_dir, _script_name                   = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
+sys.path.insert(0, os.path.join(_script_dir, "Generated", "AllTypes"))
+with CallOnExit(lambda: sys.path.pop(0)):
+    import AllTypes_PythonYamlSerialization as AllTypesYaml
+
 sys.path.insert(0, os.path.join(_script_dir, "Generated", "FileSystemTest"))
 with CallOnExit(lambda: sys.path.pop(0)):
-    import FileSystemTest_PythonYamlSerialization as YamlSerialization
-    import FileSystemTest_PythonXmlSerialization as XmlSerialization
-
+    import FileSystemTest_PythonYamlSerialization as FileSystemYaml
+    import FileSystemTest_PythonXmlSerialization as FileSystemXml
 
 with InitRelativeImports():
+    from .Impl.AllTypesUtils import AllTypesUtilsMixin
     from .Impl.FileSystemTestUtils import FileSystemUtilsMixin
+
+# ----------------------------------------------------------------------
+class AllTypesSuite(unittest.TestCase, AllTypesUtilsMixin):
+    # ----------------------------------------------------------------------
+    def setUp(self):
+        self.maxDiff = None
+
+        yaml_filename = os.path.join(_script_dir, "..", "Impl", "AllTypes.yaml")
+        assert os.path.isfile(yaml_filename), yaml_filename
+
+        with open(yaml_filename) as f:
+            yaml_content = rtyaml.load(f)
+
+        self._yaml_filename = yaml_filename
+        self._yaml_content = yaml_content
+
+    # ----------------------------------------------------------------------
+    def test_Standard(self):
+        obj = AllTypesYaml.Deserialize_types(self._yaml_filename)
+
+        self.ValidateTypes(obj)
+
+    # ----------------------------------------------------------------------
+    def test_StandardList(self):
+        obj = AllTypesYaml.Deserialize_standard_list(
+            textwrap.dedent(
+                """\
+                - one
+                - two
+                - three
+                """,
+            ),
+        )
+
+        self.assertEqual(obj, ["one", "two", "three"])
+
+        # Errors
+        self.assertRaisesRegex(
+            AllTypesYaml.DeserializeException,
+            r"An item was expected",
+            lambda: AllTypesYaml.Deserialize_standard_list(""),
+        )
+
+    # ----------------------------------------------------------------------
+    def test_OptionalList(self):
+        self.assertEqual(
+            AllTypesYaml.Deserialize_optional_list(
+                textwrap.dedent(
+                    """\
+                    - one
+                    - two
+                    """,
+                ),
+            ),
+            ["one", "two"],
+        )
+
+        self.assertEqual(AllTypesYaml.Deserialize_optional_list(""), [])
+
+    # ----------------------------------------------------------------------
+    def test_FixedList(self):
+        self.assertEqual(
+            AllTypesYaml.Deserialize_fixed_list(
+                textwrap.dedent(
+                    """\
+                    - a
+                    - b
+                    - c
+                    """,
+                ),
+            ),
+            ["a", "b", "c"],
+        )
+
+        self.assertRaisesRegex(
+            AllTypesYaml.DeserializeException,
+            r"At least 3 items were expected \(2 found\)",
+            lambda: AllTypesYaml.Deserialize_fixed_list(
+                textwrap.dedent(
+                    """\
+                    - a
+                    - b
+                    """,
+                ),
+            ),
+        )
+
+        self.assertRaisesRegex(
+            AllTypesYaml.DeserializeException,
+            r"At most 3 items were expected \(4 found\)",
+            lambda: AllTypesYaml.Deserialize_fixed_list(
+                textwrap.dedent(
+                    """\
+                    - a
+                    - b
+                    - c
+                    - d
+                    """,
+                ),
+            ),
+        )
+
+    # ----------------------------------------------------------------------
+    def test_Optional(self):
+        self.assertEqual(AllTypesYaml.Deserialize_optional("test"), "test")
+        self.assertEqual(AllTypesYaml.Deserialize_optional(""), AllTypesYaml.DoesNotExist)
+
+    # ----------------------------------------------------------------------
+    def test_Constraints(self):
+        # directory_
+        self.assertEqual(
+            AllTypesYaml.Deserialize_directory_("Generated"),
+            os.path.join(os.getcwd(), "Generated"),
+        )
+        self.assertRaisesRegex(
+            AllTypesYaml.DeserializeException,
+            re.escape(
+                "'{}' is not a valid directory".format(os.path.join(os.getcwd(), "Does Not Exist")),
+            ),
+            lambda: AllTypesYaml.Deserialize_directory_("Does Not Exist"),
+        )
+
+        # filename_
+        self.assertEqual(
+            AllTypesYaml.Deserialize_filename_('"__RepositoryId__"'),
+            os.path.join(os.getcwd(), "__RepositoryId__"),
+        )
+        self.assertRaisesRegex(
+            AllTypesYaml.DeserializeException,
+            re.escape(
+                "'{}' is not a valid file".format(os.path.join(os.getcwd(), "Does Not Exist")),
+            ),
+            lambda: AllTypesYaml.Deserialize_filename_("Does Not Exist"),
+        )
+
+        # filename_any_
+        self.assertEqual(
+            AllTypesYaml.Deserialize_filename_any_("Generated"),
+            os.path.join(os.getcwd(), "Generated"),
+        )
+        self.assertEqual(
+            AllTypesYaml.Deserialize_filename_any_('"__RepositoryId__"'),
+            os.path.join(os.getcwd(), "__RepositoryId__"),
+        )
+        self.assertRaisesRegex(
+            AllTypesYaml.DeserializeException,
+            re.escape(
+                "'{}' is not a valid file or directory".format(
+                    os.path.join(os.getcwd(), "Does Not Exist"),
+                ),
+            ),
+            lambda: AllTypesYaml.Deserialize_filename_any_("Does Not Exist"),
+        )
+
+        # number_
+        self.assertEqual(AllTypesYaml.Deserialize_number_("2"), 2)
+        self.assertRaisesRegex(
+            AllTypesYaml.DeserializeException,
+            r"-30 is not >= -20.0",
+            lambda: AllTypesYaml.Deserialize_number_("-30"),
+        )
+        self.assertRaisesRegex(
+            AllTypesYaml.DeserializeException,
+            r"40 is not <= 20.0",
+            lambda: AllTypesYaml.Deserialize_number_("40"),
+        )
+
+        # int_
+        self.assertEqual(AllTypesYaml.Deserialize_int_("10"), 10)
+        self.assertRaisesRegex(
+            AllTypesYaml.DeserializeException,
+            r"-30 is not >= -20",
+            lambda: AllTypesYaml.Deserialize_int_("-30"),
+        )
+        self.assertRaisesRegex(
+            AllTypesYaml.DeserializeException,
+            r"40 is not <= 20",
+            lambda: AllTypesYaml.Deserialize_int_("40"),
+        )
+
+        # string_
+        self.assertEqual(AllTypesYaml.Deserialize_string_("abc"), "abc")
+        self.assertRaisesRegex(
+            AllTypesYaml.DeserializeException,
+            r"'a' is not a valid 'String' string - Value must have more than 2 characters, have less than 4 characters",
+            lambda: AllTypesYaml.Deserialize_string_("a"),
+        )
+        self.assertRaisesRegex(
+            AllTypesYaml.DeserializeException,
+            r"'abcde' is not a valid 'String' string - Value must have more than 2 characters, have less than 4 characters",
+            lambda: AllTypesYaml.Deserialize_string_("abcde"),
+        )
+
+        # string_regex_
+        self.assertEqual(AllTypesYaml.Deserialize_string_regex_("bit"), "bit")
+        self.assertEqual(AllTypesYaml.Deserialize_string_regex_("but"), "but")
+        self.assertEqual(AllTypesYaml.Deserialize_string_regex_("bat"), "bat")
+        self.assertRaisesRegex(
+            AllTypesYaml.DeserializeException,
+            r"'abc' is not a valid 'String' string - Value must match the regular expression 'b.t'",
+            lambda: AllTypesYaml.Deserialize_string_regex_("abc"),
+        )
 
 
 # ----------------------------------------------------------------------
@@ -50,9 +259,9 @@ class FileSystemSuite(unittest.TestCase, FileSystemUtilsMixin):
         xml_filename = os.path.join(_script_dir, "..", "Impl", "FileSystemTest.xml")
         assert os.path.isfile(xml_filename), xml_filename
 
-        xml_obj = XmlSerialization.Deserialize(xml_filename)
+        xml_obj = FileSystemXml.Deserialize(xml_filename)
 
-        xml_obj_additional_data = XmlSerialization.Deserialize(
+        xml_obj_additional_data = FileSystemXml.Deserialize(
             xml_filename,
             process_additional_data=True,
         )
@@ -62,19 +271,19 @@ class FileSystemSuite(unittest.TestCase, FileSystemUtilsMixin):
 
     # ----------------------------------------------------------------------
     def test_All(self):
-        serialized_obj = YamlSerialization.Serialize(self._xml_obj)
+        serialized_obj = FileSystemYaml.Serialize(self._xml_obj)
 
         self.ValidateRoot(serialized_obj.root)
         self.ValidateRoots(serialized_obj.roots)
 
-        obj = YamlSerialization.Deserialize(serialized_obj)
+        obj = FileSystemYaml.Deserialize(serialized_obj)
 
         self.ValidateRoot(obj.root)
         self.ValidateRoots(obj.roots)
 
     # ----------------------------------------------------------------------
     def test_AllAdditionalData(self):
-        serialized_obj = YamlSerialization.Serialize(
+        serialized_obj = FileSystemYaml.Serialize(
             self._xml_obj_additional_data,
             process_additional_data=True,
         )
@@ -89,7 +298,7 @@ class FileSystemSuite(unittest.TestCase, FileSystemUtilsMixin):
             process_additional_data=True,
         )
 
-        obj = YamlSerialization.Deserialize(
+        obj = FileSystemYaml.Deserialize(
             serialized_obj,
             process_additional_data=True,
         )
@@ -106,17 +315,17 @@ class FileSystemSuite(unittest.TestCase, FileSystemUtilsMixin):
 
     # ----------------------------------------------------------------------
     def test_Root(self):
-        serialized_obj = YamlSerialization.Serialize_root(self._xml_obj.root)
+        serialized_obj = FileSystemYaml.Serialize_root(self._xml_obj.root)
 
         self.ValidateRoot(serialized_obj)
 
-        obj = YamlSerialization.Deserialize_root(serialized_obj)
+        obj = FileSystemYaml.Deserialize_root(serialized_obj)
 
         self.ValidateRoot(obj)
 
     # ----------------------------------------------------------------------
     def test_RootAdditionalData(self):
-        serialized_obj = YamlSerialization.Serialize_root(
+        serialized_obj = FileSystemYaml.Serialize_root(
             self._xml_obj_additional_data,
             process_additional_data=True,
         )
@@ -126,7 +335,7 @@ class FileSystemSuite(unittest.TestCase, FileSystemUtilsMixin):
             process_additional_data=True,
         )
 
-        obj = YamlSerialization.Deserialize_root(
+        obj = FileSystemYaml.Deserialize_root(
             serialized_obj,
             process_additional_data=True,
         )
@@ -138,17 +347,17 @@ class FileSystemSuite(unittest.TestCase, FileSystemUtilsMixin):
 
     # ----------------------------------------------------------------------
     def test_Roots(self):
-        serialized_obj = YamlSerialization.Serialize_roots(self._xml_obj.roots)
+        serialized_obj = FileSystemYaml.Serialize_roots(self._xml_obj.roots)
 
         self.ValidateRoots(serialized_obj)
 
-        obj = YamlSerialization.Deserialize_roots(serialized_obj)
+        obj = FileSystemYaml.Deserialize_roots(serialized_obj)
 
         self.ValidateRoots(obj)
 
     # ----------------------------------------------------------------------
     def test_RootsAdditionalData(self):
-        serialized_obj = YamlSerialization.Serialize_roots(
+        serialized_obj = FileSystemYaml.Serialize_roots(
             self._xml_obj_additional_data,
             process_additional_data=True,
         )
@@ -158,7 +367,7 @@ class FileSystemSuite(unittest.TestCase, FileSystemUtilsMixin):
             process_additional_data=True,
         )
 
-        obj = YamlSerialization.Deserialize_roots(
+        obj = FileSystemYaml.Deserialize_roots(
             serialized_obj,
             process_additional_data=True,
         )
@@ -170,9 +379,9 @@ class FileSystemSuite(unittest.TestCase, FileSystemUtilsMixin):
 
     # ----------------------------------------------------------------------
     def test_AllToString(self):
-        python_obj = YamlSerialization.Deserialize(self._xml_obj)
+        python_obj = FileSystemYaml.Deserialize(self._xml_obj)
 
-        s = YamlSerialization.Serialize(
+        s = FileSystemYaml.Serialize(
             python_obj,
             to_string=True,
         )
@@ -204,12 +413,12 @@ class FileSystemSuite(unittest.TestCase, FileSystemUtilsMixin):
 
     # ----------------------------------------------------------------------
     def test_AllAdditionalDataToString(self):
-        python_obj = YamlSerialization.Deserialize(
+        python_obj = FileSystemYaml.Deserialize(
             self._xml_obj_additional_data,
             process_additional_data=True,
         )
 
-        s = YamlSerialization.Serialize(
+        s = FileSystemYaml.Serialize(
             python_obj,
             process_additional_data=True,
             to_string=True,
@@ -251,9 +460,9 @@ class FileSystemSuite(unittest.TestCase, FileSystemUtilsMixin):
 
     # ----------------------------------------------------------------------
     def test_RootToString(self):
-        python_obj = YamlSerialization.Deserialize_root(self._xml_obj)
+        python_obj = FileSystemYaml.Deserialize_root(self._xml_obj)
 
-        s = YamlSerialization.Serialize_root(
+        s = FileSystemYaml.Serialize_root(
             python_obj,
             to_string=True,
         )
@@ -281,12 +490,12 @@ class FileSystemSuite(unittest.TestCase, FileSystemUtilsMixin):
 
     # ----------------------------------------------------------------------
     def test_RootAdditionalDataToString(self):
-        python_obj = YamlSerialization.Deserialize_root(
+        python_obj = FileSystemYaml.Deserialize_root(
             self._xml_obj_additional_data,
             process_additional_data=True,
         )
 
-        s = YamlSerialization.Serialize_root(
+        s = FileSystemYaml.Serialize_root(
             python_obj,
             process_additional_data=True,
             to_string=True,
@@ -315,9 +524,9 @@ class FileSystemSuite(unittest.TestCase, FileSystemUtilsMixin):
 
     # ----------------------------------------------------------------------
     def test_RootsToString(self):
-        python_obj = YamlSerialization.Deserialize_roots(self._xml_obj)
+        python_obj = FileSystemYaml.Deserialize_roots(self._xml_obj)
 
-        s = YamlSerialization.Serialize_roots(
+        s = FileSystemYaml.Serialize_roots(
             python_obj,
             to_string=True,
         )
@@ -334,12 +543,12 @@ class FileSystemSuite(unittest.TestCase, FileSystemUtilsMixin):
 
     # ----------------------------------------------------------------------
     def test_RootsAdditionalDataToString(self):
-        python_obj = YamlSerialization.Deserialize_roots(
+        python_obj = FileSystemYaml.Deserialize_roots(
             self._xml_obj_additional_data,
             process_additional_data=True,
         )
 
-        s = YamlSerialization.Serialize_roots(
+        s = FileSystemYaml.Serialize_roots(
             python_obj,
             process_additional_data=True,
             to_string=True,

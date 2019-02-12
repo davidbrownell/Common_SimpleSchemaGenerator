@@ -67,8 +67,8 @@ class Plugin(PythonSerializationImpl):
         # |  Methods
         @classmethod
         @Interface.override
-        def ConvenienceConversions(cls, var_name, element):
-            return textwrap.dedent(
+        def ConvenienceConversions(cls, var_name, element_or_none):
+            content = textwrap.dedent(
                 """\
                 if isinstance({var_name}, six.string_types):
                     if os.path.isfile({var_name}):
@@ -76,16 +76,26 @@ class Plugin(PythonSerializationImpl):
                             {var_name} = json.load(f)
                     else:
                         {var_name} = json.loads({var_name})
-
-                {super}
                 """,
             ).format(
                 var_name=var_name,
-                super=super(Plugin.SourceStatementWriter, cls).ConvenienceConversions(
-                    var_name,
-                    element,
-                ),
             )
+
+            if element_or_none is not None:
+                content += textwrap.dedent(
+                    """\
+
+                    {}
+
+                    """,
+                ).format(
+                    super(Plugin.SourceStatementWriter, cls).ConvenienceConversions(
+                        var_name,
+                        element_or_none,
+                    ),
+                )
+
+            return content
 
     # ----------------------------------------------------------------------
     @Interface.staticderived

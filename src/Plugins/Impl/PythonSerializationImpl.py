@@ -254,14 +254,7 @@ class PythonSerializationImpl(PluginBase):
 
                     elements = cls._CalculateElementsToWrite(elements, include_map)
 
-                    top_level_elements = [
-                        element
-                        for element in elements
-                        if isinstance(
-                            element.Resolve(),
-                            (Elements.CompoundElement, Elements.SimpleElement),
-                        ) and not element.IsDefinitionOnly and element.Parent not in elements
-                    ]
+                    top_level_elements = [element for element in elements if not element.IsDefinitionOnly and element.Parent not in elements]
 
                     if not top_level_elements:
                         return
@@ -495,7 +488,7 @@ class PythonSerializationImpl(PluginBase):
             to_string_statements = dest_writer.SerializeToString("result")
 
             extra_args = textwrap.dedent(
-                """\
+                """
                 to_string=False,
                 """,
             )
@@ -519,17 +512,33 @@ class PythonSerializationImpl(PluginBase):
             extra_args = ""
             suffix = ""
 
+        convenience_conversions = source_writer.ConvenienceConversions("root", None)
+        if "is_root" in convenience_conversions:
+            is_root_param = "\n    is_root=True,"
+        else:
+            is_root_param = ""
+
         statements = []
+        has_compound = False
 
         for element in elements:
+            if isinstance(element.Resolve(), (Elements.CompoundElement, Elements.SimpleElement)):
+                has_compound = True
+
+                compound_args = textwrap.dedent(
+                    """
+                    process_additional_data=process_additional_data,
+                    always_include_optional=always_include_optional,
+                    """,
+                )
+            else:
+                compound_args = ""
+
             statements.append(
                 textwrap.dedent(
                     """\
                     this_result = {method_name}_{name}(
-                        root,
-                        is_root=True,
-                        process_additional_data=process_additional_data,
-                        always_include_optional=always_include_optional,
+                        root,{is_root_param}{compound_args}
                     )
                     if this_result is not DoesNotExist:
                         {append_statement}
@@ -540,6 +549,8 @@ class PythonSerializationImpl(PluginBase):
                 ).format(
                     method_name=method_name,
                     name=ToPythonName(element),
+                    is_root_param=is_root_param,
+                    compound_args=StringHelpers.LeftJustify(compound_args, 4),
                     append_statement=StringHelpers.LeftJustify(
                         dest_writer.AppendChild(element, "result", "this_result"),
                         4,
@@ -551,16 +562,26 @@ class PythonSerializationImpl(PluginBase):
                 ),
             )
 
+        if has_compound:
+            compound_args = textwrap.dedent(
+                """
+                process_additional_data=False,
+                always_include_optional=False,
+                """,
+            )
+        else:
+            compound_args = ""
+
         output_stream.write(
             textwrap.dedent(
                 '''\
                 # ----------------------------------------------------------------------
                 def {method_name}(
-                    root,
-                    process_additional_data=False,
-                    always_include_optional=False,
-                {extra_args}):
+                    root,{compound_args}{extra_args}
+                ):
                     """Convenience method that {method_name_lower}s all top-level elements"""
+
+                    {convenience}
 
                     result = {create_compound}
 
@@ -573,11 +594,12 @@ class PythonSerializationImpl(PluginBase):
             ).format(
                 method_name=method_name,
                 method_name_lower=method_name.lower(),
-                extra_args=StringHelpers.LeftJustify(
-                    extra_args,
+                compound_args=StringHelpers.LeftJustify(compound_args, 4).rstrip(),
+                extra_args=StringHelpers.LeftJustify(extra_args, 4).rstrip(),
+                convenience=StringHelpers.LeftJustify(
+                    convenience_conversions or "# No convenience conversions",
                     4,
-                    skip_first_line=False,
-                ),
+                ).strip(),
                 create_compound=StringHelpers.LeftJustify(
                     dest_writer.CreateCompoundElement(
                         dest_writer.CreateTemporaryElement('"_"', "1"),
@@ -608,8 +630,39 @@ class PythonSerializationImpl(PluginBase):
             method_name = "Deserialize"
 
         for element in elements:
+            if isinstance(element.Resolve(), (Elements.CompoundElement, Elements.SimpleElement)):
+                compound_params = textwrap.dedent(
+                    """
+                    process_additional_data=False,
+                    always_include_optional=False,
+                    """,
+                )
+
+                compound_args = textwrap.dedent(
+                    """
+                    process_additional_data=process_additional_data,
+                    always_include_optional=always_include_optional,
+                    """,
+                )
+            else:
+                compound_params = ""
+                compound_args = ""
+
+            optional_collection_clause = ""
+
             if element.TypeInfo.Arity.IsCollection:
                 var_name = "items"
+
+                if element.TypeInfo.Arity.Min == 0:
+                    optional_collection_clause = textwrap.dedent(
+                        """
+
+                        if {var_name} is DoesNotExist:
+                            {var_name} = []
+                        """,
+                    ).format(
+                        var_name=var_name,
+                    )
             else:
                 var_name = "item"
 
@@ -621,7 +674,7 @@ class PythonSerializationImpl(PluginBase):
 
                 if to_string_statements:
                     extra_args = textwrap.dedent(
-                        """\
+                        """
                         to_string=False,
                         pretty_print=False,
                         """,
@@ -640,6 +693,9 @@ class PythonSerializationImpl(PluginBase):
 
             convenience_conversions = source_writer.ConvenienceConversions(var_name, element)
             if "is_root" in convenience_conversions:
+                if not extra_args:
+                    extra_args = "\n"
+
                 extra_args += "is_root=False,\n"
 
             output_stream.write(
@@ -647,10 +703,8 @@ class PythonSerializationImpl(PluginBase):
                     '''\
                     # ----------------------------------------------------------------------
                     def {method_name}_{name}(
-                        {var_name},
-                        process_additional_data=False,
-                        always_include_optional=False,
-                    {extra_args}):
+                        {var_name},{compound_params}{extra_args}
+                    ):
                         """{method_name}s '{name}' from {source_type} to {dest_type}"""
 
                         {convenience}
@@ -658,10 +712,8 @@ class PythonSerializationImpl(PluginBase):
                         try:
                             try:
                                 {var_name} = {method_name}r().{resolved_name}(
-                                    {var_name},
-                                    process_additional_data=process_additional_data,
-                                    always_include_optional=always_include_optional,
-                                )
+                                    {var_name},{compound_args}
+                                ){optional_collection_clause}
                             except:
                                 _DecorateActiveException("{name}")
                         except SerializationException:
@@ -678,14 +730,19 @@ class PythonSerializationImpl(PluginBase):
                     method_name=method_name,
                     resolved_name=ToPythonName(element.Resolve()),
                     var_name=var_name,
-                    extra_args=StringHelpers.LeftJustify(
-                        extra_args,
-                        4,
-                        skip_first_line=False,
-                    ),
+                    compound_params=StringHelpers.LeftJustify(compound_params, 4).rstrip(),
+                    compound_args=StringHelpers.LeftJustify(compound_args, 16).rstrip(),
+                    optional_collection_clause=StringHelpers.LeftJustify(
+                        optional_collection_clause,
+                        12,
+                    ).rstrip(),
+                    extra_args=StringHelpers.LeftJustify(extra_args, 4).rstrip(),
                     source_type=source_writer.ObjectTypeDesc,
                     dest_type=dest_writer.ObjectTypeDesc,
-                    convenience=StringHelpers.LeftJustify(convenience_conversions, 4).strip(),
+                    convenience=StringHelpers.LeftJustify(
+                        convenience_conversions or "# No convenience conversions",
+                        4,
+                    ).strip(),
                     suffix=StringHelpers.LeftJustify(suffix, 4),
                 ),
             )
@@ -881,7 +938,7 @@ class PythonSerializationImpl(PluginBase):
                             """\
                             {result_name} = []
 
-                            for this_index, this_item in enumerate({arg_name}):
+                            for this_index, this_item in enumerate({arg_name} or []):
                                 try:
                                     {result_name}.append({statement})
                                 except:
@@ -961,26 +1018,36 @@ class PythonSerializationImpl(PluginBase):
                 return
 
             # Standard content...
+            does_not_exist_items = ["DoesNotExist", "None"]
+
+            if element.TypeInfo.Arity.IsCollection:
+                does_not_exist_items.append("[]")
+
+            content_stream.write(
+                textwrap.dedent(
+                    """\
+                    if {arg_name} in [{does_not_exist_items}]:
+                        _{python_name}_TypeInfo.ValidateArity(None)
+                        return DoesNotExist
+
+                    """,
+                ).format(
+                    python_name=python_name,
+                    does_not_exist_items=", ".join(does_not_exist_items),
+                    arg_name=arg_name,
+                ),
+            )
+
             if is_serializer:
-                does_not_exist_items = ["DoesNotExist", "None"]
-
-                if element.TypeInfo.Arity.IsCollection:
-                    does_not_exist_items.append("[]")
-
                 content_stream.write(
                     textwrap.dedent(
                         """\
-                        if {arg_name} in [{does_not_exist_items}]:
-                            _{python_name}_TypeInfo.ValidateArity(None)
-                            return DoesNotExist
-
                         _{python_name}_TypeInfo.ValidateArity({arg_name})
 
                         """,
                     ).format(
                         python_name=python_name,
                         arg_name=arg_name,
-                        does_not_exist_items=", ".join(does_not_exist_items),
                     ),
                 )
 
@@ -996,6 +1063,7 @@ class PythonSerializationImpl(PluginBase):
                 content_stream.write(
                     textwrap.dedent(
                         """\
+
                         _{python_name}_TypeInfo.ValidateArity({result_name})
                         """,
                     ).format(

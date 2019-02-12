@@ -96,7 +96,7 @@ class SourceStatementWriter(StatementWriter):
     # ----------------------------------------------------------------------
     @staticmethod
     @Interface.abstractmethod
-    def ConvenienceConversions(var_name, element):
+    def ConvenienceConversions(var_name, element_or_none):
         """\
         Statements that convert from an input type to the source; used to create
         better experiences for callers. The generated code should return 

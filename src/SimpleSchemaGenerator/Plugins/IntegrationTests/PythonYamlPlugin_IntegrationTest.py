@@ -20,11 +20,13 @@ import re
 import sys
 import textwrap
 import unittest
+import uuid
 
 import rtyaml
 
 import CommonEnvironment
 from CommonEnvironment.CallOnExit import CallOnExit
+from CommonEnvironment import FileSystem
 
 from CommonEnvironmentEx.Package import InitRelativeImports
 
@@ -155,40 +157,78 @@ class AllTypesSuite(unittest.TestCase, AllTypesUtilsMixin):
     # ----------------------------------------------------------------------
     def test_Constraints(self):
         # directory_
-        self.assertEqual(
-            AllTypesYaml.Deserialize_directory_("Generated"),
-            os.path.join(os.getcwd(), "Generated"),
-        )
-        self.assertRaisesRegex(
+
+        # Create a temp dir
+        temp_dirname = os.path.join(os.getcwd(), str(uuid.uuid4()).replace("-", ""))
+        assert not os.path.exists(temp_dirname), temp_dirname
+
+        os.mkdir(temp_dirname)
+        with CallOnExit(lambda: FileSystem.RemoveTree(temp_dirname)):
+            self.assertEqual(
+                AllTypesYaml.Deserialize_directory_(os.path.basename(temp_dirname)).lower(),
+                temp_dirname.lower(),
+            )
+
+        # ----------------------------------------------------------------------
+        def CaseInsensitiveException(ExceptionType, regex, func):
+            try:
+                func()
+                self.assertFalse(True)
+            except ExceptionType as ex:
+                self.assertEqual(regex.lower(), str(ex).lower())
+
+        # ----------------------------------------------------------------------
+
+        CaseInsensitiveException(
             AllTypesYaml.DeserializeException,
-            re.escape(
-                "'{}' is not a valid directory".format(os.path.join(os.getcwd(), "Does Not Exist")),
-            ),
+            "'{}' is not a valid directory".format(os.path.join(os.getcwd(), "Does Not Exist")),
             lambda: AllTypesYaml.Deserialize_directory_("Does Not Exist"),
         )
 
         # filename_
-        self.assertEqual(
-            AllTypesYaml.Deserialize_filename_('"__RepositoryId__"'),
-            os.path.join(os.getcwd(), "__RepositoryId__"),
-        )
-        self.assertRaisesRegex(
+
+        # Create a temp filename
+        temp_filename = os.path.join(os.getcwd(), str(uuid.uuid4()).replace("-", ""))
+        assert not os.path.exists(temp_filename), temp_filename
+
+        with open(temp_filename, "w") as f:
+            f.write("Temp file")
+
+        with CallOnExit(lambda: FileSystem.RemoveFile(temp_filename)):
+            self.assertEqual(
+                AllTypesYaml.Deserialize_filename_('"{}"'.format(os.path.basename(temp_filename))).lower(),
+                temp_filename.lower(),
+            )
+
+        CaseInsensitiveException(
             AllTypesYaml.DeserializeException,
-            re.escape(
-                "'{}' is not a valid file".format(os.path.join(os.getcwd(), "Does Not Exist")),
-            ),
+            "'{}' is not a valid file".format(os.path.join(os.getcwd(), "Does Not Exist")),
             lambda: AllTypesYaml.Deserialize_filename_("Does Not Exist"),
         )
 
         # filename_any_
-        self.assertEqual(
-            AllTypesYaml.Deserialize_filename_any_("Generated"),
-            os.path.join(os.getcwd(), "Generated"),
-        )
-        self.assertEqual(
-            AllTypesYaml.Deserialize_filename_any_('"__RepositoryId__"'),
-            os.path.join(os.getcwd(), "__RepositoryId__"),
-        )
+        temp_dirname = os.path.join(os.getcwd(), str(uuid.uuid4()).replace("-", ""))
+        assert not os.path.exists(temp_dirname), temp_dirname
+
+        os.mkdir(temp_dirname)
+        with CallOnExit(lambda: FileSystem.RemoveTree(temp_dirname)):
+            self.assertEqual(
+                AllTypesYaml.Deserialize_filename_any_('"{}"'.format(os.path.basename(temp_dirname))).lower(),
+                temp_dirname.lower(),
+            )
+
+        temp_filename = os.path.join(os.getcwd(), str(uuid.uuid4()).replace("-", ""))
+        assert not os.path.exists(temp_filename), temp_filename
+
+        with open(temp_filename, "w") as f:
+            f.write("Temp file")
+
+        with CallOnExit(lambda: FileSystem.RemoveFile(temp_filename)):
+            self.assertEqual(
+                AllTypesYaml.Deserialize_filename_any_('"{}"'.format(os.path.basename(temp_filename))).lower(),
+                temp_filename.lower(),
+            )
+
         self.assertRaisesRegex(
             AllTypesYaml.DeserializeException,
             re.escape(

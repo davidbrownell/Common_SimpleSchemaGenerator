@@ -39,6 +39,7 @@ class TestUtilsMixin(object):
         self.assertEqual(obj.ref2, 100.1)
         self.assertEqual(obj.ref3, [-10, -20])
         self.assertEqual(obj.ref4, [10, 20])
+        self.assertEqual(obj.ref5, [[10.0, 20.0], [30.0, 40.0]])
 
         self.assertEqual(obj.any_.one.two.three.a, "a")
         self.assertEqual(obj.any_.one.two.three.b, "b")

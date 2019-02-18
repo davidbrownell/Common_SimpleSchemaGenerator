@@ -28,6 +28,17 @@
       <item>20</item>
     </ref4>
 
+    <ref5>
+      <item>
+        <item>10</item>
+        <item>20</item>
+      </item>
+      <item>
+        <item>30</item>
+        <item>40</item>
+      </item>
+    </ref5>
+
     <any_>
       <one>
         <two>

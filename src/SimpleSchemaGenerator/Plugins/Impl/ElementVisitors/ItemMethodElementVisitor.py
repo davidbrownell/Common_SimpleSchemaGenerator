@@ -139,31 +139,22 @@ class ItemMethodElementVisitor(ElementVisitor):
     # ----------------------------------------------------------------------
     @Interface.override
     def OnList(self, element):
-        raise NotImplementedError("TODO: List")
-
-        # TODO: Verify that this code works
-        # TODO: Validate arity
-
         self._output_stream.write(
             textwrap.dedent(
                 """\
                 # ----------------------------------------------------------------------
                 @classmethod
-                def _{python_name}_Item(cls, item):
-                    results = []
-
-                    for index, child in enumerate(item):
-                        try:
-                            results.append(cls.{reference_name}(child))
-                        except:
-                            _DecorateActiveException("Index {{}}".format(index))
-
-                    return results
+                def _{python_name}_Item(cls, items):
+                    try:
+                        return cls.{reference_python_name}(items)
+                    except:
+                        _DecorateActiveException("{reference_name}")
 
                 """,
             ).format(
                 python_name=ToPythonName(element),
-                reference_name=ToPythonName(element.Reference),
+                reference_python_name=ToPythonName(element.Reference),
+                reference_name=element.Reference.Name,
             ),
         )
 

@@ -1,0 +1,27 @@
+<types>:
+    <bool_ bool +>
+    <date_ date +>
+    <datetime_ datetime +>
+    <directory_ directory ensure_exists=false +>
+    <duration_ duration +>
+    <enum_ enum values=["one", "two", "three"] +>
+    <filename_ filename ensure_exists=false +>
+    <number_ number +>
+    <guid_ guid +>
+    <int_ int +>
+    <string_ string +>
+    <time_ time +>
+    <uri_ uri +>
+
+<standard_list string +>
+<optional_list string *>
+<fixed_list string {3}>
+<optional string ?>
+
+<directory_ directory>
+<filename_ filename>
+<filename_any_ filename match_any=true>
+<number_ number min=-20 max=20>
+<int_ int min=-20 max=20>
+<string_ string min_length=2 max_length=4>
+<string_regex_ string validation_expression="b.t">

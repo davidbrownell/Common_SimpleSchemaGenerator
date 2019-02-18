@@ -1,9 +1,9 @@
 # ----------------------------------------------------------------------
 # |
-# |  PythonJsonPlugin.py
+# |  PythonYamlPlugin.py
 # |
 # |  David Brownell <db@DavidBrownell.com>
-# |      2019-02-09 13:19:16
+# |      2019-02-10 08:36:02
 # |
 # ----------------------------------------------------------------------
 # |
@@ -40,9 +40,9 @@ with InitRelativeImports():
 class Plugin(PythonSerializationImpl):
     # ----------------------------------------------------------------------
     # |  Properties
-    Name                                                                                        = Interface.DerivedProperty("PythonJson")
+    Name                                                                                        = Interface.DerivedProperty("PythonYaml")
     Description                                                                                 = Interface.DerivedProperty(
-        "Creates python code that is able to serialize and deserialize python objects to JSON",
+        "Creates python code that is able to serialize and deserialize python objects to YAML",
     )
 
     # ----------------------------------------------------------------------
@@ -60,46 +60,56 @@ class Plugin(PythonSerializationImpl):
     @Interface.staticderived
     class SourceStatementWriter(PythonSourceStatementWriter):
         # ----------------------------------------------------------------------
-        # |  Public Properties
-        ObjectTypeDesc                      = Interface.DerivedProperty("a JSON object")
+        # |  Properties
+        ObjectTypeDesc                      = Interface.DerivedProperty("a YAML object")
 
         # ----------------------------------------------------------------------
         # |  Methods
         @classmethod
         @Interface.override
-        def ConvenienceConversions(cls, var_name, element):
-            return textwrap.dedent(
+        def ConvenienceConversions(cls, var_name, element_or_none):
+            content = textwrap.dedent(
                 """\
                 if isinstance({var_name}, six.string_types):
                     if os.path.isfile({var_name}):
                         with open({var_name}) as f:
-                            {var_name} = json.load(f)
+                            {var_name} = rtyaml.load(f)
                     else:
-                        {var_name} = json.loads({var_name})
-
-                {super}
+                        {var_name} = rtyaml.load({var_name})
                 """,
             ).format(
                 var_name=var_name,
-                super=super(Plugin.SourceStatementWriter, cls).ConvenienceConversions(
-                    var_name,
-                    element,
-                ),
             )
+
+            if element_or_none is not None:
+                content += textwrap.dedent(
+                    """\
+
+                    {}
+
+                    """,
+                ).format(
+                    super(Plugin.SourceStatementWriter, cls).ConvenienceConversions(
+                        var_name,
+                        element_or_none,
+                    ),
+                )
+
+            return content
 
     # ----------------------------------------------------------------------
     @Interface.staticderived
     class DestinationStatementWriter(PythonDestinationStatementWriter):
         # ----------------------------------------------------------------------
-        # |  Public Properties
-        ObjectTypeDesc                      = Interface.DerivedProperty("a JSON object")
+        # |  Properties
+        ObjectTypeDesc                      = Interface.DerivedProperty("a YAML object")
 
         # ----------------------------------------------------------------------
         # |  Methods
         @staticmethod
         @Interface.override
         def SerializeToString(var_name):
-            return "_JsonToString({var_name}, pretty_print)".format(
+            return "_YamlToString({var_name})".format(
                 var_name=var_name,
             )
 
@@ -110,15 +120,18 @@ class Plugin(PythonSerializationImpl):
             return textwrap.dedent(
                 """\
                 # ----------------------------------------------------------------------
-                def _JsonToString(obj, pretty_print):
-                    if pretty_print:
-                        content = json.dumps(obj, cls=JsonEncoder, indent=2, separators=[", ", " : "])
+                def _YamlToString(obj):
+                    previous_tag_emitter = yaml.emitter.Emitter.process_tag
 
-                        # Remove trailing whitespace
-                        return "\\n".join([line.rstrip() for line in content.split("\\n")])
+                    # ----------------------------------------------------------------------
+                    def RestoreTagEmitter():
+                        yaml.emitter.Emitter.process_tag = previous_tag_emitter
 
-                    else:
-                        return json.dumps(obj, cls=JsonEncoder)
+                    # ----------------------------------------------------------------------
+
+                    yaml.emitter.Emitter.process_tag = (lambda *args, **kwargs: None)
+                    with CallOnExit(RestoreTagEmitter):
+                        return rtyaml.dump(obj)
 
                 """,
             )
@@ -127,7 +140,7 @@ class Plugin(PythonSerializationImpl):
     # |  Private Properties
     _SupportAttributes                      = Interface.DerivedProperty(False)
     _SupportAnyElements                     = Interface.DerivedProperty(True)
-    _TypeInfoSerializationName              = Interface.DerivedProperty("JsonSerialization")
+    _TypeInfoSerializationName              = Interface.DerivedProperty("YamlSerialization")
 
     _SourceStatementWriter                  = Interface.DerivedProperty(SourceStatementWriter)
     _DestinationStatementWriter             = Interface.DerivedProperty(DestinationStatementWriter)
@@ -140,23 +153,11 @@ class Plugin(PythonSerializationImpl):
         output_stream.write(
             textwrap.dedent(
                 """\
-                import json
+                import rtyaml
+                import yaml
 
-                from CommonEnvironment.TypeInfo.FundamentalTypes.Serialization.JsonSerialization import JsonSerialization
-
-                # ----------------------------------------------------------------------
-                class JsonEncoder(json.JSONEncoder):
-                    def default(self, o):
-                        if isinstance(o, Object):
-                            d = copy.deepcopy(o.__dict__)
-
-                            for k in list(six.iterkeys(d)):
-                                if k.startswith("_"):
-                                    del d[k]
-
-                            return d
-
-                        return getattr(o, "__dict__", o)
+                from CommonEnvironment.CallOnExit import CallOnExit
+                from CommonEnvironment.TypeInfo.FundamentalTypes.Serialization.YamlSerialization import YamlSerialization
 
 
                 """,
@@ -167,5 +168,22 @@ class Plugin(PythonSerializationImpl):
     @staticmethod
     @Interface.override
     def _WriteFileFooter(output_stream):
-        # Nothing to do here
-        pass
+        output_stream.write(
+            textwrap.dedent(
+                """\
+
+
+                # ----------------------------------------------------------------------
+                def _ObjectToYaml(dumper, data):
+                    d = dict(data.__dict__)
+                    for k in list(six.iterkeys(d)):
+                        if k.startswith("_"):
+                            del d[k]
+
+                    return dumper.represent_dict(d)
+
+
+                yaml.add_representer(Object, _ObjectToYaml)
+                """,
+            ),
+        )

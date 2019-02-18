@@ -40,7 +40,10 @@ class PythonSourceStatementWriter(SourceStatementWriter):
     # ----------------------------------------------------------------------
     @classmethod
     @Interface.override
-    def ConvenienceConversions(cls, var_name, element):
+    def ConvenienceConversions(cls, var_name, element_or_none):
+        if element_or_none is None:
+            return ""
+
         return textwrap.dedent(
             """\
             if not isinstance({var_name}, list):
@@ -53,7 +56,7 @@ class PythonSourceStatementWriter(SourceStatementWriter):
             """,
         ).format(
             var_name=var_name,
-            name=element.Name,
+            name=element_or_none.Name,
         )
 
     # ----------------------------------------------------------------------
@@ -83,6 +86,12 @@ class PythonSourceStatementWriter(SourceStatementWriter):
             name=cls.GetElementStatementName(child_element),
             is_optional=is_optional,
         )
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @Interface.override
+    def GetFundamental(var_name, child_element):
+        return var_name
 
     # ----------------------------------------------------------------------
     @staticmethod

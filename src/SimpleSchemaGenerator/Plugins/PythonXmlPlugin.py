@@ -62,8 +62,8 @@ class Plugin(PythonSerializationImpl):
         # ----------------------------------------------------------------------
         @staticmethod
         @Interface.override
-        def ConvenienceConversions(var_name, element):
-            return textwrap.dedent(
+        def ConvenienceConversions(var_name, element_or_none):
+            content = textwrap.dedent(
                 """\
                 if isinstance({var_name}, six.string_types):
                     if os.path.isfile({var_name}):
@@ -71,23 +71,32 @@ class Plugin(PythonSerializationImpl):
                             {var_name} = f.read()
 
                     {var_name} = ET.fromstring({var_name})
-
-                potential_child = _GetXmlElement(
-                    {var_name},
-                    "{name}",
-                    is_optional={is_optional},
-                    is_collection={is_collection},
-                )
-                if potential_child is not DoesNotExist or is_root:
-                    {var_name} = potential_child
-
                 """,
             ).format(
                 var_name=var_name,
-                name=element.Name,
-                is_optional=element.TypeInfo.Arity.Min == 0,
-                is_collection=element.TypeInfo.Arity.IsCollection,
             )
+
+            if element_or_none is not None:
+                content += textwrap.dedent(
+                    """\
+                    potential_child = _GetXmlElement(
+                        {var_name},
+                        "{name}",
+                        is_optional={is_optional},
+                        is_collection={is_collection},
+                    )
+                    if potential_child is not DoesNotExist or is_root:
+                        {var_name} = potential_child
+
+                    """,
+                ).format(
+                    var_name=var_name,
+                    name=element_or_none.Name,
+                    is_optional=element_or_none.TypeInfo.Arity.Min == 0,
+                    is_collection=element_or_none.TypeInfo.Arity.IsCollection,
+                )
+
+            return content
 
         # ----------------------------------------------------------------------
         @classmethod
@@ -99,9 +108,7 @@ class Plugin(PythonSerializationImpl):
             is_simple_schema_fundamental=False,
         ):
             if is_simple_schema_fundamental:
-                return '{var_name}.text if {var_name}.text.strip() else ""'.format(
-                    var_name=var_name,
-                )
+                return cls.GetFundamental(var_name, child_element)
 
             if getattr(child_element, "IsAttribute", False):
                 return textwrap.dedent(
@@ -132,6 +139,17 @@ class Plugin(PythonSerializationImpl):
                 name=cls.GetElementStatementName(child_element),
                 is_optional=child_element.TypeInfo.Arity.Min == 0,
                 is_collection=child_element.TypeInfo.Arity.IsCollection,
+            )
+
+        # ----------------------------------------------------------------------
+        @staticmethod
+        @Interface.override
+        def GetFundamental(var_name, child_element):
+            if getattr(child_element, "IsAttribute", False):
+                return var_name
+
+            return '{var_name}.text if {var_name}.text.strip() else ""'.format(
+                var_name=var_name,
             )
 
         # ----------------------------------------------------------------------

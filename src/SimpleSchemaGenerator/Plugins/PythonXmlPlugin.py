@@ -71,6 +71,7 @@ class Plugin(PythonSerializationImpl):
                             {var_name} = f.read()
 
                     {var_name} = ET.fromstring({var_name})
+
                 """,
             ).format(
                 var_name=var_name,

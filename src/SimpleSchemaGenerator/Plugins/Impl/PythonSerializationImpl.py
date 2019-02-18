@@ -794,6 +794,17 @@ class PythonSerializationImpl(PluginBase):
                         element.TypeInfo.Items[element.FundamentalAttributeName],
                     )
 
+            if isinstance(element, Elements.VariantElement):
+                for variation in element.Variations:
+                    if isinstance(variation, Elements.ReferenceElement):
+                        continue
+
+                    assert isinstance(variation, Elements.FundamentalElement), variation
+                    type_info_value = type_info_visitor.Accept(variation)
+
+                    if type_info_value is not None:
+                        type_infos["_{}_TypeInfo".format(ToPythonName(variation))] = type_info_value
+
         # ----------------------------------------------------------------------
 
         cls._VisitElements(elements, OnElement)

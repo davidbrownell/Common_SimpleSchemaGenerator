@@ -1,0 +1,55 @@
+types:
+  bool_:
+  - True
+  - true
+  - Yes
+  - yes
+  - False
+  - false
+  - No
+  - no
+  - "t"
+  - "y"
+  - "1"
+  - "f"
+  - "n"
+  - "0"
+  date_:
+  - 2019-02-11
+  - "2019.02.11"
+  datetime_:
+  - 2019-02-11 17:00:00
+  - 2019-02-11T17:00:00
+  directory_: 
+  - DirectoryName
+  duration_:
+  - "1:23:01:02"
+  - "1:23:01:02.03"
+  - "23:01:02"
+  enum_:
+  - three
+  - two
+  - one
+  filename_:
+  - FileName
+  number_:
+  - 100.1
+  - 100
+  - -100.1
+  - -100
+  guid_:
+  - f638e451-c276-479a-aaa0-c699e35196fb
+  - f638e451c276479aaaa0c699e35196fb
+  - "{f638e451-c276-479a-aaa0-c699e35196fb}"
+  - "{f638e451c276479aaaa0c699e35196fb}"
+  int_:
+  - 10
+  - -10
+  string_:
+  - test
+  time_:
+  - "10:11:12"
+  - "10:11:12.131415"
+  uri_:
+  - https://www.test.com
+  - file:///abc123

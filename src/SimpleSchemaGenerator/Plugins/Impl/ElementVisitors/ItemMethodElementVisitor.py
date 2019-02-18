@@ -73,10 +73,11 @@ class ItemMethodElementVisitor(ElementVisitor):
     def OnFundamental(self, element):
         python_name = ToPythonName(element)
 
-        statement = "{type_info}.{method_prefix}Item(_{python_name}_TypeInfo, item, **{serialize_args})".format(
+        statement = "{type_info}.{method_prefix}Item(_{python_name}_TypeInfo, {item_statement}, **{serialize_args})".format(
             type_info=self._type_info_serialization_name,
             method_prefix=self._method_prefix,
             python_name=python_name,
+            item_statement=self._source_writer.GetFundamental("item", element),
             serialize_args=self._custom_serialize_item_args,
         )
 

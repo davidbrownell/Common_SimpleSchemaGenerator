@@ -25,7 +25,7 @@
         <item a="a" b="b">
           <value>
             <item one="1">text value</item>
-            <item >another text value</item>
+            <item>another text value</item>
           </value>
         </item>
       </extra>

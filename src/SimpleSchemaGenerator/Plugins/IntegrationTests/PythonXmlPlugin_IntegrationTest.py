@@ -34,15 +34,20 @@ _script_dir, _script_name                   = os.path.split(_script_fullpath)
 
 sys.path.insert(0, os.path.join(_script_dir, "Generated", "FileSystemTest"))
 with CallOnExit(lambda: sys.path.pop(0)):
-    import FileSystemTest_PythonXmlSerialization as XmlSerialization
+    import FileSystemTest_PythonXmlSerialization as FileSystemXmlSerialization
+
+sys.path.insert(0, os.path.join(_script_dir, "Generated", "Test"))
+with CallOnExit(lambda: sys.path.pop(0)):
+    import Test_PythonXmlSerialization as TestXmlSerialization
 
 
 with InitRelativeImports():
     from .Impl.FileSystemTestUtils import FileSystemUtilsMixin
+    from .Impl.TestUtils import TestUtilsMixin
 
 
 # ----------------------------------------------------------------------
-class SuiteImpl(unittest.TestCase, FileSystemUtilsMixin):
+class FileSystemSuiteImpl(unittest.TestCase, FileSystemUtilsMixin):
     # ----------------------------------------------------------------------
     def Match(
         self,
@@ -86,7 +91,12 @@ class SuiteImpl(unittest.TestCase, FileSystemUtilsMixin):
 
 
 # ----------------------------------------------------------------------
-class FileSystemSuite(SuiteImpl):
+class TestSuiteImpl(unittest.TestCase, TestUtilsMixin):
+    pass
+
+
+# ----------------------------------------------------------------------
+class FileSystemSuite(FileSystemSuiteImpl):
     # ----------------------------------------------------------------------
     def setUp(self):
         xml_filename = os.path.join(_script_dir, "..", "Impl", "FileSystemTest.xml")
@@ -100,14 +110,14 @@ class FileSystemSuite(SuiteImpl):
 
     # ----------------------------------------------------------------------
     def test_Standard(self):
-        obj = XmlSerialization.Deserialize(self._xml_filename)
+        obj = FileSystemXmlSerialization.Deserialize(self._xml_filename)
 
         self.ValidateRoot(obj.root)
         self.ValidateRoots(obj.roots)
 
     # ----------------------------------------------------------------------
     def test_StandardAdditionalData(self):
-        obj = XmlSerialization.Deserialize(
+        obj = FileSystemXmlSerialization.Deserialize(
             self._xml_filename,
             process_additional_data=True,
         )
@@ -124,9 +134,9 @@ class FileSystemSuite(SuiteImpl):
 
     # ----------------------------------------------------------------------
     def test_All(self):
-        python_object = XmlSerialization.Deserialize(self._xml_filename)
+        python_object = FileSystemXmlSerialization.Deserialize(self._xml_filename)
 
-        xml_object = XmlSerialization.Serialize(python_object)
+        xml_object = FileSystemXmlSerialization.Serialize(python_object)
 
         self.Match(
             xml_object,
@@ -136,12 +146,12 @@ class FileSystemSuite(SuiteImpl):
 
     # ----------------------------------------------------------------------
     def test_AllAdditionalData(self):
-        python_object = XmlSerialization.Deserialize(
+        python_object = FileSystemXmlSerialization.Deserialize(
             self._xml_filename,
             process_additional_data=True,
         )
 
-        xml_object = XmlSerialization.Serialize(
+        xml_object = FileSystemXmlSerialization.Serialize(
             python_object,
             process_additional_data=True,
         )
@@ -154,8 +164,8 @@ class FileSystemSuite(SuiteImpl):
 
     # ----------------------------------------------------------------------
     def test_Root(self):
-        python_object = XmlSerialization.Deserialize_root(self._xml_filename)
-        xml_object = XmlSerialization.Serialize_root(python_object)
+        python_object = FileSystemXmlSerialization.Deserialize_root(self._xml_filename)
+        xml_object = FileSystemXmlSerialization.Serialize_root(python_object)
 
         self.Match(
             xml_object,
@@ -165,12 +175,12 @@ class FileSystemSuite(SuiteImpl):
 
     # ----------------------------------------------------------------------
     def test_RootAdditionalData(self):
-        python_object = XmlSerialization.Deserialize_root(
+        python_object = FileSystemXmlSerialization.Deserialize_root(
             self._xml_filename,
             process_additional_data=True,
         )
 
-        xml_object = XmlSerialization.Serialize_root(
+        xml_object = FileSystemXmlSerialization.Serialize_root(
             python_object,
             process_additional_data=True,
         )
@@ -183,8 +193,8 @@ class FileSystemSuite(SuiteImpl):
 
     # ----------------------------------------------------------------------
     def test_Roots(self):
-        python_object = XmlSerialization.Deserialize_roots(self._xml_filename)
-        xml_object = XmlSerialization.Serialize_roots(python_object)
+        python_object = FileSystemXmlSerialization.Deserialize_roots(self._xml_filename)
+        xml_object = FileSystemXmlSerialization.Serialize_roots(python_object)
 
         self.Match(
             xml_object,
@@ -194,12 +204,12 @@ class FileSystemSuite(SuiteImpl):
 
     # ----------------------------------------------------------------------
     def test_RootsAdditionalData(self):
-        python_object = XmlSerialization.Deserialize_roots(
+        python_object = FileSystemXmlSerialization.Deserialize_roots(
             self._xml_filename,
             process_additional_data=True,
         )
 
-        xml_object = XmlSerialization.Serialize_roots(
+        xml_object = FileSystemXmlSerialization.Serialize_roots(
             python_object,
             process_additional_data=True,
         )
@@ -212,9 +222,9 @@ class FileSystemSuite(SuiteImpl):
 
     # ----------------------------------------------------------------------
     def test_AllToString(self):
-        python_obj = XmlSerialization.Deserialize(self._xml_filename)
+        python_obj = FileSystemXmlSerialization.Deserialize(self._xml_filename)
 
-        s = XmlSerialization.Serialize(
+        s = FileSystemXmlSerialization.Serialize(
             python_obj,
             to_string=True,
             pretty_print=True,
@@ -253,9 +263,9 @@ class FileSystemSuite(SuiteImpl):
 
     # ----------------------------------------------------------------------
     def test_AllToStringNoPrettyPrint(self):
-        python_obj = XmlSerialization.Deserialize(self._xml_filename)
+        python_obj = FileSystemXmlSerialization.Deserialize(self._xml_filename)
 
-        s = XmlSerialization.Serialize(
+        s = FileSystemXmlSerialization.Serialize(
             python_obj,
             to_string=True,
         )
@@ -267,12 +277,12 @@ class FileSystemSuite(SuiteImpl):
 
     # ----------------------------------------------------------------------
     def test_AllAdditionalDataToString(self):
-        python_obj = XmlSerialization.Deserialize(
+        python_obj = FileSystemXmlSerialization.Deserialize(
             self._xml_filename,
             process_additional_data=True,
         )
 
-        s = XmlSerialization.Serialize(
+        s = FileSystemXmlSerialization.Serialize(
             python_obj,
             process_additional_data=True,
             to_string=True,
@@ -322,9 +332,9 @@ class FileSystemSuite(SuiteImpl):
 
     # ----------------------------------------------------------------------
     def test_RootToString(self):
-        python_obj = XmlSerialization.Deserialize_root(self._xml_filename)
+        python_obj = FileSystemXmlSerialization.Deserialize_root(self._xml_filename)
 
-        s = XmlSerialization.Serialize_root(
+        s = FileSystemXmlSerialization.Serialize_root(
             python_obj,
             to_string=True,
             pretty_print=True,
@@ -357,12 +367,12 @@ class FileSystemSuite(SuiteImpl):
 
     # ----------------------------------------------------------------------
     def test_RootAdditionalDataToString(self):
-        python_obj = XmlSerialization.Deserialize_root(
+        python_obj = FileSystemXmlSerialization.Deserialize_root(
             self._xml_filename,
             process_additional_data=True,
         )
 
-        s = XmlSerialization.Serialize_root(
+        s = FileSystemXmlSerialization.Serialize_root(
             python_obj,
             process_additional_data=True,
             to_string=True,
@@ -396,9 +406,9 @@ class FileSystemSuite(SuiteImpl):
 
     # ----------------------------------------------------------------------
     def test_RootsToString(self):
-        python_obj = XmlSerialization.Deserialize_roots(self._xml_filename)
+        python_obj = FileSystemXmlSerialization.Deserialize_roots(self._xml_filename)
 
-        s = XmlSerialization.Serialize_roots(
+        s = FileSystemXmlSerialization.Serialize_roots(
             python_obj,
             to_string=True,
             pretty_print=True,
@@ -418,12 +428,12 @@ class FileSystemSuite(SuiteImpl):
 
     # ----------------------------------------------------------------------
     def test_RootsAdditionalDataToString(self):
-        python_obj = XmlSerialization.Deserialize_roots(
+        python_obj = FileSystemXmlSerialization.Deserialize_roots(
             self._xml_filename,
             process_additional_data=True,
         )
 
-        s = XmlSerialization.Serialize_roots(
+        s = FileSystemXmlSerialization.Serialize_roots(
             python_obj,
             process_additional_data=True,
             to_string=True,
@@ -451,6 +461,23 @@ class FileSystemSuite(SuiteImpl):
                 """,
             ),
         )
+
+
+# ----------------------------------------------------------------------
+class TestSuite(TestSuiteImpl):
+    # ----------------------------------------------------------------------
+    def setUp(self):
+        xml_filename = os.path.join(_script_dir, "..", "Impl", "Test.xml")
+        assert os.path.isfile(xml_filename), xml_filename
+
+        self._xml_filename = xml_filename
+
+    # ----------------------------------------------------------------------
+    def test_Standard(self):
+        obj = TestXmlSerialization.Deserialize(self._xml_filename)
+
+        self.ValidateTestBase(obj.test_base)
+        self.ValidateTestDerived(obj.test_derived)
 
 
 # ----------------------------------------------------------------------

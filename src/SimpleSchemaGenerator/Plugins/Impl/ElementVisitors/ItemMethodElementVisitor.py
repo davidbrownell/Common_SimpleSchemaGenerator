@@ -170,10 +170,6 @@ class ItemMethodElementVisitor(ElementVisitor):
     # ----------------------------------------------------------------------
     @Interface.override
     def OnAny(self, element):
-        raise NotImplementedError("TODO: Any")
-
-        # TODO: Verify that this works
-
         self._output_stream.write(
             textwrap.dedent(
                 """\

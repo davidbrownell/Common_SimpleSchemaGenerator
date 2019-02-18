@@ -27,5 +27,14 @@
       <item>10</item>
       <item>20</item>
     </ref4>
+
+    <any_>
+      <one>
+        <two>
+          <three a="a" b="b">value 3</three>
+          <four>value 4</four>
+        </two>
+      </one>
+    </any_>
   </test_derived>
 </root>

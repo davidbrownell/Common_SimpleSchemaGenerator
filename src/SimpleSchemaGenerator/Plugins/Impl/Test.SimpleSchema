@@ -17,4 +17,4 @@
     # BugBug <v2 (bool|v1)>
     # BugBug <v3 (uri|v2|filename ensure_exists=true) +>
     
-    # BugBug <_any any>
+    <any_ any>

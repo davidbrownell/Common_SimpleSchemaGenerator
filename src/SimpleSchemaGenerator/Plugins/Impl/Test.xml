@@ -1,0 +1,31 @@
+<root>
+  <test_base>
+    <item>
+      <a>
+        <item>one</item>
+        <item>two</item>
+      </a>
+    </item>
+    <item>
+      <a>
+        <item>three</item>
+      </a>
+    </item>
+  </test_base>
+
+  <test_derived>
+    <b>false</b>
+    <d>-100.1</d>
+  
+    <ref>-200.2</ref>
+    <ref2>100.1</ref2>
+    <ref3>
+      <item>-10</item>
+      <item>-20</item>
+    </ref3>
+    <ref4>
+      <item>10</item>
+      <item>20</item>
+    </ref4>
+  </test_derived>
+</root>

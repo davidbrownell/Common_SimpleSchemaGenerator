@@ -90,6 +90,12 @@ class PythonSourceStatementWriter(SourceStatementWriter):
     # ----------------------------------------------------------------------
     @staticmethod
     @Interface.override
+    def GetFundamental(var_name, child_element):
+        return var_name
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @Interface.override
     def GetAdditionalDataChildren():
         return '[(k, v) for k, v in six.iteritems(source if isinstance(source, dict) else source.__dict__) if not k.startswith("_") and k not in exclude_names]'
 

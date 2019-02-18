@@ -213,7 +213,9 @@ class AllTypesSuite(unittest.TestCase, AllTypesUtilsMixin):
         os.mkdir(temp_dirname)
         with CallOnExit(lambda: FileSystem.RemoveTree(temp_dirname)):
             self.assertEqual(
-                AllTypesYaml.Deserialize_filename_any_('"{}"'.format(os.path.basename(temp_dirname))).lower(),
+                AllTypesYaml.Deserialize_filename_any_(
+                    '"{}"'.format(os.path.basename(temp_dirname)),
+                ).lower(),
                 temp_dirname.lower(),
             )
 
@@ -225,7 +227,9 @@ class AllTypesSuite(unittest.TestCase, AllTypesUtilsMixin):
 
         with CallOnExit(lambda: FileSystem.RemoveFile(temp_filename)):
             self.assertEqual(
-                AllTypesYaml.Deserialize_filename_any_('"{}"'.format(os.path.basename(temp_filename))).lower(),
+                AllTypesYaml.Deserialize_filename_any_(
+                    '"{}"'.format(os.path.basename(temp_filename)),
+                ).lower(),
                 temp_filename.lower(),
             )
 

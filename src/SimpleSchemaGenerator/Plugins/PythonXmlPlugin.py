@@ -108,9 +108,7 @@ class Plugin(PythonSerializationImpl):
             is_simple_schema_fundamental=False,
         ):
             if is_simple_schema_fundamental:
-                return '{var_name}.text if {var_name}.text.strip() else ""'.format(
-                    var_name=var_name,
-                )
+                return cls.GetFundamental(var_name, child_element)
 
             if getattr(child_element, "IsAttribute", False):
                 return textwrap.dedent(
@@ -141,6 +139,17 @@ class Plugin(PythonSerializationImpl):
                 name=cls.GetElementStatementName(child_element),
                 is_optional=child_element.TypeInfo.Arity.Min == 0,
                 is_collection=child_element.TypeInfo.Arity.IsCollection,
+            )
+
+        # ----------------------------------------------------------------------
+        @staticmethod
+        @Interface.override
+        def GetFundamental(var_name, child_element):
+            if getattr(child_element, "IsAttribute", False):
+                return var_name
+
+            return '{var_name}.text if {var_name}.text.strip() else ""'.format(
+                var_name=var_name,
             )
 
         # ----------------------------------------------------------------------

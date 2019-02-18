@@ -125,6 +125,13 @@ class SourceStatementWriter(StatementWriter):
     # ----------------------------------------------------------------------
     @staticmethod
     @Interface.abstractmethod
+    def GetFundamental(var_name, child_element):
+        """Returns any decoration necessary to extract fundamental information from an element"""
+        raise Exception("Abstract method")
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @Interface.abstractmethod
     def GetAdditionalDataChildren():
         """\
         Statement that is a list of name/child pairs of all additional data items.

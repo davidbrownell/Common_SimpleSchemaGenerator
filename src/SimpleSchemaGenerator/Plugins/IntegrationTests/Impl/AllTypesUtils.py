@@ -55,13 +55,19 @@ class AllTypesUtilsMixin(object):
             obj.datetime_,
             [datetime.datetime(2019, 2, 11, 17, 0, 0), datetime.datetime(2019, 2, 11, 17, 0, 0)],
         )
-        self.assertEqual([dir.lower() for dir in obj.directory_], [os.path.join(os.getcwd(), "DirectoryName").lower()])
+        self.assertEqual(
+            [dir.lower() for dir in obj.directory_],
+            [os.path.join(os.getcwd(), "DirectoryName").lower()],
+        )
         self.assertEqual(
             obj.duration_,
             [datetime.timedelta(1, 82862), datetime.timedelta(1, 82862, 3), datetime.timedelta(0, 82862)],
         )
         self.assertEqual(obj.enum_, ["three", "two", "one"])
-        self.assertEqual([filename.lower() for filename in obj.filename_], [os.path.join(os.getcwd(), "FileName").lower()])
+        self.assertEqual(
+            [filename.lower() for filename in obj.filename_],
+            [os.path.join(os.getcwd(), "FileName").lower()],
+        )
         self.assertEqual(obj.guid_, [uuid.UUID("f638e451-c276-479a-aaa0-c699e35196fb")] * 4)
         self.assertEqual(obj.int_, [10, -10])
         self.assertEqual(

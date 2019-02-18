@@ -512,12 +512,6 @@ class PythonSerializationImpl(PluginBase):
             extra_args = ""
             suffix = ""
 
-        convenience_conversions = source_writer.ConvenienceConversions("root", None)
-        if "is_root" in convenience_conversions:
-            is_root_param = "\n    is_root=True,"
-        else:
-            is_root_param = ""
-
         statements = []
         has_compound = False
 
@@ -538,7 +532,8 @@ class PythonSerializationImpl(PluginBase):
                 textwrap.dedent(
                     """\
                     this_result = {method_name}_{name}(
-                        root,{is_root_param}{compound_args}
+                        root,
+                        is_root=True,{compound_args}
                     )
                     if this_result is not DoesNotExist:
                         {append_statement}
@@ -549,7 +544,6 @@ class PythonSerializationImpl(PluginBase):
                 ).format(
                     method_name=method_name,
                     name=ToPythonName(element),
-                    is_root_param=is_root_param,
                     compound_args=StringHelpers.LeftJustify(compound_args, 4),
                     append_statement=StringHelpers.LeftJustify(
                         dest_writer.AppendChild(element, "result", "this_result"),
@@ -597,7 +591,7 @@ class PythonSerializationImpl(PluginBase):
                 compound_args=StringHelpers.LeftJustify(compound_args, 4).rstrip(),
                 extra_args=StringHelpers.LeftJustify(extra_args, 4).rstrip(),
                 convenience=StringHelpers.LeftJustify(
-                    convenience_conversions or "# No convenience conversions",
+                    source_writer.ConvenienceConversions("root", None) or "# No convenience conversions",
                     4,
                 ).strip(),
                 create_compound=StringHelpers.LeftJustify(

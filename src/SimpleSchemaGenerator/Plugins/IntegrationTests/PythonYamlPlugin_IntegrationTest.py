@@ -638,14 +638,10 @@ class TestSuite(unittest.TestCase, TestUtilsMixin):
         xml_obj = TestXml.Deserialize(xml_filename)
 
         self._xml_obj = xml_obj
-        
+
     # ----------------------------------------------------------------------
     def test_All(self):
         serialized_obj = TestYaml.Serialize(self._xml_obj)
-
-        self.ValidateTestBase(serialized_obj.test_base)
-        self.ValidateTestDerived(serialized_obj.test_derived)
-
         obj = TestYaml.Deserialize(serialized_obj)
 
         self.ValidateTestBase(obj.test_base)
@@ -664,9 +660,6 @@ class TestSuite(unittest.TestCase, TestUtilsMixin):
     # ----------------------------------------------------------------------
     def test_Derived(self):
         serialized_obj = TestYaml.Serialize_test_derived(self._xml_obj)
-
-        self.ValidateTestDerived(serialized_obj)
-
         obj = TestYaml.Deserialize_test_derived(serialized_obj)
 
         self.ValidateTestDerived(obj)

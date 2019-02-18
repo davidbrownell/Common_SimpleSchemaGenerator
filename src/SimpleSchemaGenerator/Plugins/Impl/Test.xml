@@ -39,6 +39,26 @@
       </item>
     </ref5>
 
+    <v1>true</v1>
+    <v2>false</v2>
+
+    <v3>
+      <item>true</item>
+      <item>https://test.com</item>
+      <item>25</item>
+      <item>10</item>
+      <item>true</item>
+      <item>https://another_test.com</item>
+      <item>this is a test</item>
+      <item>
+        <a>
+          <item>one</item>
+          <item>two</item>
+        </a>
+      </item>
+      -->
+    </v3>
+    
     <any_>
       <one>
         <two>

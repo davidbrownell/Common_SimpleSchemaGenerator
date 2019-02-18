@@ -18,6 +18,7 @@
 import os
 
 import CommonEnvironment
+from CommonEnvironment.TypeInfo.FundamentalTypes.UriTypeInfo import Uri
 
 # ----------------------------------------------------------------------
 _script_fullpath                            = CommonEnvironment.ThisFullpath()
@@ -40,6 +41,22 @@ class TestUtilsMixin(object):
         self.assertEqual(obj.ref3, [-10, -20])
         self.assertEqual(obj.ref4, [10, 20])
         self.assertEqual(obj.ref5, [[10.0, 20.0], [30.0, 40.0]])
+
+        self.assertEqual(obj.v1, True)
+        self.assertEqual(obj.v2, False)
+        self.assertEqual(
+            obj.v3[:-1],
+            [
+                True,
+                Uri.FromString("https://test.com"),
+                25,
+                "10",
+                True,
+                Uri.FromString("https://another_test.com"),
+                "this is a test",
+            ],
+        )
+        self.assertEqual(obj.v3[-1].a, ["one", "two"])
 
         self.assertEqual(obj.any_.one.two.three.a, "a")
         self.assertEqual(obj.any_.one.two.three.b, "b")

@@ -1,5 +1,7 @@
-<test_base *>:
+(test_base_impl):
     <a string *>
+
+<test_base test_base_impl *>
 
 <test_derived test_base>:
     <optional bool ?>
@@ -13,8 +15,8 @@
     <ref4 d min=0.0 {2}>                    # Refines arity and augments metadata
     <ref5 ref3 {2}>                         # List of lists
     
-    # BugBug <v1 (b|string|int min=20)>
-    # BugBug <v2 (bool|v1)>
-    # BugBug <v3 (uri|v2|filename ensure_exists=true) +>
+    <v1 (b|int min=20|uri)>
+    <v2 (bool|v1)>
+    <v3 (v2|filename|string|test_base_impl) +>
     
     <any_ any>

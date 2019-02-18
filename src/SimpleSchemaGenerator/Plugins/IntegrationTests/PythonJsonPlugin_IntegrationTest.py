@@ -32,13 +32,19 @@ _script_dir, _script_name                   = os.path.split(_script_fullpath)
 
 sys.path.insert(0, os.path.join(_script_dir, "Generated", "FileSystemTest"))
 with CallOnExit(lambda: sys.path.pop(0)):
-    import FileSystemTest_PythonJsonSerialization as JsonSerialization
-    import FileSystemTest_PythonXmlSerialization as XmlSerialization
+    import FileSystemTest_PythonJsonSerialization as FileSystemJsonSerialization
+    import FileSystemTest_PythonXmlSerialization as FileSystemXmlSerialization
+
+
+sys.path.insert(0, os.path.join(_script_dir, "Generated", "Test"))
+with CallOnExit(lambda: sys.path.pop(0)):
+    import Test_PythonJsonSerialization as TestJsonSerialization
+    import Test_PythonXmlSerialization as TestXmlSerialization
 
 
 with InitRelativeImports():
     from .Impl.FileSystemTestUtils import FileSystemUtilsMixin
-
+    from .Impl.TestUtils import TestUtilsMixin
 
 # ----------------------------------------------------------------------
 class FileSystemSuite(unittest.TestCase, FileSystemUtilsMixin):
@@ -50,9 +56,9 @@ class FileSystemSuite(unittest.TestCase, FileSystemUtilsMixin):
         xml_filename = os.path.join(_script_dir, "..", "Impl", "FileSystemTest.xml")
         assert os.path.isfile(xml_filename), xml_filename
 
-        xml_obj = XmlSerialization.Deserialize(xml_filename)
+        xml_obj = FileSystemXmlSerialization.Deserialize(xml_filename)
 
-        xml_obj_additional_data = XmlSerialization.Deserialize(
+        xml_obj_additional_data = FileSystemXmlSerialization.Deserialize(
             xml_filename,
             process_additional_data=True,
         )
@@ -62,19 +68,19 @@ class FileSystemSuite(unittest.TestCase, FileSystemUtilsMixin):
 
     # ----------------------------------------------------------------------
     def test_All(self):
-        serialized_obj = JsonSerialization.Serialize(self._xml_obj)
+        serialized_obj = FileSystemJsonSerialization.Serialize(self._xml_obj)
 
         self.ValidateRoot(serialized_obj.root)
         self.ValidateRoots(serialized_obj.roots)
 
-        obj = JsonSerialization.Deserialize(serialized_obj)
+        obj = FileSystemJsonSerialization.Deserialize(serialized_obj)
 
         self.ValidateRoot(obj.root)
         self.ValidateRoots(obj.roots)
 
     # ----------------------------------------------------------------------
     def test_AllAdditionalData(self):
-        serialized_obj = JsonSerialization.Serialize(
+        serialized_obj = FileSystemJsonSerialization.Serialize(
             self._xml_obj_additional_data,
             process_additional_data=True,
         )
@@ -89,7 +95,7 @@ class FileSystemSuite(unittest.TestCase, FileSystemUtilsMixin):
             process_additional_data=True,
         )
 
-        obj = JsonSerialization.Deserialize(
+        obj = FileSystemJsonSerialization.Deserialize(
             serialized_obj,
             process_additional_data=True,
         )
@@ -106,17 +112,17 @@ class FileSystemSuite(unittest.TestCase, FileSystemUtilsMixin):
 
     # ----------------------------------------------------------------------
     def test_Root(self):
-        serialized_obj = JsonSerialization.Serialize_root(self._xml_obj.root)
+        serialized_obj = FileSystemJsonSerialization.Serialize_root(self._xml_obj.root)
 
         self.ValidateRoot(serialized_obj)
 
-        obj = JsonSerialization.Deserialize_root(serialized_obj)
+        obj = FileSystemJsonSerialization.Deserialize_root(serialized_obj)
 
         self.ValidateRoot(obj)
 
     # ----------------------------------------------------------------------
     def test_RootAdditionalData(self):
-        serialized_obj = JsonSerialization.Serialize_root(
+        serialized_obj = FileSystemJsonSerialization.Serialize_root(
             self._xml_obj_additional_data,
             process_additional_data=True,
         )
@@ -126,7 +132,7 @@ class FileSystemSuite(unittest.TestCase, FileSystemUtilsMixin):
             process_additional_data=True,
         )
 
-        obj = JsonSerialization.Deserialize_root(
+        obj = FileSystemJsonSerialization.Deserialize_root(
             serialized_obj,
             process_additional_data=True,
         )
@@ -138,17 +144,17 @@ class FileSystemSuite(unittest.TestCase, FileSystemUtilsMixin):
 
     # ----------------------------------------------------------------------
     def test_Roots(self):
-        serialized_obj = JsonSerialization.Serialize_roots(self._xml_obj.roots)
+        serialized_obj = FileSystemJsonSerialization.Serialize_roots(self._xml_obj.roots)
 
         self.ValidateRoots(serialized_obj)
 
-        obj = JsonSerialization.Deserialize_roots(serialized_obj)
+        obj = FileSystemJsonSerialization.Deserialize_roots(serialized_obj)
 
         self.ValidateRoots(obj)
 
     # ----------------------------------------------------------------------
     def test_RootsAdditionalData(self):
-        serialized_obj = JsonSerialization.Serialize_roots(
+        serialized_obj = FileSystemJsonSerialization.Serialize_roots(
             self._xml_obj_additional_data,
             process_additional_data=True,
         )
@@ -158,7 +164,7 @@ class FileSystemSuite(unittest.TestCase, FileSystemUtilsMixin):
             process_additional_data=True,
         )
 
-        obj = JsonSerialization.Deserialize_roots(
+        obj = FileSystemJsonSerialization.Deserialize_roots(
             serialized_obj,
             process_additional_data=True,
         )
@@ -170,9 +176,9 @@ class FileSystemSuite(unittest.TestCase, FileSystemUtilsMixin):
 
     # ----------------------------------------------------------------------
     def test_AllToString(self):
-        python_obj = JsonSerialization.Deserialize(self._xml_obj)
+        python_obj = FileSystemJsonSerialization.Deserialize(self._xml_obj)
 
-        s = JsonSerialization.Serialize(
+        s = FileSystemJsonSerialization.Serialize(
             python_obj,
             to_string=True,
             pretty_print=True,
@@ -226,9 +232,9 @@ class FileSystemSuite(unittest.TestCase, FileSystemUtilsMixin):
 
     # ----------------------------------------------------------------------
     def test_AllToStringNoPrettyPrint(self):
-        python_obj = JsonSerialization.Deserialize(self._xml_obj)
+        python_obj = FileSystemJsonSerialization.Deserialize(self._xml_obj)
 
-        s = JsonSerialization.Serialize(
+        s = FileSystemJsonSerialization.Serialize(
             python_obj,
             to_string=True,
         )
@@ -240,12 +246,12 @@ class FileSystemSuite(unittest.TestCase, FileSystemUtilsMixin):
 
     # ----------------------------------------------------------------------
     def test_AllAdditionalDataToString(self):
-        python_obj = JsonSerialization.Deserialize(
+        python_obj = FileSystemJsonSerialization.Deserialize(
             self._xml_obj_additional_data,
             process_additional_data=True,
         )
 
-        s = JsonSerialization.Serialize(
+        s = FileSystemJsonSerialization.Serialize(
             python_obj,
             process_additional_data=True,
             to_string=True,
@@ -319,9 +325,9 @@ class FileSystemSuite(unittest.TestCase, FileSystemUtilsMixin):
 
     # ----------------------------------------------------------------------
     def test_RootToString(self):
-        python_obj = JsonSerialization.Deserialize_root(self._xml_obj)
+        python_obj = FileSystemJsonSerialization.Deserialize_root(self._xml_obj)
 
-        s = JsonSerialization.Serialize_root(
+        s = FileSystemJsonSerialization.Serialize_root(
             python_obj,
             to_string=True,
             pretty_print=True,
@@ -365,12 +371,12 @@ class FileSystemSuite(unittest.TestCase, FileSystemUtilsMixin):
 
     # ----------------------------------------------------------------------
     def test_RootAdditionalDataToString(self):
-        python_obj = JsonSerialization.Deserialize_root(
+        python_obj = FileSystemJsonSerialization.Deserialize_root(
             self._xml_obj_additional_data,
             process_additional_data=True,
         )
 
-        s = JsonSerialization.Serialize_root(
+        s = FileSystemJsonSerialization.Serialize_root(
             python_obj,
             process_additional_data=True,
             to_string=True,
@@ -415,9 +421,9 @@ class FileSystemSuite(unittest.TestCase, FileSystemUtilsMixin):
 
     # ----------------------------------------------------------------------
     def test_RootsToString(self):
-        python_obj = JsonSerialization.Deserialize_roots(self._xml_obj)
+        python_obj = FileSystemJsonSerialization.Deserialize_roots(self._xml_obj)
 
-        s = JsonSerialization.Serialize_roots(
+        s = FileSystemJsonSerialization.Serialize_roots(
             python_obj,
             to_string=True,
             pretty_print=True,
@@ -440,12 +446,12 @@ class FileSystemSuite(unittest.TestCase, FileSystemUtilsMixin):
 
     # ----------------------------------------------------------------------
     def test_RootsAdditionalDataToString(self):
-        python_obj = JsonSerialization.Deserialize_roots(
+        python_obj = FileSystemJsonSerialization.Deserialize_roots(
             self._xml_obj_additional_data,
             process_additional_data=True,
         )
 
-        s = JsonSerialization.Serialize_roots(
+        s = FileSystemJsonSerialization.Serialize_roots(
             python_obj,
             process_additional_data=True,
             to_string=True,
@@ -485,6 +491,45 @@ class FileSystemSuite(unittest.TestCase, FileSystemUtilsMixin):
                 ]""",
             ),
         )
+
+
+# ----------------------------------------------------------------------
+class TestSuite(unittest.TestCase, TestUtilsMixin):
+    # ----------------------------------------------------------------------
+    def setUp(self):
+        self.maxDiff = None
+
+        xml_filename = os.path.join(_script_dir, "..", "Impl", "Test.xml")
+        assert os.path.isfile(xml_filename), xml_filename
+
+        xml_obj = TestXmlSerialization.Deserialize(xml_filename)
+
+        self._xml_obj = xml_obj
+
+    # ----------------------------------------------------------------------
+    def test_All(self):
+        serialized_obj = TestJsonSerialization.Serialize(self._xml_obj)
+        obj = TestJsonSerialization.Deserialize(serialized_obj)
+
+        self.ValidateTestBase(obj.test_base)
+        self.ValidateTestDerived(obj.test_derived)
+
+    # ----------------------------------------------------------------------
+    def test_Base(self):
+        serialized_obj = TestJsonSerialization.Serialize_test_base(self._xml_obj)
+
+        self.ValidateTestBase(serialized_obj)
+
+        obj = TestJsonSerialization.Deserialize_test_base(serialized_obj)
+
+        self.ValidateTestBase(obj)
+
+    # ----------------------------------------------------------------------
+    def test_Derived(self):
+        serialized_obj = TestJsonSerialization.Serialize_test_derived(self._xml_obj)
+        obj = TestJsonSerialization.Deserialize_test_derived(serialized_obj)
+
+        self.ValidateTestDerived(obj)
 
 
 # ----------------------------------------------------------------------

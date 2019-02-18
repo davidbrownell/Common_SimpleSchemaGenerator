@@ -44,9 +44,17 @@ with CallOnExit(lambda: sys.path.pop(0)):
     import FileSystemTest_PythonYamlSerialization as FileSystemYaml
     import FileSystemTest_PythonXmlSerialization as FileSystemXml
 
+sys.path.insert(0, os.path.join(_script_dir, "Generated", "Test"))
+with CallOnExit(lambda: sys.path.pop(0)):
+    import Test_PythonYamlSerialization as TestYaml
+    import Test_PythonXmlSerialization as TestXml
+
+
 with InitRelativeImports():
     from .Impl.AllTypesUtils import AllTypesUtilsMixin
     from .Impl.FileSystemTestUtils import FileSystemUtilsMixin
+    from .Impl.TestUtils import TestUtilsMixin
+
 
 # ----------------------------------------------------------------------
 class AllTypesSuite(unittest.TestCase, AllTypesUtilsMixin):
@@ -616,6 +624,45 @@ class FileSystemSuite(unittest.TestCase, FileSystemUtilsMixin):
                 """,
             ),
         )
+
+
+# ----------------------------------------------------------------------
+class TestSuite(unittest.TestCase, TestUtilsMixin):
+    # ----------------------------------------------------------------------
+    def setUp(self):
+        self.maxDiff = None
+
+        xml_filename = os.path.join(_script_dir, "..", "Impl", "Test.xml")
+        assert os.path.isfile(xml_filename), xml_filename
+
+        xml_obj = TestXml.Deserialize(xml_filename)
+
+        self._xml_obj = xml_obj
+
+    # ----------------------------------------------------------------------
+    def test_All(self):
+        serialized_obj = TestYaml.Serialize(self._xml_obj)
+        obj = TestYaml.Deserialize(serialized_obj)
+
+        self.ValidateTestBase(obj.test_base)
+        self.ValidateTestDerived(obj.test_derived)
+
+    # ----------------------------------------------------------------------
+    def test_Base(self):
+        serialized_obj = TestYaml.Serialize_test_base(self._xml_obj)
+
+        self.ValidateTestBase(serialized_obj)
+
+        obj = TestYaml.Deserialize_test_base(serialized_obj)
+
+        self.ValidateTestBase(obj)
+
+    # ----------------------------------------------------------------------
+    def test_Derived(self):
+        serialized_obj = TestYaml.Serialize_test_derived(self._xml_obj)
+        obj = TestYaml.Deserialize_test_derived(serialized_obj)
+
+        self.ValidateTestDerived(obj)
 
 
 # ----------------------------------------------------------------------

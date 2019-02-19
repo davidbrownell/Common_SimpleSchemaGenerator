@@ -54,7 +54,7 @@ def Build(
             verbose=" /verbose" if verbose else "",
         )
 
-        schema_names = ["FileSystemTest.SimpleSchema"]                      # TODO , "Test.SimpleSchema"]
+        schema_names = ["AllTypes.SimpleSchema", "FileSystemTest.SimpleSchema", "Test.SimpleSchema"]
         plugin_names = ["PythonJson", "PythonXml", "PythonYaml"]
 
         for schema_name_index, schema_name in enumerate(schema_names):

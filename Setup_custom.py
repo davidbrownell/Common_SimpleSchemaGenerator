@@ -118,4 +118,4 @@ def GetCustomActions(debug, verbose, explicit_configurations):
     cases, this is Bash on Linux systems and Batch or Powershell on Windows systems.
     """
 
-    return [CurrentShell.Commands.SymbolicLink(os.path.join(_script_dir, "Scripts", "SimpleSchemaGenerator.py"), os.path.join(_script_dir, "src", "SimpleSchemaGenerator.py"))]
+    return [CurrentShell.Commands.SymbolicLink(os.path.join(_script_dir, "Scripts", "SimpleSchemaGenerator.py"), os.path.join(_script_dir, "src", "SimpleSchemaGenerator", "SimpleSchemaGenerator.py"))]

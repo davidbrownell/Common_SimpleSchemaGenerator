@@ -73,10 +73,11 @@ class ItemMethodElementVisitor(ElementVisitor):
     def OnFundamental(self, element):
         python_name = ToPythonName(element)
 
-        statement = "{type_info}.{method_prefix}Item(_{python_name}_TypeInfo, item, **{serialize_args})".format(
+        statement = "{type_info}.{method_prefix}Item(_{python_name}_TypeInfo, {item_statement}, **{serialize_args})".format(
             type_info=self._type_info_serialization_name,
             method_prefix=self._method_prefix,
             python_name=python_name,
+            item_statement=self._source_writer.GetFundamental("item", element),
             serialize_args=self._custom_serialize_item_args,
         )
 
@@ -111,7 +112,27 @@ class ItemMethodElementVisitor(ElementVisitor):
     # ----------------------------------------------------------------------
     @Interface.override
     def OnVariant(self, element):
-        raise NotImplementedError("TODO: Variant")
+        statements = []
+        new_types = []
+
+        for variation in element.Variations:
+            if isinstance(variation, Elements.ReferenceElement):
+                statement = "cls._{}_Item".format(ToPythonName(variation.Reference))
+
+                if isinstance(
+                    variation.Reference.Resolve(),
+                    (Elements.CompoundElement, Elements.SimpleElement),
+                ):
+                    statement = "lambda item: {}(item, process_additional_data=False, always_include_optional=False)".format(
+                        statement,
+                    )
+
+                statements.append(statement)
+            else:
+                assert not isinstance(variation, (Elements.CompoundElement, Elements.SimpleElement)), variation
+
+                new_types.append(variation)
+                statements.append("cls._{}_Item".format(ToPythonName(variation)))
 
         python_name = ToPythonName(element)
 
@@ -121,13 +142,28 @@ class ItemMethodElementVisitor(ElementVisitor):
                 # ----------------------------------------------------------------------
                 @classmethod
                 def _{python_name}_Item(cls, item):
-                    return
+                    for potential_method in [
+                        {statements}
+                    ]:
+                        try:
+                            return potential_method(item)
+                        except:
+                            pass
+
+                    raise {exception_type}Exception("The value cannot be converted to any of the supported variations")
 
                 """,
             ).format(
                 python_name=python_name,
+                statements=StringHelpers.LeftJustify(
+                    "\n".join(["{},".format(statement) for statement in statements]),
+                    8,
+                ).rstrip(),
+                exception_type="Serialize" if self._is_serializer else "Deserialize",
             ),
         )
+
+        self.Accept(new_types)
 
     # ----------------------------------------------------------------------
     @Interface.override
@@ -138,41 +174,28 @@ class ItemMethodElementVisitor(ElementVisitor):
     # ----------------------------------------------------------------------
     @Interface.override
     def OnList(self, element):
-        raise NotImplementedError("TODO: List")
-
-        # TODO: Verify that this code works
-        # TODO: Validate arity
-
         self._output_stream.write(
             textwrap.dedent(
                 """\
                 # ----------------------------------------------------------------------
                 @classmethod
-                def _{python_name}_Item(cls, item):
-                    results = []
-
-                    for index, child in enumerate(item):
-                        try:
-                            results.append(cls.{reference_name}(child))
-                        except:
-                            _DecorateActiveException("Index {{}}".format(index))
-
-                    return results
+                def _{python_name}_Item(cls, items):
+                    try:
+                        return cls.{reference_python_name}(items)
+                    except:
+                        _DecorateActiveException("{reference_name}")
 
                 """,
             ).format(
                 python_name=ToPythonName(element),
-                reference_name=ToPythonName(element.Reference),
+                reference_python_name=ToPythonName(element.Reference),
+                reference_name=element.Reference.Name,
             ),
         )
 
     # ----------------------------------------------------------------------
     @Interface.override
     def OnAny(self, element):
-        raise NotImplementedError("TODO: Any")
-
-        # TODO: Verify that this works
-
         self._output_stream.write(
             textwrap.dedent(
                 """\

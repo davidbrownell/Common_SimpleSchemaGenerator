@@ -96,7 +96,7 @@ class SourceStatementWriter(StatementWriter):
     # ----------------------------------------------------------------------
     @staticmethod
     @Interface.abstractmethod
-    def ConvenienceConversions(var_name, element):
+    def ConvenienceConversions(var_name, element_or_none):
         """\
         Statements that convert from an input type to the source; used to create
         better experiences for callers. The generated code should return 
@@ -120,6 +120,13 @@ class SourceStatementWriter(StatementWriter):
         should account for attributes, collections, optional values, 
         and standard children in their implementations.
         """
+        raise Exception("Abstract method")
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @Interface.abstractmethod
+    def GetFundamental(var_name, child_element):
+        """Returns any decoration necessary to extract fundamental information from an element"""
         raise Exception("Abstract method")
 
     # ----------------------------------------------------------------------

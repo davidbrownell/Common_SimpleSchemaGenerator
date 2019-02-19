@@ -413,6 +413,7 @@ for _type_info in [                                                         # In
     DurationTypeInfo(),
     EnumTypeInfo(["placeholder"]),
     FilenameTypeInfo(),
+    FloatTypeInfo(),
     GuidTypeInfo(),
     IntTypeInfo(),
     StringTypeInfo(),

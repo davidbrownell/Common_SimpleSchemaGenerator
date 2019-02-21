@@ -54,10 +54,21 @@ def Build(
             verbose=" /verbose" if verbose else "",
         )
 
-        schema_names = ["AllTypes.SimpleSchema", "FileSystemTest.SimpleSchema", "Test.SimpleSchema"]
-        plugin_names = ["PythonJson", "PythonXml", "PythonYaml"]
+        schema_names = [("AllTypes.SimpleSchema", " /include=types"), "FileSystemTest.SimpleSchema", "Test.SimpleSchema"]
+
+        plugin_names = [
+            "PythonJson",
+            "PythonXml",
+            "PythonYaml",
+            "JsonSchema",
+        ]
 
         for schema_name_index, schema_name in enumerate(schema_names):
+            schema_flags = ""
+
+            if isinstance(schema_name, tuple):
+                schema_name, schema_flags = schema_name
+
             dm.stream.write(
                 "Processing '{}' ({} of {})...".format(
                     schema_name,
@@ -92,6 +103,9 @@ def Build(
                             output_dir=output_dir,
                             input_filename=schema_name,
                         )
+
+                        if plugin_name.endswith("Schema"):
+                            command_line += schema_flags
 
                         plugin_dm.result, output = Process.Execute(command_line)
                         if plugin_dm.result != 0 or verbose:

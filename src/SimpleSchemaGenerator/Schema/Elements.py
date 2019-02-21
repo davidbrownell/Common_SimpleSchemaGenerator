@@ -236,6 +236,10 @@ class ListElement(ReferenceMixin, Element):
             Reference=lambda r: r.Name,
         )
 
+    # ----------------------------------------------------------------------
+    def Resolve(self):
+        return self
+
 
 # ----------------------------------------------------------------------
 class AnyElement(Element):

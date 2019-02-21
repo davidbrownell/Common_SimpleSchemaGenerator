@@ -65,7 +65,7 @@ class Plugin(PluginBase):
     @staticmethod
     @override
     def Generate(
-        simple_schema_code_generator,
+        simple_schema_generator,
         invoke_reason,
         input_filenames,
         output_filenames,

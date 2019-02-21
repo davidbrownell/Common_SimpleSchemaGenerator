@@ -149,7 +149,7 @@ class PythonSerializationImpl(PluginBase):
     @Interface.override
     def Generate(
         cls,
-        simple_schema_code_generator,
+        simple_schema_generator,
         invoke_reason,
         input_filenames,
         output_filenames,

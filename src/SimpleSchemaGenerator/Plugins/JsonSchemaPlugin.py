@@ -25,6 +25,7 @@ import six
 import CommonEnvironment
 from CommonEnvironment import Interface
 from CommonEnvironment import RegularExpression
+from CommonEnvironment.TypeInfo.FundamentalTypes.BoolTypeInfo import BoolTypeInfo
 from CommonEnvironment.TypeInfo.FundamentalTypes.Serialization.StringSerialization import RegularExpressionVisitor
 from CommonEnvironment.TypeInfo.FundamentalTypes.Visitor import Visitor as FundamentalTypeInfoVisitor
 
@@ -37,6 +38,7 @@ _script_dir, _script_name                   = os.path.split(_script_fullpath)
 
 with InitRelativeImports():
     from ..Plugin import Plugin as PluginBase, ParseFlag
+    from ..Schema import Attributes
     from ..Schema import Elements
 
 # <parameters differ from overridden method> pylint: disable=W0221
@@ -86,12 +88,32 @@ class Plugin(PluginBase):
         yield "id", None
         yield "description", None
         yield "schema_version", "http://json-schema.org/draft-07/schema#"
+        yield "allow_additional_children", False
 
     # ----------------------------------------------------------------------
     @classmethod
     @Interface.override
     def GenerateOutputFilenames(cls, context):
         return ["{}.schema.json".format(context["output_name"])]
+
+    # ----------------------------------------------------------------------
+    @classmethod
+    @Interface.override
+    def GetOptionalMetadataItems(cls, item):
+        results = []
+
+        if item.element_type == Elements.CompoundElement:
+            results.append(
+                Attributes.Attribute(
+                    "allow_additional_children",
+                    BoolTypeInfo(
+                        arity="?",
+                    ),
+                    default_value=None,
+                ),
+            )
+
+        return results + super(Plugin, cls).GetOptionalMetadataItems(item)
 
     # ----------------------------------------------------------------------
     @classmethod
@@ -111,6 +133,7 @@ class Plugin(PluginBase):
         id,
         description,
         schema_version,
+        allow_additional_children,
     ):
         assert len(output_filenames) == 1
         output_filename = output_filenames[0]
@@ -165,6 +188,13 @@ class Plugin(PluginBase):
                     if required:
                         required.sort()
                         schema["required"] = required
+
+                    element_allow_additional_children = element.allow_additional_children
+                    if element_allow_additional_children is None:
+                        element_allow_additional_children = allow_additional_children
+
+                    if not element_allow_additional_children:
+                        schema["additionalProperties"] = False
 
                     definitions_schema["_{}_Item".format(element.DottedName)] = schema
 
@@ -273,6 +303,9 @@ class Plugin(PluginBase):
             if required:
                 required.sort()
                 schema["required"] = required
+
+            if not allow_additional_children:
+                schema["additionalProperties"] = False
 
             with open(output_filename, "w") as f:
                 json.dump(

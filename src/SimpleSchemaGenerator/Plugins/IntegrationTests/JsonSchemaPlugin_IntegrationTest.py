@@ -127,15 +127,39 @@ class JsonSchema(unittest.TestCase):
             format_checker=jsonschema.FormatChecker(),
         )
 
+        instance_content["types"]["bool_"] = "not a bool"
+
+        self.assertRaises(
+            jsonschema.exceptions.ValidationError,
+            lambda: jsonschema.validate(
+                instance=instance_content,
+                schema=schema_content,
+                format_checker=jsonschema.FormatChecker(),
+            ),
+        )
+
     # ----------------------------------------------------------------------
     def test_FileSystem(self):
         with open(self._file_system_filename) as f:
             schema_content = json.load(f)
 
+        instance_content = json.loads(self._file_system)
+
         jsonschema.validate(
-            instance=json.loads(self._file_system),
+            instance=instance_content,
             schema=schema_content,
             format_checker=jsonschema.FormatChecker(),
+        )
+
+        instance_content["root"]["new_attribute"] = True
+
+        self.assertRaises(
+            jsonschema.exceptions.ValidationError,
+            lambda: jsonschema.validate(
+                instance=instance_content,
+                schema=schema_content,
+                format_checker=jsonschema.FormatChecker(),
+            ),
         )
 
     # ----------------------------------------------------------------------
@@ -143,10 +167,47 @@ class JsonSchema(unittest.TestCase):
         with open(self._test_filename) as f:
             schema_content = json.load(f)
 
+        instance_content = json.loads(self._test)
+
         jsonschema.validate(
-            instance=json.loads(self._test),
+            instance=instance_content,
             schema=schema_content,
             format_checker=jsonschema.FormatChecker(),
+        )
+
+        # Min value is 20 for ints
+        instance_content["test_derived"]["v1"] = 0
+
+        self.assertRaises(
+            jsonschema.exceptions.ValidationError,
+            lambda: jsonschema.validate(
+                instance=instance_content,
+                schema=schema_content,
+                format_checker=jsonschema.FormatChecker(),
+            ),
+        )
+
+        instance_content["test_derived"]["v1"] = 20
+
+        # Adding a value to test_base is supported as 'allow_additional_children' is true
+        instance_content["test_base"][0]["foo"] = "bar"
+
+        jsonschema.validate(
+            instance=instance_content,
+            schema=schema_content,
+            format_checker=jsonschema.FormatChecker(),
+        )
+
+        # Adding a value to test_derived is not supported
+        instance_content["test_derived"]["foo"] = "bar"
+
+        self.assertRaises(
+            jsonschema.exceptions.ValidationError,
+            lambda: jsonschema.validate(
+                instance=instance_content,
+                schema=schema_content,
+                format_checker=jsonschema.FormatChecker(),
+            ),
         )
 
 

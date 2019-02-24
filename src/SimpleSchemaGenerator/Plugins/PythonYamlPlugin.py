@@ -71,7 +71,7 @@ class Plugin(PythonSerializationImpl):
             content = textwrap.dedent(
                 """\
                 if isinstance({var_name}, six.string_types):
-                    if os.path.isfile({var_name}):
+                    if len({var_name}) < 2000 and os.path.isfile({var_name}):
                         with open({var_name}) as f:
                             {var_name} = rtyaml.load(f)
                     else:

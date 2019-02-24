@@ -48,7 +48,7 @@ def Build(
         prefix="\nResults: ",
         suffix="\n",
     ) as dm:
-        command_line_template = '{script} Generate {{plugin}} {{schema}} "{{output_dir}}" /input="{{input_filename}}" /output_data_filename_prefix={{plugin}}{force}{verbose}'.format(
+        command_line_template = '{script} Generate {{plugin}} {{schema}} "{{output_dir}}" /input="{{input_filename}}" /output_data_filename_prefix={{plugin}} /filter_unsupported_attributes{force}{verbose}'.format(
             script=CurrentShell.CreateScriptName("SimpleSchemaGenerator"),
             force=" /force" if force else "",
             verbose=" /verbose" if verbose else "",
@@ -61,6 +61,7 @@ def Build(
             "PythonXml",
             "PythonYaml",
             "JsonSchema",
+            "XsdSchema",
         ]
 
         for schema_name_index, schema_name in enumerate(schema_names):

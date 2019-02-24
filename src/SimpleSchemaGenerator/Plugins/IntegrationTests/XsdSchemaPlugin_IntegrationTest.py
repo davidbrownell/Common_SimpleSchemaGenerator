@@ -1,9 +1,9 @@
 # ----------------------------------------------------------------------
 # |
-# |  JsonSchemaPlugin_IntegrationTest.py
+# |  XsdSchemaPlugin_IntegrationTest.py
 # |
 # |  David Brownell <db@DavidBrownell.com>
-# |      2019-02-18 17:05:36
+# |      2019-02-22 20:29:04
 # |
 # ----------------------------------------------------------------------
 # |
@@ -13,17 +13,19 @@
 # |  http://www.boost.org/LICENSE_1_0.txt.
 # |
 # ----------------------------------------------------------------------
-"""Integration tests for the JsonSchema plugin"""
+"""Unit tests for XsdSchema.py"""
 
-import json
 import os
 import sys
+import textwrap
 import unittest
 
-import jsonschema
+from lxml import etree
+from six.moves import StringIO
 
 import CommonEnvironment
 from CommonEnvironment.CallOnExit import CallOnExit
+from CommonEnvironment import StringHelpers
 
 from CommonEnvironmentEx.Package import InitRelativeImports
 
@@ -34,22 +36,22 @@ _script_dir, _script_name                   = os.path.split(_script_fullpath)
 
 sys.path.insert(0, os.path.join(_script_dir, "Generated", "AllTypes"))
 with CallOnExit(lambda: sys.path.pop(0)):
-    import AllTypes_PythonJsonSerialization as AllTypesJson
+    import AllTypes_PythonXmlSerialization as AllTypesXml
     import AllTypes_PythonYamlSerialization as AllTypesYaml
 
 sys.path.insert(0, os.path.join(_script_dir, "Generated", "FileSystemTest"))
 with CallOnExit(lambda: sys.path.pop(0)):
-    import FileSystemTest_PythonJsonSerialization as FileSystemJson
     import FileSystemTest_PythonXmlSerialization as FileSystemXml
 
 sys.path.insert(0, os.path.join(_script_dir, "Generated", "Test"))
 with CallOnExit(lambda: sys.path.pop(0)):
-    import Test_PythonJsonSerialization as TestJson
     import Test_PythonXmlSerialization as TestXml
 
 
 # ----------------------------------------------------------------------
-class JsonSchema(unittest.TestCase):
+
+# ----------------------------------------------------------------------
+class XsdSchema(unittest.TestCase):
     # ----------------------------------------------------------------------
     def setUp(self):
         # AllTypes.yaml
@@ -57,34 +59,26 @@ class JsonSchema(unittest.TestCase):
         assert os.path.isfile(all_types_filename), all_types_filename
 
         all_types_original_content = AllTypesYaml.Deserialize_types(all_types_filename)
-        all_types_content = AllTypesJson.Serialize_types(
+        all_types_content = AllTypesXml.Serialize_types(
             all_types_original_content,
             to_string=True,
         )
 
-        all_types_filename = os.path.join(
-            _script_dir,
-            "Generated",
-            "AllTypes",
-            "AllTypes.schema.json",
-        )
+        all_types_filename = os.path.join(_script_dir, "Generated", "AllTypes", "AllTypes.xsd")
         assert os.path.isfile(all_types_filename), all_types_filename
 
         # FileSystemTest.xml
         file_system_filename = os.path.join(_script_dir, "..", "Impl", "FileSystemTest.xml")
         assert os.path.isfile(file_system_filename), file_system_filename
 
-        file_system_original_content = FileSystemXml.Deserialize(file_system_filename)
-        file_system_content = FileSystemJson.Serialize(
-            file_system_original_content,
-            to_string=True,
-        )
+        with open(file_system_filename) as f:
+            file_system_content = f.read()
 
         file_system_filename = os.path.join(
             _script_dir,
             "Generated",
             "FileSystemTest",
-            "FileSystemTest.schema.json",
+            "FileSystemTest.xsd",
         )
         assert os.path.isfile(file_system_filename), file_system_filename
 
@@ -92,13 +86,10 @@ class JsonSchema(unittest.TestCase):
         test_filename = os.path.join(_script_dir, "..", "Impl", "Test.xml")
         assert os.path.isfile(test_filename), test_filename
 
-        test_original_content = TestXml.Deserialize(test_filename)
-        test_content = TestJson.Serialize(
-            test_original_content,
-            to_string=True,
-        )
+        with open(test_filename) as f:
+            test_content = f.read()
 
-        test_filename = os.path.join(_script_dir, "Generated", "Test", "Test.schema.json")
+        test_filename = os.path.join(_script_dir, "Generated", "Test", "Test.xsd")
         assert os.path.isfile(test_filename), test_filename
 
         self._all_types = all_types_content
@@ -113,89 +104,60 @@ class JsonSchema(unittest.TestCase):
     # ----------------------------------------------------------------------
     def test_AllTypes(self):
         with open(self._all_types_filename) as f:
-            schema_content = json.load(f)
+            schema_content = f.read()
 
-        instance_content = {"types": json.loads(self._all_types)}
+        schema_doc = etree.parse(StringIO(schema_content))
+        schema = etree.XMLSchema(schema_doc)
 
-        jsonschema.validate(
-            instance=instance_content,
-            schema=schema_content,
-            format_checker=jsonschema.FormatChecker(),
+        xml_content = textwrap.dedent(
+            """\
+            <AllTypes>
+              {}
+            </AllTypes>
+            """,
+        ).format(StringHelpers.LeftJustify(self._all_types, 2))
+
+        schema.assertValid(etree.parse(StringIO(xml_content)))
+
+        xml_content = xml_content.replace(
+            "<bool_><item>true</item>",
+            "<bool_><item>not a bool</item>",
         )
 
-        instance_content["types"]["bool_"] = "not a bool"
-
         self.assertRaises(
-            jsonschema.exceptions.ValidationError,
-            lambda: jsonschema.validate(
-                instance=instance_content,
-                schema=schema_content,
-                format_checker=jsonschema.FormatChecker(),
-            ),
+            etree.DocumentInvalid,
+            lambda: schema.assertValid(etree.parse(StringIO(xml_content))),
         )
 
     # ----------------------------------------------------------------------
     def test_FileSystem(self):
         with open(self._file_system_filename) as f:
-            schema_content = json.load(f)
+            schema_content = f.read()
 
-        instance_content = json.loads(self._file_system)
+        schema_doc = etree.parse(StringIO(schema_content))
+        schema = etree.XMLSchema(schema_doc)
 
-        jsonschema.validate(
-            instance=instance_content,
-            schema=schema_content,
-            format_checker=jsonschema.FormatChecker(),
-        )
+        xml_content = self._file_system.replace("everything", "FileSystemTest")
 
-        instance_content["root"]["new_attribute"] = True
+        # Remove the extra content, as it can't be properly parsed by
+        # the xsd schema (this is a limitation of XSD (see "Unique Particle
+        # Attribution")).
+        xml_content = xml_content.replace("<extra>", "<!--<extra>")
+        xml_content = xml_content.replace("</extra>", "</extra>-->")
 
-        self.assertRaises(
-            jsonschema.exceptions.ValidationError,
-            lambda: jsonschema.validate(
-                instance=instance_content,
-                schema=schema_content,
-                format_checker=jsonschema.FormatChecker(),
-            ),
-        )
+        schema.assertValid(etree.parse(StringIO(xml_content)))
 
     # ----------------------------------------------------------------------
     def test_Test(self):
         with open(self._test_filename) as f:
-            schema_content = json.load(f)
+            schema_content = f.read()
 
-        instance_content = json.loads(self._test)
+        schema_doc = etree.parse(StringIO(schema_content))
+        schema = etree.XMLSchema(schema_doc)
 
-        jsonschema.validate(
-            instance=instance_content,
-            schema=schema_content,
-            format_checker=jsonschema.FormatChecker(),
-        )
+        xml_content = self._test.replace("root", "Test")
 
-        # Min value is 20 for ints
-        instance_content["test_derived"]["v1"] = 0
-
-        self.assertRaises(
-            jsonschema.exceptions.ValidationError,
-            lambda: jsonschema.validate(
-                instance=instance_content,
-                schema=schema_content,
-                format_checker=jsonschema.FormatChecker(),
-            ),
-        )
-
-        instance_content["test_derived"]["v1"] = 20
-
-        # Adding a value to test_derived is not supported
-        instance_content["test_derived"]["foo"] = "bar"
-
-        self.assertRaises(
-            jsonschema.exceptions.ValidationError,
-            lambda: jsonschema.validate(
-                instance=instance_content,
-                schema=schema_content,
-                format_checker=jsonschema.FormatChecker(),
-            ),
-        )
+        schema.assertValid(etree.parse(StringIO(xml_content)))
 
 
 # ----------------------------------------------------------------------

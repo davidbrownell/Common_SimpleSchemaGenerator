@@ -1,4 +1,4 @@
-(test_base_impl allow_additional_children=true):
+(test_base_impl):
     <a string *>
 
 <test_base test_base_impl *>

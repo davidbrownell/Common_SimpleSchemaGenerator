@@ -61,7 +61,7 @@ def Build(
             "PythonXml",
             "PythonYaml",
             "JsonSchema",
-            # TODO: "XsdSchema",
+            "XsdSchema",
         ]
 
         for schema_name_index, schema_name in enumerate(schema_names):

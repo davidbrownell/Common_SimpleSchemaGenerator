@@ -66,7 +66,7 @@ class Plugin(PythonSerializationImpl):
             content = textwrap.dedent(
                 """\
                 if isinstance({var_name}, six.string_types):
-                    if os.path.isfile({var_name}):
+                    if len({var_name}) < 2000 and os.path.isfile({var_name}):
                         with open({var_name}) as f:
                             {var_name} = f.read()
 
@@ -493,7 +493,7 @@ class Plugin(PythonSerializationImpl):
     # |  Private Properties
     _SupportAttributes                      = Interface.DerivedProperty(True)
     _SupportAnyElements                     = Interface.DerivedProperty(True)
-    _TypeInfoSerializationName              = Interface.DerivedProperty("StringSerialization")
+    _TypeInfoSerializationName              = Interface.DerivedProperty("XmlSerialization")
 
     _SourceStatementWriter                  = Interface.DerivedProperty(SourceStatementWriter)
     _DestinationStatementWriter             = Interface.DerivedProperty(DestinationStatementWriter)
@@ -508,7 +508,7 @@ class Plugin(PythonSerializationImpl):
                 """\
                 import xml.etree.ElementTree as ET
 
-                from CommonEnvironment.TypeInfo.FundamentalTypes.Serialization.StringSerialization import StringSerialization
+                from CommonEnvironment.TypeInfo.FundamentalTypes.Serialization.XmlSerialization import XmlSerialization
 
                 """,
             ),

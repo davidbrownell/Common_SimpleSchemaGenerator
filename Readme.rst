@@ -1,15 +1,28 @@
-=======================
-<TODO: Repository Name>
-=======================
+===================
+Common_SimpleSchema
+===================
 
-<TODO: Repository Description>. In this template file, all text to be replaced is delimited by ``<TODO: ...>``.
+SimpleSchemaGenerator is a schema definition language and compiler able to process schema inputs and generate output based on a plugin architecture; plugins include:
+
+  * JSON Schemas
+  * XSD Schema
+  * Python Serialization according to:
+      * JSON
+      * XML
+      * YAML
+
+Plugins can be created to extend this functionality. Example of possible uses are the generation of:
+
+  * SqlAlchemy ORM objects
+  * Swagger definitions
+  * REST APIs
+  * etc.
 
 Contents
 ========
 #. `Quick Start`_
 #. License_
 #. `Supported Platforms`_
-#. Definitions_
 #. Functionality_
 #. `Docker Images`_
 #. Dependencies_
@@ -17,7 +30,7 @@ Contents
 
 Quick Start
 ===========
-Setup_ and Activate_ are required to begin using this repository. Before running these scripts, please make sure that all Dependencies_ have been cloned.
+Setup_ and Activate_ are required to begin using this repository. Before running these scripts, please make sure that all Dependencies have been cloned.
 
 .. _Setup:
 
@@ -36,97 +49,80 @@ Activate
   Activate prepares the current environment for development activities and must be run at least once in each terminal window.
   
   ====================================  =====================================================
-  Linux                                 ``Activate.sh <TODO: Update configurations>``
-  Windows                               ``Activate.cmd <TODO: Update configurations>``
-  Windows (PowerShell)                  ``Activate.ps1 <TODO: Update configurations>``
+  Linux                                 ``Activate.sh``
+  Windows                               ``Activate.cmd``
+  Windows (PowerShell)                  ``Activate.ps1``
   ====================================  =====================================================
   
 License
 =======
-<TODO: Update for your repo>
-
 This repository is licensed under the `Boost Software License <https://www.boost.org/LICENSE_1_0.txt>`_. 
 
 `GitHub <https://github.com>`_ describes this license as:
 
   A simple permissive license only requiring preservation of copyright and license notices for source (and not binary) distribution. Licensed works, modifications, and larger works may be distributed under different terms and without source code.
 
-This repository distributes the following software:
-
-========================================  =========================================
-Software                                  License
-========================================  =========================================
-`Python <https://www.python.org>`_        `PSF License Agreement <https://docs.python.org/3/license.html>`_
-========================================  =========================================
-
 Supported Platforms
 ===================
-<TODO: Update for your repo>
-
-This software has been verified on the following platforms.
-
 ========================  ======================  =========================================
 Platform                  Scripting Environment   Version
 ========================  ======================  =========================================
-Windows                   Cmd.exe                 Windows 10 April 2018 Update
-Windows                   PowerShell              Windows 10 April 2018 Update
-Linux                     Bash                    Ubuntu 18.04, 16.04
+Windows                   Cmd.exe                 Windows 10:
+
+                                                  - October 2018 Update
+                                                  - April 2018 Update
+
+Windows                   PowerShell              Windows 10:
+
+                                                  - October 2018 Update
+                                                  - April 2018 Update
+
+Linux                     Bash                    Ubuntu:
+
+                                                  - 18.04
+                                                  - 16.04
 ========================  ======================  =========================================
 
-Definitions
-===========
-<TODO: Update for your repo>
-
-.. _`Term 1`:
-
-Term 1
-  Definition
-
-.. _`Term 2`:
-  
-Term 2
-  Definition
-  
 Functionality
 =============
-<TODO: Update for your repo>
+TODO: The SimpleSchema language is fully implemented, but not well documented. For now, examples are available at:
 
-.. _`Feature 1`:
+  * `AllTypes.SimpleSchema <src/SimpleSchemaGenerator/Plugins/Impl/AllTypes.SimpleSchema>`_
+  * `FileSystemTest.SimpleSchema <src/SimpleSchemaGenerator/Plugins/Impl/FileSystemTest.SimpleSchema>`_
+  * `Test.SimpleSchema <src/SimpleSchemaGenerator/Plugins/Impl/Test.SimpleSchema>`_
 
-Feature 1
-  Description
-  
-.. _`Feature 2`:
+To invoke the SimpleSchemaGenerator, from an activated environment run:
 
-Feature 2
-  Description
-  
+  =========================  =======================================
+  Linux                      ``SimpleSchemaGenerator.sh``
+  Windows                    ``SimpleSchemaGenerator.cmd``
+  Windows (PowerShell)       ``SimpleSchemaGenerator.ps1``
+  =========================  =======================================
+
+To generate a JSON Schema file on Windows:
+
+  ``SimpleSchemaGenerator.cmd Generate JsonSchema MyFile <output directory> /input=<input_filename>``
+
 Docker Images
 =============
-Docker images of this repository are generated with updates.
+Docker images of Common_SimpleSchemaGenerator are generated periodically.
 
-<TODO: Update for your repo>
+================================================  ==========================================
+dbrownell/common_simpleschemagenerator:standard   An environment suitable for invoking SimpleSchemaGenerator.
+dbrownell/common_simpleschemagenerator:base       An environment that is setup_ but not activated_ (useful as a base image for other Common_Environment-based images).
+================================================  ==========================================
 
 Dependencies
 ============
-<TODO: Update for your repo>
-
 This repository is dependent upon these repositories.
 
-==============================  =================================
+======================================================================================  =================================
 Repo Name                       Description
-==============================  =================================
-Common Environment              Common development activities
-==============================  =================================
-
-Related Repositories
---------------------
-==============================  =================================
-Repo Name                       Description
-==============================  =================================
-Common Environment              Common development activities
-==============================  =================================
+======================================================================================  =================================
+`Common_EnvironmentEx <https://github.com/davidbrownell/Common_EnvironmentEx>`_         Enhances `Common_Environment` with libraries, scripts, and tools common to different development activities.
+`Common_Environment_v3 <https://github.com/davidbrownell/Common_Environment_v3>`_       Foundational repository that implements functionality common to all development environments.
+======================================================================================  =================================
 
 Support
 =======
-For question or issues, please visit <TODO: Your url>.
+For question or issues, please visit https://github.com/davidbrownell/Common_SimpleSchemaGenerator.

@@ -512,48 +512,123 @@ class PythonSerializationImpl(PluginBase):
             extra_args = ""
             suffix = ""
 
-        statements = []
-        has_compound = False
+        if len(elements) == 1:
+            # Just call the item func.
+            has_compound = isinstance(
+                elements[0].Resolve(),
+                (Elements.CompoundElement, Elements.SimpleElement),
+            )
 
-        for element in elements:
-            if isinstance(element.Resolve(), (Elements.CompoundElement, Elements.SimpleElement)):
-                has_compound = True
+            args = ""
 
-                compound_args = textwrap.dedent(
+            if has_compound:
+                args += textwrap.dedent(
                     """
                     process_additional_data=process_additional_data,
                     always_include_optional=always_include_optional,
                     """,
                 )
-            else:
-                compound_args = ""
 
-            statements.append(
-                textwrap.dedent(
+            if extra_args:
+                args += textwrap.dedent(
                     """\
-                    this_result = {method_name}_{name}(
-                        root,
-                        is_root=True,{compound_args}
-                    )
-                    if this_result is not DoesNotExist:
-                        {append_statement}
-                    elif always_include_optional:
-                        {append_empty_statement}
-
+                    to_string=to_string,
                     """,
-                ).format(
-                    method_name=method_name,
-                    name=ToPythonName(element),
-                    compound_args=StringHelpers.LeftJustify(compound_args, 4),
-                    append_statement=StringHelpers.LeftJustify(
-                        dest_writer.AppendChild(element, "result", "this_result"),
-                        4,
-                    ).strip(),
-                    append_empty_statement=StringHelpers.LeftJustify(
-                        dest_writer.AppendChild(element, "result", None),
-                        4,
-                    ).strip(),
+                )
+
+                if "pretty_print" in extra_args:
+                    args += textwrap.dedent(
+                        """\
+                        pretty_print=pretty_print,
+                        """,
+                    )
+
+            method_body = textwrap.dedent(
+                """\
+                return {method_name}_{name}(
+                    root,
+                    is_root=False,{args}
+                )
+                """,
+            ).format(
+                method_name=method_name,
+                name=ToPythonName(elements[0]),
+                args=StringHelpers.LeftJustify(args, 4).rstrip(),
+            )
+
+        else:
+            has_compound = False
+
+            statements = []
+
+            for element in elements:
+                if isinstance(element.Resolve(), (Elements.CompoundElement, Elements.SimpleElement)):
+                    has_compound = True
+
+                    compound_args = textwrap.dedent(
+                        """
+                        process_additional_data=process_additional_data,
+                        always_include_optional=always_include_optional,
+                        """,
+                    )
+                else:
+                    compound_args = ""
+
+                statements.append(
+                    textwrap.dedent(
+                        """\
+                        this_result = {method_name}_{name}(
+                            root,
+                            is_root=True,{compound_args}
+                        )
+                        if this_result is not DoesNotExist:
+                            {append_statement}
+                        elif always_include_optional:
+                            {append_empty_statement}
+
+                        """,
+                    ).format(
+                        method_name=method_name,
+                        name=ToPythonName(element),
+                        compound_args=StringHelpers.LeftJustify(compound_args, 4),
+                        append_statement=StringHelpers.LeftJustify(
+                            dest_writer.AppendChild(element, "result", "this_result"),
+                            4,
+                        ).strip(),
+                        append_empty_statement=StringHelpers.LeftJustify(
+                            dest_writer.AppendChild(element, "result", None),
+                            4,
+                        ).strip(),
+                    ),
+                )
+
+            method_body = textwrap.dedent(
+                '''\
+                """Convenience method that {method_name_lower}s all top-level elements"""
+
+                {convenience}
+
+                result = {create_compound}
+
+                {statements}
+
+                {suffix}return result
+                ''',
+            ).format(
+                method_name_lower=method_name.lower(),
+                convenience=StringHelpers.LeftJustify(
+                    source_writer.ConvenienceConversions("root", None) or "# No convenience conversions",
+                    4,
+                ).strip(),
+                create_compound=StringHelpers.LeftJustify(
+                    dest_writer.CreateCompoundElement(
+                        dest_writer.CreateTemporaryElement('"_"', "1"),
+                        None,
+                    ).rstrip(),
+                    4,
                 ),
+                statements="".join(statements).strip(),
+                suffix="{}\n\n".format(StringHelpers.LeftJustify(suffix, 4).rstrip()) if suffix else "",
             )
 
         if has_compound:
@@ -568,43 +643,20 @@ class PythonSerializationImpl(PluginBase):
 
         output_stream.write(
             textwrap.dedent(
-                '''\
+                """\
                 # ----------------------------------------------------------------------
                 def {method_name}(
                     root,{compound_args}{extra_args}
                 ):
-                    """Convenience method that {method_name_lower}s all top-level elements"""
-
-                    {convenience}
-
-                    result = {create_compound}
-
-                    {statements}
-
-                    {suffix}return result
+                    {method_body}
 
 
-                ''',
+                """,
             ).format(
                 method_name=method_name,
-                method_name_lower=method_name.lower(),
+                method_body=StringHelpers.LeftJustify(method_body, 4).strip(),
                 compound_args=StringHelpers.LeftJustify(compound_args, 4).rstrip(),
                 extra_args=StringHelpers.LeftJustify(extra_args, 4).rstrip(),
-                convenience=StringHelpers.LeftJustify(
-                    source_writer.ConvenienceConversions("root", None) or "# No convenience conversions",
-                    4,
-                ).strip(),
-                create_compound=StringHelpers.LeftJustify(
-                    dest_writer.CreateCompoundElement(
-                        dest_writer.CreateTemporaryElement('"_"', "1"),
-                        None,
-                    ),
-                    4,
-                ).strip(),
-                suffix="{}\n\n    ".format(
-                    StringHelpers.LeftJustify("{}\n\n".format(suffix), 4).strip(),
-                ) if suffix else "",
-                statements=StringHelpers.LeftJustify("".join(statements), 4).strip(),
             ),
         )
 

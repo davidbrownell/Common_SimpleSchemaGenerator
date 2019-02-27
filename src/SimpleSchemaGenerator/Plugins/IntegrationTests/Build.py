@@ -54,7 +54,12 @@ def Build(
             verbose=" /verbose" if verbose else "",
         )
 
-        schema_names = [("AllTypes.SimpleSchema", " /include=types"), "FileSystemTest.SimpleSchema", "Test.SimpleSchema"]
+        schema_names = [
+            "AllowAdditionalChildren.SimpleSchema",
+            ("AllTypes.SimpleSchema", " /include=types"), 
+            "FileSystemTest.SimpleSchema",
+            "Test.SimpleSchema",
+        ]
 
         plugin_names = [
             "PythonJson",

@@ -1,0 +1,10 @@
+{ 
+    "root" : {
+        "one" : {
+            "a" : "string A"
+        },
+        "two" : {
+            "a" : "string B"
+        }
+    }
+}

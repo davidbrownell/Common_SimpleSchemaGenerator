@@ -109,13 +109,7 @@ class XsdSchema(unittest.TestCase):
         schema_doc = etree.parse(StringIO(schema_content))
         schema = etree.XMLSchema(schema_doc)
 
-        xml_content = textwrap.dedent(
-            """\
-            <AllTypes>
-              {}
-            </AllTypes>
-            """,
-        ).format(StringHelpers.LeftJustify(self._all_types, 2))
+        xml_content = self._all_types
 
         schema.assertValid(etree.parse(StringIO(xml_content)))
 

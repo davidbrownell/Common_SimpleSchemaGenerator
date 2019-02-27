@@ -23,6 +23,7 @@ from collections import OrderedDict
 import six
 
 import CommonEnvironment
+from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import Interface
 from CommonEnvironment import RegularExpression
 from CommonEnvironment.StreamDecorator import StreamDecorator
@@ -138,7 +139,7 @@ class Plugin(PluginBase):
         include_map = cls._GenerateIncludeMap(elements, include_indexes)
         include_dotted_names = set(six.iterkeys(include_map))
 
-        top_level_elements = [element for element in elements if element.Parent is None and element.DottedName in include_map]
+        top_level_elements = [element for element in elements if element.Parent is None and not element.IsDefinitionOnly and element.DottedName in include_map]
 
         status_stream.write("Creating '{}'...".format(output_filename))
         with status_stream.DoneManager() as dm:
@@ -160,42 +161,56 @@ class Plugin(PluginBase):
                     ),
                 )
 
-                f.write(
-                    textwrap.dedent(
-                        """\
-                        <xsd:element name="{}">
-                          <xsd:complexType>
-                            <xsd:sequence>
-                        """,
-                    ).format(root_name or name),
-                )
-
-                indented_stream = StreamDecorator(
-                    f,
-                    line_prefix="      ",
-                )
-
-                for element in top_level_elements:
-                    if element.IsDefinitionOnly or element.DottedName not in include_dotted_names:
-                        continue
-
-                    indented_stream.write(
-                        '<xsd:element name="{name}" type="_{type}" />\n'.format(
-                            name=element.Name,
-                            type=element.Resolve().DottedName,
-                        ),
+                # XML only always 1 root element. If there are multiple top-level elements
+                # defined by the schema, unite them under a common parent.
+                if len(top_level_elements) > 1:
+                    f.write(
+                        textwrap.dedent(
+                            """\
+                            <xsd:element name="{}">
+                              <xsd:complexType>
+                                <xsd:sequence>
+                            """,
+                        ).format(root_name or name),
                     )
 
-                f.write(
-                    textwrap.dedent(
-                        """\
-                            </xsd:sequence>
-                          </xsd:complexType>
-                        </xsd:element>
+                    element_stream = StreamDecorator(
+                        f,
+                        line_prefix="      ",
+                    )
 
-                        """,
-                    ),
-                )
+                    # ----------------------------------------------------------------------
+                    def Cleanup():
+                        f.write(
+                            textwrap.dedent(
+                                """\
+                                    </xsd:sequence>
+                                  </xsd:complexType>
+                                </xsd:element>
+
+                                """,
+                            ),
+                        )
+
+                    # ----------------------------------------------------------------------
+
+                else:
+                    element_stream = f
+
+                    # ----------------------------------------------------------------------
+                    def Cleanup():
+                        f.write("\n")
+
+                    # ----------------------------------------------------------------------
+
+                with CallOnExit(Cleanup):
+                    for element in top_level_elements:
+                        element_stream.write(
+                            '<xsd:element name="{name}" type="_{type}" />\n'.format(
+                                name=element.Name,
+                                type=element.Resolve().DottedName,
+                            ),
+                        )
 
                 fundamental_type_info_visitor = _FundamentalTypeInfoVisitor()
 

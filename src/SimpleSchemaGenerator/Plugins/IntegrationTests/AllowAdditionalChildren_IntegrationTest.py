@@ -92,7 +92,7 @@ class AllowAdditionalChildren(unittest.TestCase):
             format_checker=jsonschema.FormatChecker(),
         )
 
-        json_content["root"]["one"]["extra"] = 1
+        json_content["one"]["extra"] = 1
 
         jsonschema.validate(
             instance=json_content,
@@ -100,7 +100,7 @@ class AllowAdditionalChildren(unittest.TestCase):
             format_checker=jsonschema.FormatChecker(),
         )
 
-        json_content["root"]["two"]["extra"] = 1
+        json_content["two"]["extra"] = 1
 
         self.assertRaises(
             jsonschema.exceptions.ValidationError,
@@ -123,7 +123,7 @@ class AllowAdditionalChildren(unittest.TestCase):
         xml_content = XmlSerialization.Serialize(
             content,
             to_string=True,
-        ).replace("_", "AllowAdditionalChildren")
+        )
 
         schema.assertValid(etree.parse(StringIO(xml_content)))
 

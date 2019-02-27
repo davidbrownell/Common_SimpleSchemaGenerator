@@ -142,7 +142,7 @@ class Plugin(PluginBase):
         include_map = cls._GenerateIncludeMap(elements, include_indexes)
         include_dotted_names = set(six.iterkeys(include_map))
 
-        top_level_elements = [element for element in elements if element.Parent is None and element.DottedName in include_map]
+        top_level_elements = [element for element in elements if element.Parent is None and not element.IsDefinitionOnly and element.DottedName in include_map]
 
         # ----------------------------------------------------------------------
         def CreateDefinitions():
@@ -270,9 +270,6 @@ class Plugin(PluginBase):
             schema = {}
 
             for element in top_level_elements:
-                if element.IsDefinitionOnly:
-                    continue
-
                 schema[element.DottedName] = {"$ref": "#/definitions/_{}".format(element.Resolve().DottedName)}
 
             return schema
@@ -284,28 +281,33 @@ class Plugin(PluginBase):
             schema = {
                 "$schema": schema_version,
                 "type": "object",
-                "properties": CreateElements(),
                 "definitions": CreateDefinitions(),
             }
+
+            if len(top_level_elements) > 1:
+                schema["properties"] = CreateElements()
+
+                required = []
+
+                for element in elements:
+                    if element.DottedName in include_dotted_names and not element.IsDefinitionOnly and element.TypeInfo.Arity.Min != 0:
+                        required.append(element.Name)
+
+                if required:
+                    required.sort()
+                    schema["required"] = required
+
+                if not allow_additional_children:
+                    schema["additionalProperties"] = False
+
+            else:
+                schema["$ref"] = "#/definitions/_{}".format(top_level_elements[0].DottedName)
 
             if id:
                 schema["id"] = id
 
             if description:
                 schema["description"] = description
-
-            required = []
-
-            for element in elements:
-                if element.DottedName in include_dotted_names and not element.IsDefinitionOnly and element.TypeInfo.Arity.Min != 0:
-                    required.append(element.Name)
-
-            if required:
-                required.sort()
-                schema["required"] = required
-
-            if not allow_additional_children:
-                schema["additionalProperties"] = False
 
             with open(output_filename, "w") as f:
                 json.dump(

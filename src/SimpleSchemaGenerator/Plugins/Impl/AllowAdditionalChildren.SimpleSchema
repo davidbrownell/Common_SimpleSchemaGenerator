@@ -1,0 +1,6 @@
+<root>:
+    <one allow_additional_children=true>:
+        <a string>
+
+    <two>:
+        <a string>

@@ -115,7 +115,7 @@ class JsonSchema(unittest.TestCase):
         with open(self._all_types_filename) as f:
             schema_content = json.load(f)
 
-        instance_content = {"types": json.loads(self._all_types)}
+        instance_content = json.loads(self._all_types)
 
         jsonschema.validate(
             instance=instance_content,
@@ -123,7 +123,7 @@ class JsonSchema(unittest.TestCase):
             format_checker=jsonschema.FormatChecker(),
         )
 
-        instance_content["types"]["bool_"] = "not a bool"
+        instance_content["bool_"] = "not a bool"
 
         self.assertRaises(
             jsonschema.exceptions.ValidationError,

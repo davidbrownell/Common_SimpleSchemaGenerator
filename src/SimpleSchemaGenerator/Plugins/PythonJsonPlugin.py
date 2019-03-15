@@ -71,7 +71,7 @@ class Plugin(PythonSerializationImpl):
             content = textwrap.dedent(
                 """\
                 if isinstance({var_name}, six.string_types):
-                    if len({var_name}) < 2000 and os.path.isfile({var_name}):
+                    if FileSystem.IsFilename({var_name}):
                         with open({var_name}) as f:
                             {var_name} = json.load(f)
                     else:
@@ -152,6 +152,7 @@ class Plugin(PythonSerializationImpl):
                 """\
                 import json
 
+                from CommonEnvironment import FileSystem
                 from CommonEnvironment.TypeInfo.FundamentalTypes.Serialization.JsonSerialization import JsonSerialization
 
                 # ----------------------------------------------------------------------

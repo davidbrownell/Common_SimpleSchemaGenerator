@@ -139,7 +139,7 @@ def _ValidateFundamentalName(plugin, element):
 
 
 # ----------------------------------------------------------------------
-UNIVERSAL_ATTRIBUTE_INFO                                = AttributeInfo(
+UNIVERSAL_ATTRIBUTE_INFO                    = AttributeInfo(
     optional_items=[                                    # Override the name of the object. This is useful when the element should have a name that would otherwise
                                                         # be reserved by the system (date, string, filename, etc.)
                                                         #
@@ -160,7 +160,7 @@ UNIVERSAL_ATTRIBUTE_INFO                                = AttributeInfo(
     ],
 )
 
-COLLECTION_ATTRIBUTE_INFO                               = AttributeInfo(
+COLLECTION_ATTRIBUTE_INFO                   = AttributeInfo(
     optional_items=[                                    # Name of child element whose value should be unique across all children
         Attribute(
             COLLECTION_UNIQUE_KEY_ATTRIBUTE_NAME,
@@ -179,7 +179,7 @@ COLLECTION_ATTRIBUTE_INFO                               = AttributeInfo(
     ],
 )
 
-OPTIONAL_ATTRIBUTE_INFO                                 = AttributeInfo(
+OPTIONAL_ATTRIBUTE_INFO                     = AttributeInfo(
     optional_items=[
         Attribute(
             OPTIONAL_DEFAULT_ATTRIBUTE_NAME,
@@ -192,7 +192,7 @@ OPTIONAL_ATTRIBUTE_INFO                                 = AttributeInfo(
 # ----------------------------------------------------------------------
 COMPOUND_ATTRIBUTE_INFO                     = AttributeInfo()
 
-SIMPLE_ATTRIBUTE_INFO                                                       = AttributeInfo(
+SIMPLE_ATTRIBUTE_INFO                       = AttributeInfo(
     optional_items=[                                                        # Create a named child with this name for plugins that don't support simple objects
         Attribute(
             SIMPLE_FUNDAMENTAL_NAME_ATTRIBUTE_NAME,
@@ -204,7 +204,7 @@ SIMPLE_ATTRIBUTE_INFO                                                       = At
 
 ANY_ATTRIBUTE_INFO                          = AttributeInfo()
 
-CUSTOM_ATTRIBUTE_INFO                                                         = AttributeInfo(
+CUSTOM_ATTRIBUTE_INFO                       = AttributeInfo(
     required_items=[Attribute(CUSTOM_TYPE_ATTRIBUTE_NAME, StringTypeInfo())],
 )
 

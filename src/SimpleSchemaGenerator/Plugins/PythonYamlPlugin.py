@@ -40,8 +40,8 @@ with InitRelativeImports():
 class Plugin(PythonSerializationImpl):
     # ----------------------------------------------------------------------
     # |  Properties
-    Name                                                                                        = Interface.DerivedProperty("PythonYaml")
-    Description                                                                                 = Interface.DerivedProperty(
+    Name                                    = Interface.DerivedProperty("PythonYaml")
+    Description                             = Interface.DerivedProperty(
         "Creates python code that is able to serialize and deserialize python objects to YAML",
     )
 

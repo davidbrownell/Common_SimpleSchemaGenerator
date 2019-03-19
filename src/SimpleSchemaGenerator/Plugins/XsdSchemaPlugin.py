@@ -51,9 +51,9 @@ with InitRelativeImports():
 class Plugin(PluginBase):
     # ----------------------------------------------------------------------
     # |  Public Properties
-    Name                                                = Interface.DerivedProperty("XsdSchema")
-    Description                                         = Interface.DerivedProperty("Generates an XSD Schema file (XML Schema Definition)")
-    Flags                                               = Interface.DerivedProperty(
+    Name                                    = Interface.DerivedProperty("XsdSchema")
+    Description                             = Interface.DerivedProperty("Generates an XSD Schema file (XML Schema Definition)")
+    Flags                                   = Interface.DerivedProperty(
         ParseFlag.SupportAttributes
         | ParseFlag.SupportIncludeStatements
         # | ParseFlag.SupportConfigStatements

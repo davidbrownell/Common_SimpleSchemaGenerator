@@ -38,7 +38,7 @@ with InitRelativeImports():
     from .Schema.Parse import ParseFiles
 
 # ----------------------------------------------------------------------
-PLUGINS                                                 = GeneratorFactory.CreatePluginMap(
+PLUGINS                                     = GeneratorFactory.CreatePluginMap(
     "DEVELOPMENT_ENVIRONMENT_SIMPLE_SCHEMA_PLUGINS",
     os.path.join(_script_dir, "Plugins"),
     sys.stdout,

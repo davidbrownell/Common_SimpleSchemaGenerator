@@ -30,7 +30,7 @@ _script_dir, _script_name                   = os.path.split(_script_fullpath)
 
 APPLICATION_NAME                            = "Docker_Common_SimpleSchemaGenerator"
 
-Build                                                   = DockerBuildImpl.CreateRepositoryBuildFunc(
+Build                                       = DockerBuildImpl.CreateRepositoryBuildFunc(
     "Common_SimpleSchemaGenerator",
     os.path.join(_script_dir, "..", ".."),
     "dbrownell",

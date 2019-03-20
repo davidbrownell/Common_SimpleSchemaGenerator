@@ -41,11 +41,11 @@ class Plugin(PluginBase):
 
     # ----------------------------------------------------------------------
     # |  Public Properties
-    Name                                                                                                                                      = DerivedProperty("PyDictionary")
-    Description                                                                                                                               = DerivedProperty(
+    Name                                    = DerivedProperty("PyDictionary")
+    Description                             = DerivedProperty(
         "Generates python source code that contains a dictionary with top-level enum schema elements that have corresponding friendly names",
     )
-    Flags                                                                                                                                     = DerivedProperty(ParseFlag.AllFlags)
+    Flags                                   = DerivedProperty(ParseFlag.AllFlags)
 
     # ----------------------------------------------------------------------
     # |  Public Methods

@@ -39,7 +39,7 @@ with InitRelativeImports():
     from ....Plugin import Plugin, ParseFlag
 
 # ----------------------------------------------------------------------
-SIMPLE_SCHEMA                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      = textwrap.dedent(
+SIMPLE_SCHEMA                               = textwrap.dedent(
     """\
     <test_base>:
         <a string *>
@@ -69,9 +69,9 @@ SIMPLE_SCHEMA                                                                   
 
 # ----------------------------------------------------------------------
 class InternalPlugin(Plugin):
-    Name                                                = DerivedProperty("InternalPlugin")
-    Description                                         = DerivedProperty("")
-    Flags                                               = DerivedProperty(  # ParseFlag.SupportAttributes |
+    Name                                    = DerivedProperty("InternalPlugin")
+    Description                             = DerivedProperty("")
+    Flags                                   = DerivedProperty(              # ParseFlag.SupportAttributes |
         ParseFlag.SupportIncludeStatements
         |
                                                                             # ParseFlag.SupportConfigStatements |

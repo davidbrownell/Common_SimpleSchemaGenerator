@@ -41,8 +41,8 @@ class Plugin(PythonSerializationImpl):
 
     # ----------------------------------------------------------------------
     # |  Properties
-    Name                                                                                       = Interface.DerivedProperty("PythonXml")
-    Description                                                                                = Interface.DerivedProperty(
+    Name                                    = Interface.DerivedProperty("PythonXml")
+    Description                             = Interface.DerivedProperty(
         "Creates Python code that is able to serialize and deserialize python objects to XML",
     )
 

@@ -48,11 +48,11 @@ with InitRelativeImports():
 class Plugin(PluginBase):
     # ----------------------------------------------------------------------
     # |  Public Properties
-    Name                                                                    = Interface.DerivedProperty("JsonSchema")
-    Description                                                             = Interface.DerivedProperty(
+    Name                                    = Interface.DerivedProperty("JsonSchema")
+    Description                             = Interface.DerivedProperty(
         "Generates a JSON Schema file (https://json-schema.org/)",
     )
-    Flags                                                                   = Interface.DerivedProperty(
+    Flags                                   = Interface.DerivedProperty(
         # ParseFlag.SupportAttributes
         ParseFlag.SupportIncludeStatements
         # | ParseFlag.SupportConfigStatements

@@ -119,9 +119,34 @@ class Plugin(PythonSerializationImpl):
         def GetGlobalUtilityMethods(source_writer):
             return textwrap.dedent(
                 """\
-                # ----------------------------------------------------------------------
-                def _YamlToString(obj):
-                    return yaml.dump(obj)
+                _to_string_workaround = False
+
+                try:
+                    if rtyaml.Dumper is yaml.cyaml.CDumper:
+                        _to_string_workaround = True
+                except NameError:
+                    pass
+
+                if _to_string_workaround:
+                    # ----------------------------------------------------------------------
+                    def _YamlToString(obj):
+                        return yaml.dump(obj)
+
+                    # ----------------------------------------------------------------------
+                else:
+                    # ----------------------------------------------------------------------
+                    def _YamlToString(obj):
+                        previous_tag_emitter = yaml.emitter.Emitter.process_tag
+
+                        # ----------------------------------------------------------------------
+                        def RestoreTagEmitter():
+                            yaml.emitter.Emitter.process_tag = previous_tag_emitter
+
+                        # ----------------------------------------------------------------------
+
+                        yaml.emitter.Emitter.process_tag = (lambda *args, **kwargs: None)
+                        with CallOnExit(RestoreTagEmitter):
+                            return rtyaml.dump(obj)
 
                 """,
             )

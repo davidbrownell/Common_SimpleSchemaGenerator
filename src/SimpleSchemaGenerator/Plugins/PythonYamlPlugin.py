@@ -124,7 +124,7 @@ class Plugin(PythonSerializationImpl):
                 try:
                     if rtyaml.Dumper is yaml.cyaml.CDumper:
                         _to_string_workaround = True
-                except NameError:
+                except AttributeError:
                     pass
 
                 if _to_string_workaround:

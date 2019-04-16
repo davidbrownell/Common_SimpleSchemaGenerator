@@ -121,17 +121,7 @@ class Plugin(PythonSerializationImpl):
                 """\
                 # ----------------------------------------------------------------------
                 def _YamlToString(obj):
-                    previous_tag_emitter = yaml.emitter.Emitter.process_tag
-
-                    # ----------------------------------------------------------------------
-                    def RestoreTagEmitter():
-                        yaml.emitter.Emitter.process_tag = previous_tag_emitter
-
-                    # ----------------------------------------------------------------------
-
-                    yaml.emitter.Emitter.process_tag = (lambda *args, **kwargs: None)
-                    with CallOnExit(RestoreTagEmitter):
-                        return rtyaml.dump(obj)
+                    return yaml.dump(obj)
 
                 """,
             )

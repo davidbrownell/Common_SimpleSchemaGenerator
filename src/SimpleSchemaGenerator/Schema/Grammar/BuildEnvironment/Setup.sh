@@ -33,4 +33,4 @@ then
     exit -1
 fi
 
-source $DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL/RepositoryBootstrap/Impl/Setup.sh "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )" "$@"
+source $DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL/RepositoryBootstrap/Impl/Setup.sh "$@"

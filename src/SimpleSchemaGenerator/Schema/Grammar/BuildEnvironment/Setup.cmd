@@ -28,6 +28,6 @@ if "%DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL%"=="" (
     goto end
 )
 
-call %DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL%\RepositoryBootstrap\Impl\Setup.cmd %~dp0 %*
+call %DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL%\RepositoryBootstrap\Impl\Setup.cmd %*
 
 :end

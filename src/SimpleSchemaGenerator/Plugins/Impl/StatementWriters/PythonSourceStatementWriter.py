@@ -108,8 +108,16 @@ class PythonSourceStatementWriter(SourceStatementWriter):
 
         return textwrap.dedent(
             """\
+            # The following types should be returned directly without additional conversion
+            if isinstance({source_var_name}, (int, float, str, bool)):
+                return {source_var_name}
+
+            assert not isinstance({source_var_name}, list), {source_var_name}
+
             if not isinstance({source_var_name}, dict):
                 {source_var_name} = {source_var_name}.__dict__
+
+            source_attribute_names = {source_var_name}.get("{attribute_names}", set())
 
             attributes = OrderedDict()
             items = OrderedDict()
@@ -118,7 +126,7 @@ class PythonSourceStatementWriter(SourceStatementWriter):
                 if k.startswith("_"):
                     continue
 
-                if k in {source_var_name}["{attribute_names}"]:
+                if k in source_attribute_names:
                     attributes[k] = v
                 else:
                     items[k] = v

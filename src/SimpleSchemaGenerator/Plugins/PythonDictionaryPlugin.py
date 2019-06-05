@@ -100,6 +100,7 @@ class Plugin(PluginBase):
                     ).format(
                         cls._GenerateFileHeader(
                             prefix="# ",
+                            filename_prefix="<SimpleSchemaGenerator>/",
                         ),
                     ),
                 )

@@ -56,6 +56,10 @@ class ItemMethodElementVisitor(ElementVisitor):
         self._is_serializer                 = is_serializer
         self._method_prefix                 = "Serialize" if is_serializer else "Deserialize"
 
+        self.IncludeApplyOptionalChild      = False
+        self.IncludeApplyOptionalChildren   = False
+        self.IncludeApplyOptionalAttribute  = False
+
     # ----------------------------------------------------------------------
     @staticmethod
     @Interface.override
@@ -236,6 +240,7 @@ class ItemMethodElementVisitor(ElementVisitor):
                 assert not child.TypeInfo.Arity.IsCollection
 
                 if child.TypeInfo.Arity.IsOptional:
+                    self.IncludeApplyOptionalAttribute = True
                     statement_template = 'cls._ApplyOptionalAttribute(item, "{name}", attributes, cls.{python_name}, always_include_optional)'
                 else:
                     statement_template = textwrap.dedent(
@@ -267,8 +272,10 @@ class ItemMethodElementVisitor(ElementVisitor):
                         statement = "cls.{}".format(ToPythonName(child))
 
                     if child.TypeInfo.Arity.Max == 1:
+                        self.IncludeApplyOptionalChild = True
                         function_name = "_ApplyOptionalChild"
                     else:
+                        self.IncludeApplyOptionalChildren = True
                         function_name = "_ApplyOptionalChildren"
 
                     statement = 'cls.{function_name}(item, "{name}", result, {statement}, always_include_optional)'.format(

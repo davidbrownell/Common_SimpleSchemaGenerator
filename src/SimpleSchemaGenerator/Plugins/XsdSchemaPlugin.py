@@ -157,6 +157,7 @@ class Plugin(PluginBase):
                     ).format(
                         cls._GenerateFileHeader(
                             line_break="-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-",
+                            filename_prefix="<SimpleSchemaGenerator>/",
                         ),
                     ),
                 )

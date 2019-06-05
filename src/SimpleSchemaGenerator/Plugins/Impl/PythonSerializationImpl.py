@@ -90,6 +90,8 @@ class PythonSerializationImpl(PluginBase):
             | ParseFlag.ResolveReferences,
         )
 
+        cls._include_validate_unique_keys   = False
+
     # ----------------------------------------------------------------------
     @classmethod
     @Interface.override
@@ -175,6 +177,7 @@ class PythonSerializationImpl(PluginBase):
                 f.write(
                     cls._GenerateFileHeader(
                         prefix="# ",
+                        filename_prefix="<SimpleSchemaGenerator>/",
                     ),
                 )
 
@@ -342,22 +345,6 @@ class PythonSerializationImpl(PluginBase):
                             # ----------------------------------------------------------------------
                             # ----------------------------------------------------------------------
                             # ----------------------------------------------------------------------
-                            def _ValidateUniqueKeys(unique_key_attribute_name, items):
-                                unique_keys = set()
-
-                                for item in items:
-                                    if isinstance(item, dict):
-                                        unique_key = item.get(unique_key_attribute_name)
-                                    else:
-                                        unique_key = getattr(item, unique_key_attribute_name)
-
-                                    if unique_key in unique_keys:
-                                        raise UniqueKeySerializationException("The unique key '{}' is not unique: '{}'".format(unique_key_attribute_name, unique_key))
-
-                                    unique_keys.add(unique_key)
-
-
-                            # ----------------------------------------------------------------------
                             def _DecorateActiveException(frame_desc):
                                 exception = sys.exc_info()[1]
 
@@ -371,6 +358,29 @@ class PythonSerializationImpl(PluginBase):
                             """,
                         ),
                     )
+
+                    if cls._include_validate_unique_keys:
+                        f.write(
+                            textwrap.dedent(
+                                """\
+                                
+                                # ----------------------------------------------------------------------
+                                def _ValidateUniqueKeys(unique_key_attribute_name, items):
+                                    unique_keys = set()
+
+                                    for item in items:
+                                        if isinstance(item, dict):
+                                            unique_key = item.get(unique_key_attribute_name)
+                                        else:
+                                            unique_key = getattr(item, unique_key_attribute_name)
+
+                                        if unique_key in unique_keys:
+                                            raise UniqueKeySerializationException("The unique key '{}' is not unique: '{}'".format(unique_key_attribute_name, unique_key))
+
+                                        unique_keys.add(unique_key)
+                                """,
+                            ),
+                        )
 
             # Open the file again and trim all empty lines; this
             # is surprisingly difficult to do inline, which is why
@@ -982,6 +992,8 @@ class PythonSerializationImpl(PluginBase):
                     unique_statement = None
 
                     if hasattr(resolved_element, "unique_key"):
+                        cls._include_validate_unique_keys = True
+
                         unique_statement = '_ValidateUniqueKeys("{unique_key}", {arg_name})\n\n'.format(
                             unique_key=resolved_element.unique_key,
                             arg_name=arg_name if is_serializer else result_name,
@@ -1160,7 +1172,7 @@ class PythonSerializationImpl(PluginBase):
         )
 
         # Item_ methods
-        ItemMethodElementVisitor(
+        item_method_element_visitor = ItemMethodElementVisitor(
             cls._TypeInfoSerializationName,
             custom_serialize_item_args,
             source_writer,
@@ -1168,7 +1180,9 @@ class PythonSerializationImpl(PluginBase):
             indented_stream,
             cls._EnumerateChildren,
             is_serializer,
-        ).Accept(elements)
+        )
+        
+        item_method_element_visitor.Accept(elements)
 
         indented_stream.write(
             textwrap.dedent(
@@ -1199,66 +1213,69 @@ class PythonSerializationImpl(PluginBase):
             """,
         )
 
-        optional_child_empty_element = source_writer.CreateTemporaryElement("attribute_name", "?")
+        if item_method_element_visitor.IncludeApplyOptionalChild:
+            optional_child_empty_element = source_writer.CreateTemporaryElement("attribute_name", "?")
 
-        indented_stream.write(
-            content_template.format(
-                method_name="_ApplyOptionalChild",
-                var_name="item",
-                get_statement=StringHelpers.LeftJustify(
-                    source_writer.GetChild("item", optional_child_empty_element),
-                    4,
-                ).strip(),
-                add_child=StringHelpers.LeftJustify(
-                    dest_writer.AppendChild(optional_child_empty_element, "dest", "value"),
-                    12,
-                ).strip(),
-                add_child_empty=StringHelpers.LeftJustify(
-                    dest_writer.AppendChild(optional_child_empty_element, "dest", None),
-                    8,
-                ).strip(),
-            ),
-        )
+            indented_stream.write(
+                content_template.format(
+                    method_name="_ApplyOptionalChild",
+                    var_name="item",
+                    get_statement=StringHelpers.LeftJustify(
+                        source_writer.GetChild("item", optional_child_empty_element),
+                        4,
+                    ).strip(),
+                    add_child=StringHelpers.LeftJustify(
+                        dest_writer.AppendChild(optional_child_empty_element, "dest", "value"),
+                        12,
+                    ).strip(),
+                    add_child_empty=StringHelpers.LeftJustify(
+                        dest_writer.AppendChild(optional_child_empty_element, "dest", None),
+                        8,
+                    ).strip(),
+                ),
+            )
 
-        optional_children_empty_element = dest_writer.CreateTemporaryElement("attribute_name", "*")
+        if item_method_element_visitor.IncludeApplyOptionalChildren:
+            optional_children_empty_element = dest_writer.CreateTemporaryElement("attribute_name", "*")
 
-        indented_stream.write(
-            content_template.format(
-                method_name="_ApplyOptionalChildren",
-                var_name="items",
-                get_statement=StringHelpers.LeftJustify(
-                    source_writer.GetChild("items", optional_children_empty_element),
-                    4,
-                ).strip(),
-                add_child=StringHelpers.LeftJustify(
-                    dest_writer.AppendChild(optional_children_empty_element, "dest", "value"),
-                    12,
-                ).strip(),
-                add_child_empty=StringHelpers.LeftJustify(
-                    dest_writer.AppendChild(optional_children_empty_element, "dest", None),
-                    8,
-                ).strip(),
-            ),
-        )
+            indented_stream.write(
+                content_template.format(
+                    method_name="_ApplyOptionalChildren",
+                    var_name="items",
+                    get_statement=StringHelpers.LeftJustify(
+                        source_writer.GetChild("items", optional_children_empty_element),
+                        4,
+                    ).strip(),
+                    add_child=StringHelpers.LeftJustify(
+                        dest_writer.AppendChild(optional_children_empty_element, "dest", "value"),
+                        12,
+                    ).strip(),
+                    add_child_empty=StringHelpers.LeftJustify(
+                        dest_writer.AppendChild(optional_children_empty_element, "dest", None),
+                        8,
+                    ).strip(),
+                ),
+            )
 
-        optional_attribute_empty_element = dest_writer.CreateTemporaryElement(
-            "attribute_name",
-            "?",
-            is_attribute=True,
-        )
+        if item_method_element_visitor.IncludeApplyOptionalAttribute:
+            optional_attribute_empty_element = dest_writer.CreateTemporaryElement(
+                "attribute_name",
+                "?",
+                is_attribute=True,
+            )
 
-        indented_stream.write(
-            content_template.format(
-                method_name="_ApplyOptionalAttribute",
-                var_name="item",
-                get_statement=StringHelpers.LeftJustify(
-                    source_writer.GetChild("item", optional_attribute_empty_element),
-                    4,
-                ).strip(),
-                add_child="dest[attribute_name] = value",
-                add_child_empty="dest[attribute_name] = None",
-            ),
-        )
+            indented_stream.write(
+                content_template.format(
+                    method_name="_ApplyOptionalAttribute",
+                    var_name="item",
+                    get_statement=StringHelpers.LeftJustify(
+                        source_writer.GetChild("item", optional_attribute_empty_element),
+                        4,
+                    ).strip(),
+                    add_child="dest[attribute_name] = value",
+                    add_child_empty="dest[attribute_name] = None",
+                ),
+            )
 
         # _ApplyAdditionalData
         temporary_children_element = source_writer.CreateTemporaryElement("name", "+")

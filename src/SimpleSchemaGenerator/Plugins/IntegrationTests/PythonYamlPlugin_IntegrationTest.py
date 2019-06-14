@@ -281,12 +281,12 @@ class AllTypesSuite(unittest.TestCase, AllTypesUtilsMixin):
         self.assertEqual(AllTypesYaml.Deserialize_string_("abc"), "abc")
         self.assertRaisesRegex(
             AllTypesYaml.DeserializeException,
-            r"'a' is not a valid 'String' string - Value must have more than 2 characters, have less than 4 characters",
+            r"'a' is not a valid 'String' string - Value must have at least 2 characters, not have more than 4 characters",
             lambda: AllTypesYaml.Deserialize_string_("a"),
         )
         self.assertRaisesRegex(
             AllTypesYaml.DeserializeException,
-            r"'abcde' is not a valid 'String' string - Value must have more than 2 characters, have less than 4 characters",
+            r"'abcde' is not a valid 'String' string - Value must have at least 2 characters, not have more than 4 characters",
             lambda: AllTypesYaml.Deserialize_string_("abcde"),
         )
 

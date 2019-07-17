@@ -40,6 +40,7 @@ class StatementWriter(Interface.Interface):
 
     SIMPLE_ELEMENT_FUNDAMENTAL_ATTRIBUTE_NAME           = "_text_attribute_name"
     ATTRIBUTES_ATTRIBUTE_NAME                           = "_attribute_names"
+    VARIANT_CLASS_TYPE_ATTRIBUTE_NAME                   = "_variant_type"
 
     # ----------------------------------------------------------------------
     @Interface.abstractproperty
@@ -99,7 +100,7 @@ class SourceStatementWriter(StatementWriter):
     def ConvenienceConversions(var_name, element_or_none):
         """\
         Statements that convert from an input type to the source; used to create
-        better experiences for callers. The generated code should return 
+        better experiences for callers. The generated code should return
         `DoesNotExist` if the element was not found in the variable.
 
         Optional vars:
@@ -117,7 +118,7 @@ class SourceStatementWriter(StatementWriter):
     ):
         """\
         Gets the child_element from a variable. Implementing classes
-        should account for attributes, collections, optional values, 
+        should account for attributes, collections, optional values,
         and standard children in their implementations.
         """
         raise Exception("Abstract method")

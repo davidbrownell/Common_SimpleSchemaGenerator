@@ -123,12 +123,15 @@ class ItemMethodElementVisitor(ElementVisitor):
             if isinstance(variation, Elements.ReferenceElement):
                 statement = "cls._{}_Item".format(ToPythonName(variation.Reference))
 
+                resolved_element = variation.Reference.Resolve()
+
                 if isinstance(
-                    variation.Reference.Resolve(),
+                    resolved_element,
                     (Elements.CompoundElement, Elements.SimpleElement),
                 ):
-                    statement = "lambda item: {}(item, process_additional_data=False, always_include_optional=False)".format(
+                    statement = '((lambda item: {}(item, process_additional_data=False, always_include_optional=False)), "{}")'.format(
                         statement,
+                        resolved_element.DottedName,
                     )
 
                 statements.append(statement)
@@ -146,11 +149,22 @@ class ItemMethodElementVisitor(ElementVisitor):
                 # ----------------------------------------------------------------------
                 @classmethod
                 def _{python_name}_Item(cls, item):
-                    for potential_method in [
+                    for method_info in [
                         {statements}
                     ]:
+                        if isinstance(method_info, tuple):
+                            potential_method, class_name = method_info
+                        else:
+                            potential_method = method_info
+                            class_name = None
+
                         try:
-                            return potential_method(item)
+                            result = potential_method(item)
+
+                            if class_name is not None:
+                                {apply_class_name_statement}
+
+                            return result
                         except:
                             pass
 
@@ -162,6 +176,18 @@ class ItemMethodElementVisitor(ElementVisitor):
                 statements=StringHelpers.LeftJustify(
                     "\n".join(["{},".format(statement) for statement in statements]),
                     8,
+                ).rstrip(),
+                apply_class_name_statement=StringHelpers.LeftJustify(
+                    self._dest_writer.AppendChild(
+                        self._dest_writer.CreateTemporaryElement(
+                            '"{}"'.format(self._dest_writer.VARIANT_CLASS_TYPE_ATTRIBUTE_NAME),
+                            "1",
+                            is_attribute=True,
+                        ),
+                        "result",
+                        "class_name",
+                    ),
+                    16,
                 ).rstrip(),
                 exception_type="Serialize" if self._is_serializer else "Deserialize",
             ),

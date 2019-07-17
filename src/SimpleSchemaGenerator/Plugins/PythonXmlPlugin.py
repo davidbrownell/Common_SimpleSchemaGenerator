@@ -391,6 +391,13 @@ class Plugin(PythonSerializationImpl):
         @classmethod
         @Interface.override
         def AppendChild(cls, child_element, parent_var_name, var_name_or_none):
+            if getattr(child_element, "IsAttribute", False):
+                return "{parent_var_name}.attrib[{element_name}] = {var_name}".format(
+                    parent_var_name=parent_var_name,
+                    element_name=cls.GetElementStatementName(child_element),
+                    var_name=var_name_or_none,
+                )
+
             if var_name_or_none is None:
                 var_name_or_none = "_CreateXmlElement({})".format(
                     cls.GetElementStatementName(child_element),

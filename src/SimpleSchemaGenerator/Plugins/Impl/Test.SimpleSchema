@@ -4,6 +4,9 @@
 <test_base test_base_impl *>
 
 <test_derived test_base>:
+    (SubItem):
+        <v string>
+
     <optional bool ?>
     <b bool>
     <d number>
@@ -14,9 +17,11 @@
     <ref3 d {2}>                            # Refines arity
     <ref4 d min=0.0 {2}>                    # Refines arity and augments metadata
     <ref5 ref3 {2}>                         # List of lists
-    
+
     <v1 (b|int min=20|uri)>
     <v2 (bool|v1)>
     <v3 (v2|filename|string|test_base_impl) +>
-    
+
     <any_ any>
+
+    <sub_item SubItem>

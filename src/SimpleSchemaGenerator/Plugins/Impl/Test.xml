@@ -16,7 +16,7 @@
   <test_derived>
     <b>false</b>
     <d>-100.1</d>
-  
+
     <ref>-200.2</ref>
     <ref2>100.1</ref2>
     <ref3>
@@ -57,7 +57,7 @@
         </a>
       </item>
     </v3>
-    
+
     <any_>
       <one>
         <two>
@@ -66,5 +66,9 @@
         </two>
       </one>
     </any_>
+
+    <sub_item>
+      <v>string value</v>
+    </sub_item>
   </test_derived>
 </root>

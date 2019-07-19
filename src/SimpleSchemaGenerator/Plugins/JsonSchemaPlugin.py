@@ -174,7 +174,10 @@ class Plugin(PluginBase):
                     properties = OrderedDict()
                     required = []
 
-                    for child in cls._EnumerateChildren(element):
+                    for child in cls._EnumerateChildren(
+                        element,
+                        include_definitions=False,
+                    ):
                         properties[child.Name] = {"$ref": "#/definitions/_{}".format(child.Resolve().DottedName)}
 
                         if child.TypeInfo.Arity.Min != 0:

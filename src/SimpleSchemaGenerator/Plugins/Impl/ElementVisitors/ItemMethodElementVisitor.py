@@ -250,7 +250,10 @@ class ItemMethodElementVisitor(ElementVisitor):
 
         attribute_names = []
 
-        for child in self._enumerate_children_func(element):
+        for child in self._enumerate_children_func(
+            element,
+            include_definitions=False,
+        ):
             attribute_names.append(child.Name)
 
             is_compound_like = isinstance(

@@ -268,7 +268,10 @@ class Plugin(PluginBase):
                         attributes = []
                         elements = []
 
-                        for child in cls._EnumerateChildren(element):
+                        for child in cls._EnumerateChildren(
+                            element,
+                            include_definitions=False,
+                        ):
                             if getattr(child, "IsAttribute", False):
                                 attributes.append(
                                     textwrap.dedent(

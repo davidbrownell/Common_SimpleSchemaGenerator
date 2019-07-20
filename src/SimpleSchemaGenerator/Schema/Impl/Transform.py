@@ -859,6 +859,9 @@ class _ApplyTypeInfoVisitor(ItemVisitor):
             if child_item.element_type == Elements.ExtensionElement:
                 continue
 
+            if child_item.ItemType == Item.ItemType.Definition:
+                continue
+
             child_type_info_placeholders[child_item.name] = cls._PlaceholderTypeInfo()
 
         element.TypeInfo = ClassTypeInfo(                                   # Placeholders values are overridden below
@@ -869,6 +872,9 @@ class _ApplyTypeInfoVisitor(ItemVisitor):
 
         for child_item in child_items:
             if child_item.element_type == Elements.ExtensionElement:
+                continue
+
+            if child_item.ItemType == Item.ItemType.Definition:
                 continue
 
             assert not child_item.ignore, child_item

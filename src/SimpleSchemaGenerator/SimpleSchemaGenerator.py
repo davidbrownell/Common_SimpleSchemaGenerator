@@ -186,11 +186,7 @@ def CommandLineSuffix():
         {}
 
         """,
-    ).format(
-        "\n".join(
-            ["    - {0:<30}  {1}".format("{}:".format(pi.Plugin.Name), pi.Plugin.Description) for pi in six.itervalues(PLUGINS)],
-        ),
-    )
+    ).format("\n".join(["    - {0:<30}  {1}".format("{}:".format(pi.Plugin.Name), pi.Plugin.Description) for pi in six.itervalues(PLUGINS)]))
 
 
 # ----------------------------------------------------------------------
@@ -225,10 +221,18 @@ def __CreateContext(context, plugin):
     include_indexes = range(len(elements))
 
     if excludes:
-        include_indexes = [index for index in include_indexes if not any(exclude for exclude in excludes if exclude.match(elements[index].Name))]
+        include_indexes = [
+            index
+            for index in include_indexes
+            if not any(exclude for exclude in excludes if exclude.match(elements[index].Name))
+        ]
 
     if includes:
-        include_indexes = [index for index in include_indexes if any(include for include in includes if include.match(elements[index].Name))]
+        include_indexes = [
+            index
+            for index in include_indexes
+            if any(include for include in includes if include.match(elements[index].Name))
+        ]
 
     # This is a bit strange, but to detect changes, we need to compare the data in the elements rather
     # than the elements themselves (as the elements will be different object instances during each invocation).
@@ -249,7 +253,15 @@ def __CreateContext(context, plugin):
 
 
 # ----------------------------------------------------------------------
-def __Invoke(code_generator, invoke_reason, context, status_stream, verbose_stream, verbose, plugin):
+def __Invoke(
+    code_generator,
+    invoke_reason,
+    context,
+    status_stream,
+    verbose_stream,
+    verbose,
+    plugin,
+):
     elements = pickle.loads(context["pickled_elements"])
 
     return plugin.Generate(
@@ -263,7 +275,7 @@ def __Invoke(code_generator, invoke_reason, context, status_stream, verbose_stre
         status_stream,
         verbose_stream,
         verbose,
-        **context["plugin_settings"],
+        **context["plugin_settings"]
     )
 
 

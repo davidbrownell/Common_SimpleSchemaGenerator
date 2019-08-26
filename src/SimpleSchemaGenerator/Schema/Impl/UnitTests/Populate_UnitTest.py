@@ -420,7 +420,7 @@ class ConfigSuite(unittest.TestCase):
                             one = 'two'
                             three = '4'
                         """,
-                    )
+                    ),
                 },
                 0,
             ),
@@ -482,7 +482,7 @@ class UnnamedObjSuite(unittest.TestCase):
                         """\
                         <>: pass
                         """,
-                    )
+                    ),
                 },
                 0,
             ),
@@ -498,7 +498,7 @@ class UnnamedObjSuite(unittest.TestCase):
                         """\
                         <>: pass
                         """,
-                    )
+                    ),
                 },
                 ParseFlag.SupportUnnamedObjects,
             ),
@@ -516,7 +516,7 @@ class UnnamedObjSuite(unittest.TestCase):
                             <>:
                                 pass
                         """,
-                    )
+                    ),
                 },
                 ParseFlag.SupportUnnamedObjects | ParseFlag.SupportRootObjects,
             ),
@@ -666,7 +666,7 @@ class NamedObjSuite(unittest.TestCase):
                         """\
                         <foo>: pass
                         """,
-                    )
+                    ),
                 },
                 0,
             ),
@@ -682,7 +682,7 @@ class NamedObjSuite(unittest.TestCase):
                         """\
                         <foo>: pass
                         """,
-                    )
+                    ),
                 },
                 ParseFlag.SupportNamedObjects,
             ),
@@ -700,7 +700,7 @@ class NamedObjSuite(unittest.TestCase):
                             <bar>:
                                 pass
                         """,
-                    )
+                    ),
                 },
                 ParseFlag.SupportNamedObjects | ParseFlag.SupportRootObjects,
             ),
@@ -954,7 +954,7 @@ class UnnamedDeclarationSuite(unittest.TestCase):
                         """\
                         <string>
                         """,
-                    )
+                    ),
                 },
                 0,
             ),
@@ -970,7 +970,7 @@ class UnnamedDeclarationSuite(unittest.TestCase):
                         """\
                         <string>
                         """,
-                    )
+                    ),
                 },
                 ParseFlag.SupportUnnamedDeclarations,
             ),
@@ -987,7 +987,7 @@ class UnnamedDeclarationSuite(unittest.TestCase):
                         <object>:
                             <string>
                         """,
-                    )
+                    ),
                 },
                 ParseFlag.SupportUnnamedDeclarations | ParseFlag.SupportNamedObjects | ParseFlag.SupportRootObjects,
             ),
@@ -1078,7 +1078,7 @@ class NamedDeclarationSuite(unittest.TestCase):
                         """\
                         <a string>
                         """,
-                    )
+                    ),
                 },
                 0,
             ),
@@ -1094,7 +1094,7 @@ class NamedDeclarationSuite(unittest.TestCase):
                         """\
                         <a string>
                         """,
-                    )
+                    ),
                 },
                 ParseFlag.SupportNamedDeclarations,
             ),
@@ -1111,7 +1111,7 @@ class NamedDeclarationSuite(unittest.TestCase):
                         <object>:
                             <a string>
                         """,
-                    )
+                    ),
                 },
                 ParseFlag.SupportNamedDeclarations | ParseFlag.SupportNamedObjects | ParseFlag.SupportRootObjects,
             ),
@@ -1148,14 +1148,7 @@ class ExtensionSuite(unittest.TestCase):
         self.assertEqual(len(content.items), 1)
         self.assertEqual(content.items[0].name, "an_extension")
         self.assertTrue(not content.items[0].positional_arguments)
-        self.assertEqual(
-            content.items[0].keyword_arguments,
-            {
-                "one": 1,
-                "two": 2,
-                "three": 3,
-            },
-        )
+        self.assertEqual(content.items[0].keyword_arguments, {"one": 1, "two": 2, "three": 3})
         self.assertTrue(not content.items[0].arity)
 
     # ----------------------------------------------------------------------
@@ -1170,13 +1163,7 @@ class ExtensionSuite(unittest.TestCase):
         self.assertEqual(len(content.items), 1)
         self.assertEqual(content.items[0].name, "an_extension")
         self.assertEqual(content.items[0].positional_arguments, [1, 2])
-        self.assertEqual(
-            content.items[0].keyword_arguments,
-            {
-                "three": 3,
-                "four": 4,
-            },
-        )
+        self.assertEqual(content.items[0].keyword_arguments, {"three": 3, "four": 4})
         self.assertTrue(not content.items[0].arity)
 
     # ----------------------------------------------------------------------
@@ -1191,13 +1178,7 @@ class ExtensionSuite(unittest.TestCase):
         self.assertEqual(len(content.items), 1)
         self.assertEqual(content.items[0].name, "an_extension")
         self.assertEqual(content.items[0].positional_arguments, [1, 2])
-        self.assertEqual(
-            content.items[0].keyword_arguments,
-            {
-                "three": 3,
-                "four": 4,
-            },
-        )
+        self.assertEqual(content.items[0].keyword_arguments, {"three": 3, "four": 4})
         self.assertEqual(content.items[0].arity, Arity.FromString("?"))
 
     # ----------------------------------------------------------------------

@@ -111,12 +111,12 @@ class Plugin(PluginBase):
 
                 # ----------------------------------------------------------------------
                 def OnCompoundVisitingChildren(element, *args, **kwargs):   # <Unused argument> pylint: disable = W0613
-                                                                            # Don't visit children
+                    # Don't visit children
                     return False
 
                 # ----------------------------------------------------------------------
                 def OnSimpleVisitingChildren(element, *args, **kwargs):     # <Unused argument> pylint: disable = W0613
-                                                                            # Don't visit children
+                    # Don't visit children
                     return False
 
                 # ----------------------------------------------------------------------
@@ -152,7 +152,14 @@ class Plugin(PluginBase):
                             assignments=StringHelpers.LeftJustify(
                                 "([ {}\n ])".format(
                                     "\n   ".join(
-                                        ['( "{}", "{}" ),'.format(v, fv) for v, fv in six.moves.zip(element.TypeInfo.Values, element.TypeInfo.FriendlyValues)],
+                                        [
+                                            '( "{}", "{}" ),'.format(v, fv)
+                                            for v,
+                                            fv in six.moves.zip(
+                                                element.TypeInfo.Values,
+                                                element.TypeInfo.FriendlyValues,
+                                            )
+                                        ],
                                     ),
                                 ),
                                 len(prefix),
@@ -162,7 +169,14 @@ class Plugin(PluginBase):
                             reversed_assignments=StringHelpers.LeftJustify(
                                 "([ {}\n ])".format(
                                     "\n   ".join(
-                                        ['( "{}", "{}" ),'.format(fv, v) for v, fv in six.moves.zip(element.TypeInfo.Values, element.TypeInfo.FriendlyValues)],
+                                        [
+                                            '( "{}", "{}" ),'.format(fv, v)
+                                            for v,
+                                            fv in six.moves.zip(
+                                                element.TypeInfo.Values,
+                                                element.TypeInfo.FriendlyValues,
+                                            )
+                                        ],
                                     ),
                                 ),
                                 len(reversed_prefix),

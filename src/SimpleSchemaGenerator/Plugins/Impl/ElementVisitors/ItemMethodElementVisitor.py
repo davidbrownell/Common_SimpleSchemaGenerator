@@ -125,10 +125,7 @@ class ItemMethodElementVisitor(ElementVisitor):
 
                 resolved_element = variation.Reference.Resolve()
 
-                if isinstance(
-                    resolved_element,
-                    (Elements.CompoundElement, Elements.SimpleElement),
-                ):
+                if isinstance(resolved_element, (Elements.CompoundElement, Elements.SimpleElement)):
                     statement = '((lambda item: {}(item, process_additional_data=False, always_include_optional=False)), "{}")'.format(
                         statement,
                         resolved_element.DottedName,
@@ -136,7 +133,10 @@ class ItemMethodElementVisitor(ElementVisitor):
 
                 statements.append(statement)
             else:
-                assert not isinstance(variation, (Elements.CompoundElement, Elements.SimpleElement)), variation
+                assert not isinstance(
+                    variation,
+                    (Elements.CompoundElement, Elements.SimpleElement),
+                ), variation
 
                 new_types.append(variation)
                 statements.append("cls._{}_Item".format(ToPythonName(variation)))
@@ -182,7 +182,6 @@ class ItemMethodElementVisitor(ElementVisitor):
                         self._dest_writer.CreateTemporaryElement(
                             '"{}"'.format(self._dest_writer.VARIANT_CLASS_TYPE_ATTRIBUTE_NAME),
                             "1",
-                            is_attribute=True,
                         ),
                         "result",
                         "class_name",
@@ -254,6 +253,8 @@ class ItemMethodElementVisitor(ElementVisitor):
             element,
             include_definitions=False,
         ):
+            child_python_name = ToPythonName(child)
+
             attribute_names.append(child.Name)
 
             is_compound_like = isinstance(
@@ -269,8 +270,18 @@ class ItemMethodElementVisitor(ElementVisitor):
                 assert not child.TypeInfo.Arity.IsCollection
 
                 if child.TypeInfo.Arity.IsOptional:
+                    if hasattr(child, "default"):
+                        default_value = ', default_value_func=lambda: StringSerialization.DeserializeItem(_{}_TypeInfo, "{}")'.format(
+                            child_python_name,
+                            child.default,
+                        )
+                    else:
+                        default_value = ""
+
                     self.IncludeApplyOptionalAttribute = True
-                    statement_template = 'cls._ApplyOptionalAttribute(item, "{name}", attributes, cls.{python_name}, always_include_optional)'
+                    statement_template = 'cls._ApplyOptionalAttribute(item, "{{name}}", attributes, cls.{{python_name}}, always_include_optional{})'.format(
+                        default_value,
+                    )
                 else:
                     statement_template = textwrap.dedent(
                         """\
@@ -282,7 +293,7 @@ class ItemMethodElementVisitor(ElementVisitor):
 
                 statement = statement_template.format(
                     name=child.Name,
-                    python_name=ToPythonName(child),
+                    python_name=child_python_name,
                     get_child_statement=StringHelpers.LeftJustify(
                         self._source_writer.GetChild("item", child),
                         4,
@@ -295,22 +306,32 @@ class ItemMethodElementVisitor(ElementVisitor):
                 if child.TypeInfo.Arity.Min == 0:
                     if is_compound_like:
                         statement = "lambda value: cls.{}(value, always_include_optional, process_additional_data)".format(
-                            ToPythonName(child),
+                            child_python_name,
                         )
                     else:
-                        statement = "cls.{}".format(ToPythonName(child))
+                        statement = "cls.{}".format(child_python_name)
 
                     if child.TypeInfo.Arity.Max == 1:
                         self.IncludeApplyOptionalChild = True
                         function_name = "_ApplyOptionalChild"
+
+                        if hasattr(child, "default"):
+                            default_value = ', default_value_func=lambda: StringSerialization.DeserializeItem(_{}_TypeInfo, "{}")'.format(
+                                child_python_name,
+                                child.default,
+                            )
+                        else:
+                            default_value = ""
                     else:
                         self.IncludeApplyOptionalChildren = True
                         function_name = "_ApplyOptionalChildren"
+                        default_value = ""
 
-                    statement = 'cls.{function_name}(item, "{name}", result, {statement}, always_include_optional)'.format(
+                    statement = 'cls.{function_name}(item, "{name}", result, {statement}, always_include_optional{default_value})'.format(
                         function_name=function_name,
                         name=child.Name,
                         statement=statement,
+                        default_value=default_value,
                     )
 
                 else:
@@ -412,13 +433,7 @@ class ItemMethodElementVisitor(ElementVisitor):
 
                 {}
                 """,
-            ).format(
-                self._dest_writer.CreateCompoundElement(
-                    element,
-                    "attributes" if attributes else None,
-                ).strip(),
-                "".join(statements).strip(),
-            )
+            ).format(self._dest_writer.CreateCompoundElement(element, "attributes" if attributes else None).strip(), "".join(statements).strip())
 
         python_name = ToPythonName(element)
 

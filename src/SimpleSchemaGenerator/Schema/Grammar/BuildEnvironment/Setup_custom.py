@@ -94,7 +94,14 @@ def GetDependencies():
 
     return Configuration(
         "Builds the grammar used by SimpleSchemaGenerator",
-        [Dependency("9F6DB1C5041945F585C2C5F8557A2483", "Common_ANTLR", None, "https://github.com/davidbrownell/Common_ANTLR-v3.git")],
+        [
+            Dependency(
+                "9F6DB1C5041945F585C2C5F8557A2483",
+                "Common_ANTLR",
+                None,
+                "https://github.com/davidbrownell/Common_ANTLR-v3.git",
+            )
+        ],
     )
 
 

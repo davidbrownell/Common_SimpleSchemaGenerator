@@ -53,15 +53,13 @@ class Attribute(object):
         self,
         name,
         type_info,
-        default_value=DoesNotExist,                                         # Can be specific value or def Func(item) -> value
-        validate_func=None,                                                 # Called when the attribute item is present:
-                                                                            #   def Func(plugin, element) -> string if error
-        missing_validate_func=None,                                         # Called when the attribute item is not present:
-                                                                            #   def Func(plugin, element) -> string if error
-        is_metadata=False,                                                  # In generic terms, this value should be true if the attribute should be considered metadata and
-                                                                            # does not change the type information of the corresponding element. This is a general statement,
-                                                                            # where the actual mechanics of what it means to "change type information of the corresponding element"
-                                                                            # is often something that is detemined by different plugins.
+        default_value=DoesNotExist,         # Can be specific value or def Func(item) -> value
+        validate_func=None,                 # Called when the attribute item is present:
+                                            #   def Func(plugin, element) -> string if error
+        missing_validate_func=None,         # Called when the attribute item is not present:
+                                            #   def Func(plugin, element) -> string if error
+        is_metadata=False,                  # In generic terms, this value should be true if the attribute should be considered metadata and
+        # does not change the type information of the corresponding element. This is a general statement,#                                    # is often something that is detemined by different plugins.
     ):
         self.Name                           = name
         self.TypeInfo                       = type_info
@@ -140,10 +138,8 @@ def _ValidateFundamentalName(plugin, element):
 
 # ----------------------------------------------------------------------
 UNIVERSAL_ATTRIBUTE_INFO                    = AttributeInfo(
-    optional_items=[                                    # Override the name of the object. This is useful when the element should have a name that would otherwise
-                                                        # be reserved by the system (date, string, filename, etc.)
-                                                        #
-                                                        # Note that this attribute value is processed during Parsing and not made available within an Element.
+    optional_items=[
+        # Override the name of the object. This is useful when the element should have a name that would otherwise## Note that this attribute value is processed during Parsing and not made available within an Element.                                                #
         Attribute(
             UNIVERSAL_NAME_OVERRIDE_ATTRIBUTE_NAME,
             StringTypeInfo(),
@@ -161,15 +157,15 @@ UNIVERSAL_ATTRIBUTE_INFO                    = AttributeInfo(
 )
 
 COLLECTION_ATTRIBUTE_INFO                   = AttributeInfo(
-    optional_items=[                                    # Name of child element whose value should be unique across all children
+    optional_items=[
+        # Name of child element whose value should be unique across all children
         Attribute(
             COLLECTION_UNIQUE_KEY_ATTRIBUTE_NAME,
             StringTypeInfo(),
             validate_func=_ValidateUniqueKey,
             is_metadata=True,
         ),
-                                                        # Normally, a reference that is also a collection will break reference traversal and create a new dimension
-                                                        # in a N-dimension array. However, sometimes we just want to refine the arity of a referenced collection.
+        # Normally, a reference that is also a collection will break reference traversal and create a new dimension                                                # in a N-dimension array. However, sometimes we just want to refine the arity of a referenced collection.
         Attribute(
             COLLECTION_REFINES_ARITY_ATTRIBUTE_NAME,
             BoolTypeInfo(),
@@ -194,12 +190,11 @@ COMPOUND_ATTRIBUTE_INFO                     = AttributeInfo()
 
 SIMPLE_ATTRIBUTE_INFO                       = AttributeInfo(
     optional_items=[                                                        # Create a named child with this name for plugins that don't support simple objects
-        Attribute(
-            SIMPLE_FUNDAMENTAL_NAME_ATTRIBUTE_NAME,
-            StringTypeInfo(),
-            missing_validate_func=_ValidateFundamentalName,
-        )
-    ],
+    Attribute(
+        SIMPLE_FUNDAMENTAL_NAME_ATTRIBUTE_NAME,
+        StringTypeInfo(),
+        missing_validate_func=_ValidateFundamentalName,
+    )],
 )
 
 ANY_ATTRIBUTE_INFO                          = AttributeInfo()
@@ -225,25 +220,25 @@ class _InitializeFundamentalTypesVisitor(FundamentalTypesVisitor):
     # ----------------------------------------------------------------------
     @staticmethod
     @override
-    def OnBool(type_info):                                                  # <Parameters differ from overridden...> pylint: disable = W0221
+    def OnBool(type_info):                  # <Parameters differ from overridden...> pylint: disable = W0221
         return "bool", FundamentalAttributeInfo(BoolTypeInfo)
 
     # ----------------------------------------------------------------------
     @staticmethod
     @override
-    def OnDateTime(type_info):                                              # <Parameters differ from overridden...> pylint: disable = W0221
+    def OnDateTime(type_info):              # <Parameters differ from overridden...> pylint: disable = W0221
         return "datetime", FundamentalAttributeInfo(DateTimeTypeInfo)
 
     # ----------------------------------------------------------------------
     @staticmethod
     @override
-    def OnDate(type_info):                                                  # <Parameters differ from overridden...> pylint: disable = W0221
+    def OnDate(type_info):                  # <Parameters differ from overridden...> pylint: disable = W0221
         return "date", FundamentalAttributeInfo(DateTypeInfo)
 
     # ----------------------------------------------------------------------
     @staticmethod
     @override
-    def OnDirectory(type_info):                                             # <Parameters differ from overridden...> pylint: disable = W0221
+    def OnDirectory(type_info):             # <Parameters differ from overridden...> pylint: disable = W0221
         return (
             "directory",
             FundamentalAttributeInfo(
@@ -262,7 +257,7 @@ class _InitializeFundamentalTypesVisitor(FundamentalTypesVisitor):
     # ----------------------------------------------------------------------
     @staticmethod
     @override
-    def OnDuration(type_info):                                              # <Parameters differ from overridden...> pylint: disable = W0221
+    def OnDuration(type_info):              # <Parameters differ from overridden...> pylint: disable = W0221
         return "duration", FundamentalAttributeInfo(DurationTypeInfo)
 
     # ----------------------------------------------------------------------
@@ -295,7 +290,7 @@ class _InitializeFundamentalTypesVisitor(FundamentalTypesVisitor):
     # ----------------------------------------------------------------------
     @staticmethod
     @override
-    def OnFilename(type_info):                                              # <Parameters differ from overridden...> pylint: disable = W0221
+    def OnFilename(type_info):              # <Parameters differ from overridden...> pylint: disable = W0221
         return (
             "filename",
             FundamentalAttributeInfo(
@@ -319,7 +314,7 @@ class _InitializeFundamentalTypesVisitor(FundamentalTypesVisitor):
     # ----------------------------------------------------------------------
     @staticmethod
     @override
-    def OnFloat(type_info):                                                                        # <Parameters differ from overridden...> pylint: disable = W0221
+    def OnFloat(type_info):                 # <Parameters differ from overridden...> pylint: disable = W0221
         return "number", FundamentalAttributeInfo(
             FloatTypeInfo,
             optional_items=[Attribute("min", FloatTypeInfo()), Attribute("max", FloatTypeInfo())],
@@ -328,13 +323,13 @@ class _InitializeFundamentalTypesVisitor(FundamentalTypesVisitor):
     # ----------------------------------------------------------------------
     @staticmethod
     @override
-    def OnGuid(type_info):                                                  # <Parameters differ from overridden...> pylint: disable = W0221
+    def OnGuid(type_info):                  # <Parameters differ from overridden...> pylint: disable = W0221
         return "guid", FundamentalAttributeInfo(GuidTypeInfo)
 
     # ----------------------------------------------------------------------
     @staticmethod
     @override
-    def OnInt(type_info):                               # <Parameters differ from overridden...> pylint: disable = W0221
+    def OnInt(type_info):                   # <Parameters differ from overridden...> pylint: disable = W0221
         return (
             "int",
             FundamentalAttributeInfo(
@@ -365,7 +360,7 @@ class _InitializeFundamentalTypesVisitor(FundamentalTypesVisitor):
     # ----------------------------------------------------------------------
     @staticmethod
     @override
-    def OnString(type_info):                                                # <Parameters differ from overridden...> pylint: disable = W0221
+    def OnString(type_info):                # <Parameters differ from overridden...> pylint: disable = W0221
         return (
             "string",
             FundamentalAttributeInfo(
@@ -391,13 +386,13 @@ class _InitializeFundamentalTypesVisitor(FundamentalTypesVisitor):
     # ----------------------------------------------------------------------
     @staticmethod
     @override
-    def OnTime(type_info):                                                  # <Parameters differ from overridden...> pylint: disable = W0221
+    def OnTime(type_info):                  # <Parameters differ from overridden...> pylint: disable = W0221
         return "time", FundamentalAttributeInfo(TimeTypeInfo)
 
     # ----------------------------------------------------------------------
     @staticmethod
     @override
-    def OnUri(type_info):                                                   # <Parameters differ from overridden...> pylint: disable = W0221
+    def OnUri(type_info):                   # <Parameters differ from overridden...> pylint: disable = W0221
         return "uri", FundamentalAttributeInfo(UriTypeInfo)
 
 
@@ -405,7 +400,8 @@ class _InitializeFundamentalTypesVisitor(FundamentalTypesVisitor):
 
 _visitor                                    = _InitializeFundamentalTypesVisitor()
 
-for _type_info in [                                                         # Initialize these values to any value; they are only used as a way to invoke the visitor
+for _type_info in [
+    # Initialize these values to any value; they are only used as a way to invoke the visitor
     BoolTypeInfo(),
     DateTimeTypeInfo(),
     DateTypeInfo(),
@@ -434,11 +430,10 @@ def __ValidateUniqueKey(plugin, element):   # <Unused argument> pylint: disable 
 
     # Special case when the unique key is the fundamental part of a
     # SimpleElement.
-    if isinstance(element, Elements.SimpleElement) and getattr(
-        element,
-        SIMPLE_FUNDAMENTAL_NAME_ATTRIBUTE_NAME,
-        None,
-    ) == unique_key:
+    if (
+        isinstance(element, Elements.SimpleElement)
+        and getattr(element, SIMPLE_FUNDAMENTAL_NAME_ATTRIBUTE_NAME, None) == unique_key
+    ):
         return None
 
     # Look for the key in all the children.
@@ -465,7 +460,7 @@ def __ValidateUniqueKey(plugin, element):   # <Unused argument> pylint: disable 
 
 
 # ----------------------------------------------------------------------
-def __ValidateRefinesArity(plugin, element):                                # <Unused argument> pylint: disable = W0613
+def __ValidateRefinesArity(plugin, element):            # <Unused argument> pylint: disable = W0613
     if not isinstance(element, Elements.ReferenceElement):
         return "'{}' may only be used with reference elements".format(
             COLLECTION_REFINES_ARITY_ATTRIBUTE_NAME,
@@ -475,7 +470,7 @@ def __ValidateRefinesArity(plugin, element):                                # <U
 
 
 # ----------------------------------------------------------------------
-def __ValidateFundamentalName(plugin, element):                                                             # <Unused argument> pylint: disable = W0613
+def __ValidateFundamentalName(plugin, element):         # <Unused argument> pylint: disable = W0613
     if not plugin.Flags & ParseFlag.SupportSimpleObjectElements:
         return "The attribute '{}' must be provided for plugins that do not support simple objects".format(
             SIMPLE_FUNDAMENTAL_NAME_ATTRIBUTE_NAME,

@@ -35,6 +35,10 @@ _script_fullpath                            = CommonEnvironment.ThisFullpath()
 _script_dir, _script_name                   = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
+sys.path.insert(0, os.path.join(_script_dir, "Generated", "DefaultValues"))
+with CallOnExit(lambda: sys.path.pop(0)):
+    import DefaultValues_PythonYamlSerialization as DefaultValuesYamlSerialization
+
 sys.path.insert(0, os.path.join(_script_dir, "Generated", "AllTypes"))
 with CallOnExit(lambda: sys.path.pop(0)):
     import AllTypes_PythonYamlSerialization as AllTypesYaml
@@ -51,6 +55,7 @@ with CallOnExit(lambda: sys.path.pop(0)):
 
 
 with InitRelativeImports():
+    from .Impl.DefaultValuesUtils import DefaultValuesMixin
     from .Impl.AllTypesUtils import AllTypesUtilsMixin
     from .Impl.FileSystemTestUtils import FileSystemUtilsMixin
     from .Impl.TestUtils import TestUtilsMixin
@@ -204,7 +209,9 @@ class AllTypesSuite(unittest.TestCase, AllTypesUtilsMixin):
 
         with CallOnExit(lambda: FileSystem.RemoveFile(temp_filename)):
             self.assertEqual(
-                AllTypesYaml.Deserialize_filename_('"{}"'.format(os.path.basename(temp_filename))).lower(),
+                AllTypesYaml.Deserialize_filename_(
+                    '"{}"'.format(os.path.basename(temp_filename)),
+                ).lower(),
                 temp_filename.lower(),
             )
 
@@ -243,11 +250,7 @@ class AllTypesSuite(unittest.TestCase, AllTypesUtilsMixin):
 
         self.assertRaisesRegex(
             AllTypesYaml.DeserializeException,
-            re.escape(
-                "'{}' is not a valid file or directory".format(
-                    os.path.join(os.getcwd(), "Does Not Exist"),
-                ),
-            ),
+            re.escape("is not a valid file or directory"),
             lambda: AllTypesYaml.Deserialize_filename_any_("Does Not Exist"),
         )
 
@@ -663,6 +666,23 @@ class TestSuite(unittest.TestCase, TestUtilsMixin):
         obj = TestYaml.Deserialize_test_derived(serialized_obj)
 
         self.ValidateTestDerived(obj)
+
+
+# ----------------------------------------------------------------------
+class DefaultValuesSuite(unittest.TestCase, DefaultValuesMixin):
+    # ----------------------------------------------------------------------
+    def setUp(self):
+        self.maxDiff = None
+
+    # ----------------------------------------------------------------------
+    def test_All(self):
+        yaml_filanem = os.path.join(_script_dir, "..", "Impl", "DefaultValues.yaml")
+        assert os.path.isfile(yaml_filanem), yaml_filanem
+
+        obj = DefaultValuesYamlSerialization.Deserialize(yaml_filanem)
+
+        self.ValidateObject1(obj[0])
+        self.ValidateObject2(obj[1])
 
 
 # ----------------------------------------------------------------------

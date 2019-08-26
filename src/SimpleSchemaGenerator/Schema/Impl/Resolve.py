@@ -26,7 +26,9 @@ import CommonEnvironment
 from CommonEnvironment.Interface import staticderived, override
 from CommonEnvironment.TypeInfo import Arity, ValidationException
 from CommonEnvironment.TypeInfo.FundamentalTypes.BoolTypeInfo import BoolTypeInfo
-from CommonEnvironment.TypeInfo.FundamentalTypes.Serialization.StringSerialization import StringSerialization
+from CommonEnvironment.TypeInfo.FundamentalTypes.Serialization.StringSerialization import (
+    StringSerialization,
+)
 
 from CommonEnvironmentEx.Package import InitRelativeImports
 
@@ -220,7 +222,10 @@ def _ResolveElementType(plugin, reference_states, item):
             # ----------------------------------------------------------------------
 
             if IsSimple():
-                if not plugin.Flags & ParseFlag.SupportSimpleObjectElements and Attributes.SIMPLE_FUNDAMENTAL_NAME_ATTRIBUTE_NAME in item.metadata.Values:
+                if (
+                    not plugin.Flags & ParseFlag.SupportSimpleObjectElements
+                    and Attributes.SIMPLE_FUNDAMENTAL_NAME_ATTRIBUTE_NAME in item.metadata.Values
+                ):
                     # Convert this item into a compound element
                     fundamental_name = item.metadata.Values.pop(
                         Attributes.SIMPLE_FUNDAMENTAL_NAME_ATTRIBUTE_NAME,
@@ -304,7 +309,9 @@ def _ResolveElementType(plugin, reference_states, item):
 
                     # 5
                     if Attributes.COLLECTION_REFINES_ARITY_ATTRIBUTE_NAME in item.metadata.Values:
-                        refines_arity = item.metadata.Values[Attributes.COLLECTION_REFINES_ARITY_ATTRIBUTE_NAME].Value
+                        refines_arity = item.metadata.Values[
+                            Attributes.COLLECTION_REFINES_ARITY_ATTRIBUTE_NAME
+                        ].Value
                         del item.metadata.Values[Attributes.COLLECTION_REFINES_ARITY_ATTRIBUTE_NAME]
 
                         try:
@@ -391,12 +398,12 @@ def _ResolveMetadata(plugin, config_values, item):
 
     item.metadata = ResolvedMetadata(
         metadata,
-        Attributes.UNIVERSAL_ATTRIBUTE_INFO.RequiredItems + metadata_info.RequiredItems + plugin.GetRequiredMetadataItems(
-            item,
-        ),
-        Attributes.UNIVERSAL_ATTRIBUTE_INFO.OptionalItems + metadata_info.OptionalItems + plugin.GetOptionalMetadataItems(
-            item,
-        ),
+        Attributes.UNIVERSAL_ATTRIBUTE_INFO.RequiredItems
+        + metadata_info.RequiredItems
+        + plugin.GetRequiredMetadataItems(item),
+        Attributes.UNIVERSAL_ATTRIBUTE_INFO.OptionalItems
+        + metadata_info.OptionalItems
+        + plugin.GetOptionalMetadataItems(item),
     )
 
     if item.arity.IsOptional:
@@ -460,7 +467,10 @@ def _ResolveReferenceType(reference_states, item):
 def _ResolveMetadataDefaults(item):
     for item in item.Enumerate():
         for attribute in itertools.chain(item.metadata.RequiredItems, item.metadata.OptionalItems):
-            if attribute.Name not in item.metadata.Values and attribute.DefaultValue != Attributes.Attribute.DoesNotExist:
+            if (
+                attribute.Name not in item.metadata.Values
+                and attribute.DefaultValue != Attributes.Attribute.DoesNotExist
+            ):
                 if callable(attribute.DefaultValue):
                     value = attribute.DefaultValue(item)
                 else:

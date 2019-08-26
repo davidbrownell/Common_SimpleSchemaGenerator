@@ -174,7 +174,10 @@ class PythonSourceStatementWriter(SourceStatementWriter):
                 ),
                 4,
             ).strip(),
-            compound_statement=dest_writer.CreateCompoundElement(temporary_element, "attributes").strip(),
+            compound_statement=dest_writer.CreateCompoundElement(
+                temporary_element,
+                "attributes",
+            ).strip(),
             append_children=StringHelpers.LeftJustify(
                 dest_writer.AppendChild(
                     temporary_children_element,

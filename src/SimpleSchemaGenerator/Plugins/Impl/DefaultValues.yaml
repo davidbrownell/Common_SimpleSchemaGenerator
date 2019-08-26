@@ -1,0 +1,5 @@
+items:
+- item:
+- item:
+  attribute: bar
+  value: true

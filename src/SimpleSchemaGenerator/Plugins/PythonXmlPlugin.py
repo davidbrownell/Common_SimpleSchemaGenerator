@@ -83,7 +83,7 @@ class Plugin(PythonSerializationImpl):
                     potential_child = _GetXmlElement(
                         {var_name},
                         "{name}",
-                        is_optional={is_optional},
+                        is_optional=True,
                         is_collection={is_collection},
                     )
                     if potential_child is not DoesNotExist or is_root:
@@ -149,7 +149,7 @@ class Plugin(PythonSerializationImpl):
             if getattr(child_element, "IsAttribute", False):
                 return var_name
 
-            return '{var_name}.text if {var_name}.text.strip() else ""'.format(
+            return '{var_name}.text if {var_name}.text is not None and {var_name}.text.strip() else ""'.format(
                 var_name=var_name,
             )
 

@@ -112,7 +112,9 @@ def Populate(source_name_content_generators, parse_flags):                  # { 
             # At the very least, we should have a beginning and ending quote
             assert len(value) >= 2, value
 
-            if (value.startswith('"""') and value.endswith('"""')) or (value.startswith("'''") and value.endswith("'''")):
+            if (value.startswith('"""') and value.endswith('"""')) or (
+                value.startswith("'''") and value.endswith("'''")
+            ):
                 initial_whitespace = token.column
 
                 # ----------------------------------------------------------------------
@@ -185,7 +187,16 @@ def Populate(source_name_content_generators, parse_flags):                  # { 
             name, value = values
 
             self._stack.append(
-                (name, MetadataValue(value, MetadataSource.Explicit, self._source_name, ctx.start.line, ctx.start.column + 1)),
+                (
+                    name,
+                    MetadataValue(
+                        value,
+                        MetadataSource.Explicit,
+                        self._source_name,
+                        ctx.start.line,
+                        ctx.start.column + 1,
+                    ),
+                ),
             )
 
         # ----------------------------------------------------------------------
@@ -324,7 +335,8 @@ def Populate(source_name_content_generators, parse_flags):                  # { 
                                 v._replace(
                                     Source=MetadataSource.Config,
                                 ),
-                            ) for k, v in values
+                            ) for k,
+                            v in values
                         ],
                     ),
                     self._source_name,

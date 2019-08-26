@@ -56,7 +56,9 @@ class ConfigurationSuite(unittest.TestCase):
         item.config[plugin.Name].append(
             {"bar": MetadataValue(20, MetadataSource.Config, "<source>", 0, 0)},
         )
-        item.config["DoesNotExist"] = [{"baz": MetadataValue(30, MetadataSource.Config, "<source>", 0, 0)}]
+        item.config["DoesNotExist"] = [
+            {"baz": MetadataValue(30, MetadataSource.Config, "<source>", 0, 0)}
+        ]
 
         root = Resolve(item, plugin)
 
@@ -156,7 +158,11 @@ class FundamentalSuite(unittest.TestCase):
         )
 
         child1.name = "child1"
-        child1.reference = [("int", Metadata({}, "<source>", 0, 0)), ("bool", Metadata({}, "<source>", 1, 1)), ("string", Metadata({}, "<source>", 2, 2))]
+        child1.reference = [
+            ("int", Metadata({}, "<source>", 0, 0)),
+            ("bool", Metadata({}, "<source>", 1, 1)),
+            ("string", Metadata({}, "<source>", 2, 2)),
+        ]
 
         root = Resolve(parent, _CreatePlugin())
 

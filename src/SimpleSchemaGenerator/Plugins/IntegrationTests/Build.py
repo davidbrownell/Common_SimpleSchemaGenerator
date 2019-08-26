@@ -59,6 +59,7 @@ def Build(
             ("AllTypes.SimpleSchema", " /include=types"),
             "FileSystemTest.SimpleSchema",
             "Test.SimpleSchema",
+            "DefaultValues.SimpleSchema",
         ]
 
         plugin_names = [

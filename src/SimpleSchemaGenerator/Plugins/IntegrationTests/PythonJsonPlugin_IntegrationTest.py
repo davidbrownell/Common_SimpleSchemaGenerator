@@ -30,6 +30,10 @@ _script_fullpath                            = CommonEnvironment.ThisFullpath()
 _script_dir, _script_name                   = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
+sys.path.insert(0, os.path.join(_script_dir, "Generated", "DefaultValues"))
+with CallOnExit(lambda: sys.path.pop(0)):
+    import DefaultValues_PythonJsonSerialization as DefaultValuesJsonSerialization
+
 sys.path.insert(0, os.path.join(_script_dir, "Generated", "FileSystemTest"))
 with CallOnExit(lambda: sys.path.pop(0)):
     import FileSystemTest_PythonJsonSerialization as FileSystemJsonSerialization
@@ -43,6 +47,7 @@ with CallOnExit(lambda: sys.path.pop(0)):
 
 
 with InitRelativeImports():
+    from .Impl.DefaultValuesUtils import DefaultValuesMixin
     from .Impl.FileSystemTestUtils import FileSystemUtilsMixin
     from .Impl.TestUtils import TestUtilsMixin
 
@@ -530,6 +535,23 @@ class TestSuite(unittest.TestCase, TestUtilsMixin):
         obj = TestJsonSerialization.Deserialize_test_derived(serialized_obj)
 
         self.ValidateTestDerived(obj)
+
+
+# ----------------------------------------------------------------------
+class DefaultValuesSuite(unittest.TestCase, DefaultValuesMixin):
+    # ----------------------------------------------------------------------
+    def setUp(self):
+        self.maxDiff = None
+
+    # ----------------------------------------------------------------------
+    def test_All(self):
+        json_filename = os.path.join(_script_dir, "..", "Impl", "DefaultValues.json")
+        assert os.path.isfile(json_filename), json_filename
+
+        obj = DefaultValuesJsonSerialization.Deserialize(json_filename)
+
+        self.ValidateObject1(obj[0])
+        self.ValidateObject2(obj[1])
 
 
 # ----------------------------------------------------------------------

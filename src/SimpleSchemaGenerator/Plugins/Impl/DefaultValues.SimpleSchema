@@ -1,0 +1,6 @@
+<items +>:
+    [attribute string default="foo" ?]
+    [attribute_no_default string ?]
+
+    <value bool default=false ?>
+    <value_no_default bool ?>

@@ -145,7 +145,7 @@ class Item(object):
 
     # ----------------------------------------------------------------------
     def __init__(self, declaration_type, item_type, parent, source, line, column, is_external): # True if the item is defined in another file
-                                                                                                # Populated during Populate
+        # Populated during Populate
         self.DeclarationType                = declaration_type
         self.ItemType                       = item_type
         self.Parent                         = parent

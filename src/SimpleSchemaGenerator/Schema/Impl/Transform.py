@@ -59,7 +59,9 @@ def Transform(root, plugin):
     # before can be created at this time.
     delayed_instruction_queue = []
 
-    extensions_allowing_duplicate_names = {ext.Name for ext in plugin.GetExtensions() if ext.AllowDuplicates}
+    extensions_allowing_duplicate_names = {
+        ext.Name for ext in plugin.GetExtensions() if ext.AllowDuplicates
+    }
 
     apply_type_info_visitor = _ApplyTypeInfoVisitor()
     create_element_visitor = _CreateElementVisitor()
@@ -79,7 +81,10 @@ def Transform(root, plugin):
         if item.ignore:
             return False
 
-        allow_duplicates = item.element_type == Elements.ExtensionElement and item.name in extensions_allowing_duplicate_names
+        allow_duplicates = (
+            item.element_type == Elements.ExtensionElement
+            and item.name in extensions_allowing_duplicate_names
+        )
 
         if item.Key in elements and not allow_duplicates:
             return elements[item.Key]
@@ -236,14 +241,16 @@ class _CreateElementVisitor(ItemVisitor):
         elements,
         delayed_instruction_queue,
         apply_type_info_func,
-        create_element_func,                                                                                                      # <Unused argument> pylint: disable = W0613
+        create_element_func,                # <Unused argument> pylint: disable = W0613
         is_definition_only,
-    ):                                                                                                                            # <Parameters differ from overridden...> pylint: disable = W0221
+    ):                                      # <Parameters differ from overridden...> pylint: disable = W0221
         element = Elements.FundamentalElement(
-            is_attribute=metadata_item.ItemType == Item.ItemType.Attribute and (plugin.Flags & ParseFlag.SupportAttributes) != 0,
-            type_info=None,                                                                                                       # Set below
+            is_attribute=metadata_item.ItemType == Item.ItemType.Attribute and (
+                plugin.Flags & ParseFlag.SupportAttributes
+            ) != 0,
+            type_info=None,                             # Set below
             name=metadata_item.name,
-            parent=None,                                                                                                          # Set below
+            parent=None,                                # Set below
             source=metadata_item.Source,
             line=metadata_item.Line,
             column=metadata_item.Column,
@@ -266,13 +273,13 @@ class _CreateElementVisitor(ItemVisitor):
         cls,
         item,
         metadata_item,
-        plugin,                                         # <Unused argument> pylint: disable = W0613
+        plugin,                             # <Unused argument> pylint: disable = W0613
         elements,
         delayed_instruction_queue,
         apply_type_info_func,
         create_element_func,
         is_definition_only,
-    ):                                                  # <Parameters differ from overridden...> pylint: disable = W0221
+    ):                                      # <Parameters differ from overridden...> pylint: disable = W0221
         element = Elements.CompoundElement(
             children=cls._CreateChildElements(
                 item,
@@ -374,13 +381,13 @@ class _CreateElementVisitor(ItemVisitor):
         cls,
         item,
         metadata_item,
-        plugin,                                                                                                                   # <Unused argument> pylint: disable = W0613
+        plugin,                             # <Unused argument> pylint: disable = W0613
         elements,
         delayed_instruction_queue,
         apply_type_info_func,
         create_element_func,
         is_definition_only,
-    ):                                                                                                                            # <Parameters differ from overridden...> pylint: disable = W0221
+    ):                                      # <Parameters differ from overridden...> pylint: disable = W0221
         element = Elements.VariantElement(
             variations=cls._CreateChildElements(
                 item,
@@ -389,10 +396,12 @@ class _CreateElementVisitor(ItemVisitor):
                 delayed_instruction_queue,
                 create_element_func,
             ),
-            is_attribute=metadata_item.ItemType == Item.ItemType.Attribute and (plugin.Flags & ParseFlag.SupportAttributes) != 0,
-            type_info=None,                                                                                                       # Set below
+            is_attribute=metadata_item.ItemType == Item.ItemType.Attribute and (
+                plugin.Flags & ParseFlag.SupportAttributes
+            ) != 0,
+            type_info=None,                             # Set below
             name=metadata_item.name,
-            parent=None,                                                                                                          # Set below
+            parent=None,                                # Set below
             source=metadata_item.Source,
             line=metadata_item.Line,
             column=metadata_item.Column,
@@ -415,13 +424,13 @@ class _CreateElementVisitor(ItemVisitor):
         cls,
         item,
         metadata_item,
-        plugin,                                         # <Unused argument> pylint: disable = W0613
+        plugin,                             # <Unused argument> pylint: disable = W0613
         elements,
         delayed_instruction_queue,
         apply_type_info_func,
         create_element_func,
         is_definition_only,
-    ):                                                  # <Parameters differ from overridden...> pylint: disable = W0221
+    ):                                      # <Parameters differ from overridden...> pylint: disable = W0221
         if metadata_item.is_augmenting_reference:
             return cls.Accept(
                 item.reference,
@@ -464,13 +473,13 @@ class _CreateElementVisitor(ItemVisitor):
         cls,
         item,
         metadata_item,
-        plugin,                                         # <Unused argument> pylint: disable = W0613
+        plugin,                             # <Unused argument> pylint: disable = W0613
         elements,
         delayed_instruction_queue,
         apply_type_info_func,
         create_element_func,
         is_definition_only,
-    ):                                                  # <Parameters differ from overridden...> pylint: disable = W0221
+    ):                                      # <Parameters differ from overridden...> pylint: disable = W0221
         element = Elements.ListElement(
             reference=None,                             # Set below
             type_info=None,                             # Set below
@@ -501,13 +510,13 @@ class _CreateElementVisitor(ItemVisitor):
         cls,
         item,
         metadata_item,
-        plugin,                                         # <Unused argument> pylint: disable = W0613
+        plugin,                             # <Unused argument> pylint: disable = W0613
         elements,
         delayed_instruction_queue,
         apply_type_info_func,
-        create_element_func,                            # <Unused argument> pylint: disable = W0613
+        create_element_func,                # <Unused argument> pylint: disable = W0613
         is_definition_only,
-    ):                                                  # <Parameters differ from overridden...> pylint: disable = W0221
+    ):                                      # <Parameters differ from overridden...> pylint: disable = W0221
         element = Elements.AnyElement(
             type_info=None,                             # Set below
             name=metadata_item.name,
@@ -534,13 +543,13 @@ class _CreateElementVisitor(ItemVisitor):
         cls,
         item,
         metadata_item,
-        plugin,                                         # <Unused argument> pylint: disable = W0613
+        plugin,                             # <Unused argument> pylint: disable = W0613
         elements,
         delayed_instruction_queue,
         apply_type_info_func,
-        create_element_func,                            # <Unused argument> pylint: disable = W0613
+        create_element_func,                # <Unused argument> pylint: disable = W0613
         is_definition_only,
-    ):                                                  # <Parameters differ from overridden...> pylint: disable = W0221
+    ):                                      # <Parameters differ from overridden...> pylint: disable = W0221
         element = Elements.CustomElement(
             type_info=None,                             # Set below
             name=metadata_item.name,
@@ -567,19 +576,19 @@ class _CreateElementVisitor(ItemVisitor):
         cls,
         item,
         metadata_item,
-        plugin,                                                             # <Unused argument> pylint: disable = W0613
+        plugin,                             # <Unused argument> pylint: disable = W0613
         elements,
         delayed_instruction_queue,
         apply_type_info_func,
-        create_element_func,                                                # <Unused argument> pylint: disable = W0613
+        create_element_func,                # <Unused argument> pylint: disable = W0613
         is_definition_only,
-    ):                                                                      # <Parameters differ from overridden...> pylint: disable = W0221
+    ):                                      # <Parameters differ from overridden...> pylint: disable = W0221
         element = Elements.ExtensionElement(
             positional_arguments=item.positional_arguments,
             keyword_arguments=item.keyword_arguments,
-            type_info=None,                                                 # Set below
+            type_info=None,                             # Set below
             name=metadata_item.name,
-            parent=None,                                                    # Set below
+            parent=None,                                # Set below
             source=metadata_item.Source,
             line=metadata_item.Line,
             column=metadata_item.Column,
@@ -626,7 +635,7 @@ class _CreateElementVisitor(ItemVisitor):
         elements,
         delayed_instruction_queue,
         create_element_func,
-    ):                                      # <Unused argument> pylint: disable = W0613
+    ):
         child_elements = []
 
         for child_item in child_items:
@@ -746,7 +755,7 @@ class _ApplyTypeInfoVisitor(ItemVisitor):
     @classmethod
     @override
     def OnVariant(cls, item, metadata_item, element, elements, delayed_instruction_queue): # <Parameters differ from overridden...> pylint: disable = W0221
-                                                                                           # Create a placeholder
+        # Create a placeholder
         element.TypeInfo = AnyOfTypeInfo(
             [cls._PlaceholderTypeInfo()],
             arity=metadata_item.arity,
@@ -755,7 +764,7 @@ class _ApplyTypeInfoVisitor(ItemVisitor):
     # ----------------------------------------------------------------------
     @classmethod
     @override
-    def OnReference(cls, item, metadata_item, element, elements, delayed_instruction_queue):    # <Parameters differ from overridden...> pylint: disable = W0221
+    def OnReference(cls, item, metadata_item, element, elements, delayed_instruction_queue): # <Parameters differ from overridden...> pylint: disable = W0221
         cls.Accept(item.reference, metadata_item, element, elements, delayed_instruction_queue)
 
     # ----------------------------------------------------------------------
@@ -773,7 +782,10 @@ class _ApplyTypeInfoVisitor(ItemVisitor):
             referenced_element = elements[item.reference.Key]
             assert referenced_element
             assert referenced_element.TypeInfo
-            assert isinstance(element.TypeInfo.ElementTypeInfo, cls._PlaceholderTypeInfo), element.TypeInfo.ElementTypeInfo
+            assert isinstance(
+                element.TypeInfo.ElementTypeInfo,
+                cls._PlaceholderTypeInfo,
+            ), element.TypeInfo.ElementTypeInfo
             element.TypeInfo.ElementTypeInfo = referenced_element.TypeInfo
 
         # ----------------------------------------------------------------------
@@ -864,7 +876,8 @@ class _ApplyTypeInfoVisitor(ItemVisitor):
 
             child_type_info_placeholders[child_item.name] = cls._PlaceholderTypeInfo()
 
-        element.TypeInfo = ClassTypeInfo(                                   # Placeholders values are overridden below
+        element.TypeInfo = ClassTypeInfo(
+            # Placeholders values are overridden below
             child_type_info_placeholders,
             require_exact_match=bool(child_type_info_placeholders),
             arity=item.arity,
@@ -887,7 +900,10 @@ class _ApplyTypeInfoVisitor(ItemVisitor):
                 child_element = elements[child_item.Key]
                 assert child_element
                 assert child_element.TypeInfo
-                assert not isinstance(child_element.TypeInfo, cls._PlaceholderTypeInfo), child_element.Name
+                assert not isinstance(
+                    child_element.TypeInfo,
+                    cls._PlaceholderTypeInfo,
+                ), child_element.Name
                 assert child_element.Name in element.TypeInfo.Items, child_element.Name
                 assert isinstance(
                     element.TypeInfo.Items[child_element.Name],

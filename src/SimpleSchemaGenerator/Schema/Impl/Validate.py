@@ -22,7 +22,9 @@ import six
 import CommonEnvironment
 
 from CommonEnvironment.TypeInfo import ValidationException
-from CommonEnvironment.TypeInfo.FundamentalTypes.Serialization.StringSerialization import StringSerialization
+from CommonEnvironment.TypeInfo.FundamentalTypes.Serialization.StringSerialization import (
+    StringSerialization,
+)
 
 from CommonEnvironmentEx.Package import InitRelativeImports
 
@@ -51,7 +53,9 @@ def Validate(root, plugin, filter_unsupported_extensions, filter_unsupported_met
     # ----------------------------------------------------------------------
 
     extension_names = {ext.Name for ext in plugin.GetExtensions()}
-    extensions_allowing_duplicate_names = {ext.Name for ext in plugin.GetExtensions() if ext.AllowDuplicates}
+    extensions_allowing_duplicate_names = {
+        ext.Name for ext in plugin.GetExtensions() if ext.AllowDuplicates
+    }
 
     Impl(root, lambda item: _ValidateSupported(plugin.Flags, item))
     Impl(root, lambda item: _ValidateUniqueNames(extensions_allowing_duplicate_names, item))
@@ -72,42 +76,60 @@ def Validate(root, plugin, filter_unsupported_extensions, filter_unsupported_met
 # ----------------------------------------------------------------------
 def _ValidateSupported(plugin_flags, item):
     for item in item.Enumerate():
-        if item.element_type == Elements.CustomElement and not plugin_flags & ParseFlag.SupportCustomElements:
+        if (
+            item.element_type == Elements.CustomElement
+            and not plugin_flags & ParseFlag.SupportCustomElements
+        ):
             raise Exceptions.ValidateUnsupportedCustomElementsException(
                 item.Source,
                 item.Line,
                 item.Column,
             )
 
-        if item.element_type == Elements.AnyElement and not plugin_flags & ParseFlag.SupportAnyElements:
+        if (
+            item.element_type == Elements.AnyElement
+            and not plugin_flags & ParseFlag.SupportAnyElements
+        ):
             raise Exceptions.ValidateUnsupportedAnyElementsException(
                 item.Source,
                 item.Line,
                 item.Column,
             )
 
-        if item.element_type == Elements.ReferenceElement and not plugin_flags & ParseFlag.SupportReferenceElements:
+        if (
+            item.element_type == Elements.ReferenceElement
+            and not plugin_flags & ParseFlag.SupportReferenceElements
+        ):
             raise Exceptions.ValidateUnsupportedReferenceElementsException(
                 item.Source,
                 item.Line,
                 item.Column,
             )
 
-        if item.element_type == Elements.ListElement and not plugin_flags & ParseFlag.SupportListElements:
+        if (
+            item.element_type == Elements.ListElement
+            and not plugin_flags & ParseFlag.SupportListElements
+        ):
             raise Exceptions.ValidateUnsupportedListElementsException(
                 item.Source,
                 item.Line,
                 item.Column,
             )
 
-        if item.element_type == Elements.SimpleElement and not plugin_flags & ParseFlag.SupportSimpleObjectElements:
+        if (
+            item.element_type == Elements.SimpleElement
+            and not plugin_flags & ParseFlag.SupportSimpleObjectElements
+        ):
             raise Exceptions.ValidateUnsupportedSimpleObjectElementsException(
                 item.Source,
                 item.Line,
                 item.Column,
             )
 
-        if item.element_type == Elements.VariantElement and not plugin_flags & ParseFlag.SupportVariantElements:
+        if (
+            item.element_type == Elements.VariantElement
+            and not plugin_flags & ParseFlag.SupportVariantElements
+        ):
             raise Exceptions.ValidateUnsupportedVariantElementsException(
                 item.Source,
                 item.Line,
@@ -124,7 +146,10 @@ def _ValidateUniqueNames(
     names = names or {}
 
     for child in item.items:
-        if child.element_type == Elements.ExtensionElement and child.name in extensions_allowing_duplicate_names:
+        if (
+            child.element_type == Elements.ExtensionElement
+            and child.name in extensions_allowing_duplicate_names
+        ):
             continue
 
         if child.name in names:
@@ -173,7 +198,10 @@ def _ValidateMetadata(filter_unsupported_metadata, item):
                 )
 
         # Verify / eliminate / Convert extra metadata
-        md_lookup = {md.Name: md for md in itertools.chain(item.metadata.RequiredItems, item.metadata.OptionalItems)}
+        md_lookup = {
+            md.Name: md
+            for md in itertools.chain(item.metadata.RequiredItems, item.metadata.OptionalItems)
+        }
 
         md_keys = list(six.iterkeys(item.metadata.Values))
 
@@ -215,7 +243,9 @@ def _ValidateMetadata(filter_unsupported_metadata, item):
 
 # ----------------------------------------------------------------------
 def _ValidateSimpleElements(item):
-    if item.element_type != Elements.SimpleElement and not (item.element_type == Elements.CompoundElement and item.is_converted):
+    if item.element_type != Elements.SimpleElement and not (
+        item.element_type == Elements.CompoundElement and item.is_converted
+    ):
         return
 
     # ----------------------------------------------------------------------

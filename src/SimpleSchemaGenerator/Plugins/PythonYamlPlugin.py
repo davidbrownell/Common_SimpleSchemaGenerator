@@ -31,7 +31,9 @@ _script_dir, _script_name                   = os.path.split(_script_fullpath)
 with InitRelativeImports():
     from .Impl.PythonSerializationImpl import PythonSerializationImpl
 
-    from .Impl.StatementWriters.PythonDestinationStatementWriter import PythonDestinationStatementWriter
+    from .Impl.StatementWriters.PythonDestinationStatementWriter import (
+        PythonDestinationStatementWriter,
+    )
     from .Impl.StatementWriters.PythonSourceStatementWriter import PythonSourceStatementWriter
 
 # ----------------------------------------------------------------------
@@ -50,10 +52,11 @@ class Plugin(PythonSerializationImpl):
     @classmethod
     @Interface.override
     def GetAdditionalGeneratorItems(cls, context):
-        return [_script_fullpath, PythonDestinationStatementWriter, PythonSourceStatementWriter] + super(
-            Plugin,
-            cls,
-        ).GetAdditionalGeneratorItems(context)
+        return [
+            _script_fullpath,
+            PythonDestinationStatementWriter,
+            PythonSourceStatementWriter,
+        ] + super(Plugin, cls).GetAdditionalGeneratorItems(context)
 
     # ----------------------------------------------------------------------
     # |  Private Types
@@ -88,12 +91,7 @@ class Plugin(PythonSerializationImpl):
                     {}
 
                     """,
-                ).format(
-                    super(Plugin.SourceStatementWriter, cls).ConvenienceConversions(
-                        var_name,
-                        element_or_none,
-                    ),
-                )
+                ).format(super(Plugin.SourceStatementWriter, cls).ConvenienceConversions(var_name, element_or_none))
 
             return content
 

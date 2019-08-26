@@ -125,7 +125,8 @@ class TypeInfoElementVisitor(ElementVisitor):
                             v.Arity,
                             comma_prefix=False,
                         ),
-                    ) for k, v in GenerateChildren(element)
+                    ) for k,
+                    v in GenerateChildren(element)
                 ],
             ),
         )

@@ -61,7 +61,11 @@ class AllTypesUtilsMixin(object):
         )
         self.assertEqual(
             obj.duration_,
-            [datetime.timedelta(1, 82862), datetime.timedelta(1, 82862, 3), datetime.timedelta(0, 82862)],
+            [
+                datetime.timedelta(1, 82862),
+                datetime.timedelta(1, 82862, 3),
+                datetime.timedelta(0, 82862),
+            ],
         )
         self.assertEqual(obj.enum_, ["three", "two", "one"])
         self.assertEqual(

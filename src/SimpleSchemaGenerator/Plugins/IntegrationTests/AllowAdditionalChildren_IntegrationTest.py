@@ -49,7 +49,9 @@ class AllowAdditionalChildren(unittest.TestCase):
             "Impl",
             "AllowAdditionalChildren.json",
         )
-        assert os.path.isfile(allow_additional_children_filename), allow_additional_children_filename
+        assert os.path.isfile(
+            allow_additional_children_filename,
+        ), allow_additional_children_filename
 
         json_schema = os.path.join(
             _script_dir,

@@ -21,7 +21,13 @@ import os
 
 import CommonEnvironment
 from CommonEnvironment.CallOnExit import CallOnExit
-from CommonEnvironment.Interface import Interface, abstractmethod, extensionmethod, override, staticderived
+from CommonEnvironment.Interface import (
+    Interface,
+    abstractmethod,
+    extensionmethod,
+    override,
+    staticderived,
+)
 from CommonEnvironment.Visitor import Visitor as VisitorBase
 
 # ----------------------------------------------------------------------
@@ -297,7 +303,7 @@ class ElementVisitor(VisitorBase):
     # ----------------------------------------------------------------------
     @staticmethod
     @extensionmethod
-    def OnCompound_VisitingChildren(element, *args, **kwargs):                             # <Unused argument> pylint: disable = W0613
+    def OnCompound_VisitingChildren(element, *args, **kwargs):              # <Unused argument> pylint: disable = W0613
         """Return False to prevent the visitation of children. Called after OnCompound."""
         return True
 
@@ -316,7 +322,7 @@ class ElementVisitor(VisitorBase):
     # ----------------------------------------------------------------------
     @staticmethod
     @extensionmethod
-    def OnSimple_VisitingChildren(element, *args, **kwargs):                             # <Unused argument> pylint: disable = W0613
+    def OnSimple_VisitingChildren(element, *args, **kwargs):                # <Unused argument> pylint: disable = W0613
         """Return False to prevent the visitation of children. Called after OnSimple."""
         return True
 
@@ -371,7 +377,7 @@ class ElementVisitor(VisitorBase):
         traverse=True,
         include_dotted_names=None,
         **kwargs
-    ):                                                                      # set of the dotted_names of elements that should be traversed.
+    ):                                      # set of the dotted_names of elements that should be traversed.
         """Calls the appropriate On___ method based on the element type"""
 
         if include_dotted_names is None:
@@ -450,9 +456,10 @@ class ElementVisitor(VisitorBase):
                     result=result,
                 )
 
-                if traverse and isinstance(element, ChildrenMixin) and not isinstance(
-                    element,
-                    VariantElement,
+                if (
+                    traverse
+                    and isinstance(element, ChildrenMixin)
+                    and not isinstance(element, VariantElement)
                 ):
                     if typ not in child_visitation_lookup_map:
                         raise Exception("'{}' was not expected ({})".format(typ, element))
@@ -493,22 +500,22 @@ class ElementVisitor(VisitorBase):
 # |
 # ----------------------------------------------------------------------
 def CreateElementVisitor(
-    on_entering_element=None,                                                                         # def Func(element, *args, **kwargs)
-    on_exiting_element=None,                                                                          # def Func(element, *args, **kwargs)
-    on_fundamental_func=None,                                                                         # def Func(element, *args, **kwargs)
-    on_compound_func=None,                                                                            # def Func(element, *args, **kwargs)
-    on_compound_visiting_children_func=None,                                                          # def Func(element, *args, **kwargs)
-    on_compound_visited_children_func=None,                                                           # def Func(element, *args, **kwargs)
-    on_simple_func=None,                                                                              # def Func(element, *args, **kwargs)
-    on_simple_visiting_children_func=None,                                                            # def Func(element, *args, **kwargs)
-    on_simple_visited_children_func=None,                                                             # def Func(element, *args, **kwargs)
-    on_variant_func=None,                                                                             # def Func(element, *args, **kwargs)
-    on_reference_func=None,                                                                           # def Func(element, *args, **kwargs)
-    on_list_func=None,                                                                                # def Func(element, *args, **kwargs)
-    on_any_func=None,                                                                                 # def Func(element, *args, **kwargs)
-    on_custom_func=None,                                                                              # def Func(element, *args, **kwargs)
-    on_extension_func=None,                                                                           # def Func(element, *args, **kwargs)
-    on_default_func=None,                                                                             # def Func(element, *args, **kwargs)
+    on_entering_element=None,                           # def Func(element, *args, **kwargs)
+    on_exiting_element=None,                            # def Func(element, *args, **kwargs)
+    on_fundamental_func=None,                           # def Func(element, *args, **kwargs)
+    on_compound_func=None,                              # def Func(element, *args, **kwargs)
+    on_compound_visiting_children_func=None,            # def Func(element, *args, **kwargs)
+    on_compound_visited_children_func=None,             # def Func(element, *args, **kwargs)
+    on_simple_func=None,                                # def Func(element, *args, **kwargs)
+    on_simple_visiting_children_func=None,              # def Func(element, *args, **kwargs)
+    on_simple_visited_children_func=None,               # def Func(element, *args, **kwargs)
+    on_variant_func=None,                               # def Func(element, *args, **kwargs)
+    on_reference_func=None,                             # def Func(element, *args, **kwargs)
+    on_list_func=None,                                  # def Func(element, *args, **kwargs)
+    on_any_func=None,                                   # def Func(element, *args, **kwargs)
+    on_custom_func=None,                                # def Func(element, *args, **kwargs)
+    on_extension_func=None,                             # def Func(element, *args, **kwargs)
+    on_default_func=None,                               # def Func(element, *args, **kwargs)
 ):
     """Creates an ElementVisitor instance implemented in terms of the non-None function arguments."""
 

@@ -32,6 +32,10 @@ _script_fullpath                            = CommonEnvironment.ThisFullpath()
 _script_dir, _script_name                   = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
+sys.path.insert(0, os.path.join(_script_dir, "Generated", "DefaultValues"))
+with CallOnExit(lambda: sys.path.pop(0)):
+    import DefaultValues_PythonXmlSerialization as DefaultValuesXmlSerialization
+
 sys.path.insert(0, os.path.join(_script_dir, "Generated", "FileSystemTest"))
 with CallOnExit(lambda: sys.path.pop(0)):
     import FileSystemTest_PythonXmlSerialization as FileSystemXmlSerialization
@@ -42,6 +46,7 @@ with CallOnExit(lambda: sys.path.pop(0)):
 
 
 with InitRelativeImports():
+    from .Impl.DefaultValuesUtils import DefaultValuesMixin
     from .Impl.FileSystemTestUtils import FileSystemUtilsMixin
     from .Impl.TestUtils import TestUtilsMixin
 
@@ -478,6 +483,23 @@ class TestSuite(TestSuiteImpl):
 
         self.ValidateTestBase(obj.test_base)
         self.ValidateTestDerived(obj.test_derived)
+
+
+# ----------------------------------------------------------------------
+class DefaultValuesSuite(unittest.TestCase, DefaultValuesMixin):
+    # ----------------------------------------------------------------------
+    def setUp(self):
+        self.maxDiff = None
+
+    # ----------------------------------------------------------------------
+    def test_All(self):
+        xml_filename = os.path.join(_script_dir, "..", "Impl", "DefaultValues.xml")
+        assert os.path.isfile(xml_filename), xml_filename
+
+        obj = DefaultValuesXmlSerialization.Deserialize(xml_filename)
+
+        self.ValidateObject1(obj[0])
+        self.ValidateObject2(obj[1])
 
 
 # ----------------------------------------------------------------------

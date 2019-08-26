@@ -200,6 +200,7 @@ class PythonSerializationImpl(PluginBase):
                         from CommonEnvironment.TypeInfo.ListTypeInfo import ListTypeInfo
 
                         from CommonEnvironment.TypeInfo.FundamentalTypes.Serialization.PythonCodeVisitor import PythonCodeVisitor
+                        from CommonEnvironment.TypeInfo.FundamentalTypes.Serialization.StringSerialization import StringSerialization
 
                         # <Unused import> pylint: disable = W0611
                         # <Unused import> pylint: disable = W0614
@@ -363,7 +364,7 @@ class PythonSerializationImpl(PluginBase):
                         f.write(
                             textwrap.dedent(
                                 """\
-                                
+
                                 # ----------------------------------------------------------------------
                                 def _ValidateUniqueKeys(unique_key_attribute_name, items):
                                     unique_keys = set()
@@ -1181,7 +1182,7 @@ class PythonSerializationImpl(PluginBase):
             cls._EnumerateChildren,
             is_serializer,
         )
-        
+
         item_method_element_visitor.Accept(elements)
 
         indented_stream.write(
@@ -1198,7 +1199,7 @@ class PythonSerializationImpl(PluginBase):
             """\
             # ----------------------------------------------------------------------
             @classmethod
-            def {method_name}(cls, {var_name}, attribute_name, dest, apply_func, always_include_optional):
+            def {method_name}(cls, {var_name}, attribute_name, dest, apply_func, always_include_optional{default_value_param}):
                 value = {get_statement}
 
                 if value is not DoesNotExist:
@@ -1206,6 +1207,8 @@ class PythonSerializationImpl(PluginBase):
                     if value is not DoesNotExist:
                         {add_child}
                         return
+
+                {default_value_statement}
 
                 if always_include_optional:
                     {add_child_empty}
@@ -1232,6 +1235,18 @@ class PythonSerializationImpl(PluginBase):
                         dest_writer.AppendChild(optional_child_empty_element, "dest", None),
                         8,
                     ).strip(),
+                    default_value_param=", default_value_func=None",
+                    default_value_statement=StringHelpers.LeftJustify(
+                        textwrap.dedent(
+                            """\
+                            if default_value_func:
+                                {}
+                                return
+
+                            """,
+                        ).format(StringHelpers.LeftJustify(dest_writer.AppendChild(optional_child_empty_element, "dest", "default_value_func()"), 4).strip()),
+                        4,
+                    ).strip(),
                 ),
             )
 
@@ -1254,6 +1269,8 @@ class PythonSerializationImpl(PluginBase):
                         dest_writer.AppendChild(optional_children_empty_element, "dest", None),
                         8,
                     ).strip(),
+                    default_value_param='',
+                    default_value_statement="# No default statement",
                 ),
             )
 
@@ -1272,8 +1289,26 @@ class PythonSerializationImpl(PluginBase):
                         source_writer.GetChild("item", optional_attribute_empty_element),
                         4,
                     ).strip(),
-                    add_child="dest[attribute_name] = value",
-                    add_child_empty="dest[attribute_name] = None",
+                    add_child=StringHelpers.LeftJustify(
+                        dest_writer.AppendChild(optional_attribute_empty_element, "dest", "value"),
+                        12,
+                    ).strip(),
+                    add_child_empty=StringHelpers.LeftJustify(
+                        dest_writer.AppendChild(optional_attribute_empty_element, "dest", None),
+                        8,
+                    ),
+                    default_value_param=", default_value_func=None",
+                    default_value_statement=StringHelpers.LeftJustify(
+                        textwrap.dedent(
+                            """\
+                            if default_value_func:
+                                {}
+                                return
+
+                            """,
+                        ).format(StringHelpers.LeftJustify(dest_writer.AppendChild(optional_attribute_empty_element, "dest", "default_value_func()"), 4).strip()),
+                        4,
+                    ).strip(),
                 ),
             )
 

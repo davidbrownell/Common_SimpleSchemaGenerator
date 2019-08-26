@@ -89,6 +89,13 @@ class PythonDestinationStatementWriter(DestinationStatementWriter):
         if var_name_or_none is None:
             var_name_or_none = "[]" if child_element.TypeInfo.Arity.IsCollection else "None"
 
+        if getattr(child_element, "IsAttribute", False):
+            return "{}[{}] = {}".format(
+                parent_var_name,
+                cls.GetElementStatementName(child_element),
+                var_name_or_none,
+            )
+
         return "setattr({}, {}, {})".format(
             parent_var_name,
             cls.GetElementStatementName(child_element),

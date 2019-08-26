@@ -29,8 +29,12 @@ from CommonEnvironment import RegularExpression
 from CommonEnvironment.StreamDecorator import StreamDecorator
 from CommonEnvironment import StringHelpers
 from CommonEnvironment.TypeInfo.FundamentalTypes.BoolTypeInfo import BoolTypeInfo
-from CommonEnvironment.TypeInfo.FundamentalTypes.Serialization.StringSerialization import RegularExpressionVisitor
-from CommonEnvironment.TypeInfo.FundamentalTypes.Visitor import Visitor as FundamentalTypeInfoVisitor
+from CommonEnvironment.TypeInfo.FundamentalTypes.Serialization.StringSerialization import (
+    RegularExpressionVisitor,
+)
+from CommonEnvironment.TypeInfo.FundamentalTypes.Visitor import (
+    Visitor as FundamentalTypeInfoVisitor,
+)
 
 from CommonEnvironmentEx.Package import InitRelativeImports
 
@@ -54,25 +58,12 @@ class Plugin(PluginBase):
     Name                                    = Interface.DerivedProperty("XsdSchema")
     Description                             = Interface.DerivedProperty("Generates an XSD Schema file (XML Schema Definition)")
     Flags                                   = Interface.DerivedProperty(
-        ParseFlag.SupportAttributes
-        | ParseFlag.SupportIncludeStatements
-        # | ParseFlag.SupportConfigStatements
-        # | ParseFlag.SupportExtensionsStatements
-        # | ParseFlag.SupportUnnamedDeclarations
+        ParseFlag.SupportAttributes | ParseFlag.SupportIncludeStatements                                                                                                                                              # | ParseFlag.SupportConfigStatements
+                                                                                                                                                                                                                      # | ParseFlag.SupportExtensionsStatements
+                                                                                                                                                                                                                      # | ParseFlag.SupportUnnamedDeclarations
         # | ParseFlag.SupportUnnamedObjects
-        | ParseFlag.SupportNamedDeclarations
-        | ParseFlag.SupportNamedObjects
-        | ParseFlag.SupportRootDeclarations
-        | ParseFlag.SupportRootObjects
-        | ParseFlag.SupportChildDeclarations
-        | ParseFlag.SupportChildObjects
-        # | ParseFlag.SupportCustomElements
-        | ParseFlag.SupportAnyElements
-        | ParseFlag.SupportReferenceElements
-        | ParseFlag.SupportListElements
-        | ParseFlag.SupportSimpleObjectElements
-        | ParseFlag.SupportVariantElements
-        | ParseFlag.ResolveReferences,
+        | ParseFlag.SupportNamedDeclarations | ParseFlag.SupportNamedObjects | ParseFlag.SupportRootDeclarations | ParseFlag.SupportRootObjects | ParseFlag.SupportChildDeclarations | ParseFlag.SupportChildObjects  # | ParseFlag.SupportCustomElements
+        | ParseFlag.SupportAnyElements | ParseFlag.SupportReferenceElements | ParseFlag.SupportListElements | ParseFlag.SupportSimpleObjectElements | ParseFlag.SupportVariantElements | ParseFlag.ResolveReferences,
     )
 
     # ----------------------------------------------------------------------
@@ -139,7 +130,13 @@ class Plugin(PluginBase):
         include_map = cls._GenerateIncludeMap(elements, include_indexes)
         include_dotted_names = set(six.iterkeys(include_map))
 
-        top_level_elements = [element for element in elements if element.Parent is None and not element.IsDefinitionOnly and element.DottedName in include_map]
+        top_level_elements = [
+            element
+            for element in elements
+            if element.Parent is None
+            and not element.IsDefinitionOnly
+            and element.DottedName in include_map
+        ]
 
         status_stream.write("Creating '{}'...".format(output_filename))
         with status_stream.DoneManager() as dm:
@@ -276,24 +273,32 @@ class Plugin(PluginBase):
                                 attributes.append(
                                     textwrap.dedent(
                                         """\
-                                        <xsd:attribute name="{name}" use="{use}" type="{type}" />
+                                        <xsd:attribute name="{name}" use="{use}" type="{type}"{default} />
                                         """,
                                     ).format(
                                         name=child.Name,
                                         use="optional" if child.TypeInfo.Arity.IsOptional else "required",
                                         type=GetBaseTypeName(child.Resolve()),
+                                        default="" if not hasattr(
+                                            child,
+                                            "default",
+                                        ) else ' default="{}"'.format(child.default),
                                     ),
                                 )
                             else:
                                 elements.append(
                                     textwrap.dedent(
                                         """\
-                                        <xsd:element name="{name}" type="_{type}" minOccurs="{min}" maxOccurs="1" />
+                                        <xsd:element name="{name}" type="_{type}" minOccurs="{min}" maxOccurs="1"{default} />
                                         """,
                                     ).format(
                                         name=child.Name,
                                         type=child.DottedName,
                                         min="0" if child.TypeInfo.Arity.Min == 0 else "1",
+                                        default="" if not hasattr(
+                                            child,
+                                            "default",
+                                        ) else ' default="{}"'.format(child.default),
                                     ),
                                 )
 
@@ -391,8 +396,7 @@ class Plugin(PluginBase):
                                                 name=attribute.Name,
                                                 use="optional" if attribute.TypeInfo.Arity.IsOptional else "required",
                                                 type=GetBaseTypeName(attribute.Resolve()),
-                                            )
-                                            for attribute in element.Attributes
+                                            ) for attribute in element.Attributes
                                         ],
                                     ),
                                     6,
@@ -598,11 +602,7 @@ class _FundamentalTypeInfoVisitor(FundamentalTypeInfoVisitor):
             {}
             </xsd:restriction>
             """,
-        ).format(
-            "\n".join(
-                ['  <xsd:enumeration value="{}" />'.format(value) for value in type_info.Values],
-            ),
-        )
+        ).format("\n".join(['  <xsd:enumeration value="{}" />'.format(value) for value in type_info.Values]))
 
     # ----------------------------------------------------------------------
     @staticmethod
@@ -636,11 +636,7 @@ class _FundamentalTypeInfoVisitor(FundamentalTypeInfoVisitor):
             {}
             </xsd:restriction>
             """,
-        ).format(
-            "\n".join(
-                ['  <xsd:{} value="{}" />'.format(k, v) for k, v in six.iteritems(restrictions)],
-            ),
-        )
+        ).format("\n".join(['  <xsd:{} value="{}" />'.format(k, v) for k, v in six.iteritems(restrictions)]))
 
     # ----------------------------------------------------------------------
     @staticmethod
@@ -652,9 +648,7 @@ class _FundamentalTypeInfoVisitor(FundamentalTypeInfoVisitor):
               <xsd:pattern value="{}" />
             </xsd:restriction>
             """,
-        ).format(
-            RegularExpression.PythonToJavaScript(RegularExpressionVisitor().Accept(type_info)[0]),
-        )
+        ).format(RegularExpression.PythonToJavaScript(RegularExpressionVisitor().Accept(type_info)[0]))
 
     # ----------------------------------------------------------------------
     @staticmethod
@@ -698,12 +692,7 @@ class _FundamentalTypeInfoVisitor(FundamentalTypeInfoVisitor):
             {}
             </xsd:restriction>
             """,
-        ).format(
-            typ,
-            "\n".join(
-                ['  <xsd:{} value="{}" />'.format(k, v) for k, v in six.iteritems(restrictions)],
-            ),
-        )
+        ).format(typ, "\n".join(['  <xsd:{} value="{}" />'.format(k, v) for k, v in six.iteritems(restrictions)]))
 
     # ----------------------------------------------------------------------
     @staticmethod
@@ -730,11 +719,7 @@ class _FundamentalTypeInfoVisitor(FundamentalTypeInfoVisitor):
             {}
             </xsd:restriction>
             """,
-        ).format(
-            "\n".join(
-                ['  <xsd:{} value="{}" />'.format(k, v) for k, v in six.iteritems(restrictions)],
-            ),
-        )
+        ).format("\n".join(['  <xsd:{} value="{}" />'.format(k, v) for k, v in six.iteritems(restrictions)]))
 
     # ----------------------------------------------------------------------
     @staticmethod
@@ -752,9 +737,4 @@ class _FundamentalTypeInfoVisitor(FundamentalTypeInfoVisitor):
               <xsd:pattern value="{}" />
             </xsd:restriction>
             """,
-        ).format(
-            RegularExpression.PythonToJavaScript(RegularExpressionVisitor().Accept(type_info)[0]).replace(
-                "?",
-                "",
-            ),
-        )
+        ).format(RegularExpression.PythonToJavaScript(RegularExpressionVisitor().Accept(type_info)[0]).replace("?", ""))

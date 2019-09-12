@@ -50,7 +50,7 @@ CONFIG:                                     'simple_schema_config';
 SCOPE_DELIMITER:                            ':';
 ASSIGNMENT:                                 '=';
 COMMA:                                      ',';
-OR:                                         '|';
+PIPE:                                       '|';
 
 INT:                                        '-'? [0-9]+;
 NUMBER:                                     '-'? [0-9]* '.' [0-9]+;
@@ -128,7 +128,7 @@ objContent__:                               ( PASS |
 unnamedDeclaration:                         ( LPAREN declarationAttributes RPAREN |
                                               LT declarationAttributes GT |
                                               LBRACK declarationAttributes RBRACK
-                                              
+
                                             );
 
 declaration:                                ( LPAREN idRule declarationAttributes RPAREN |
@@ -137,7 +137,7 @@ declaration:                                ( LPAREN idRule declarationAttribute
                                             );
 
 declarationAttributes:                      ( idRule | declarationAttributesItems ) metadataList arity__?;
-declarationAttributesItems:                 LPAREN declarationAttributesItem__ (OR declarationAttributesItem__)* RPAREN;
+declarationAttributesItems:                 LPAREN declarationAttributesItem__ (PIPE declarationAttributesItem__)* RPAREN;
 declarationAttributesItem__:                idRule metadataList;
 
 extension:                                  idRule LPAREN extensionContent__? RPAREN arity__?;

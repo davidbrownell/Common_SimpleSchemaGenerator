@@ -1,4 +1,4 @@
-# Generated from C:\Code\v3\Common\SimpleSchemaGenerator\src\Schema\Grammar\BuildEnvironment\..\SimpleSchema.g4 by ANTLR 4.7.1
+# Generated from C:\Code\v3\Common\SimpleSchemaGenerator\src\SimpleSchemaGenerator\Schema\Grammar\BuildEnvironment\..\SimpleSchema.g4 by ANTLR 4.7.1
 from antlr4 import *
 from io import StringIO
 from typing.io import TextIO
@@ -36,23 +36,23 @@ def serializedATN():
         buf.write("\37\7\37\u0108\n\37\f\37\16\37\u010b\13\37\3\37\3\37\3")
         buf.write(" \3 \3 \3 \3 \7 \u0114\n \f \16 \u0117\13 \3 \3 \3 \3")
         buf.write(" \3!\3!\3!\3!\3!\7!\u0122\n!\f!\16!\u0125\13!\3!\3!\3")
-        buf.write('!\3!\7\u0081\u00fa\u0109\u0115\u0123\2"\3\3\5\4\7\5\t')
+        buf.write("!\3!\7\u0081\u00fa\u0109\u0115\u0123\2\"\3\3\5\4\7\5\t")
         buf.write("\6\13\7\r\b\17\t\21\n\23\13\25\f\27\r\31\16\33\17\35\20")
-        buf.write("\37\21!\22#\23%\24'\25)\26+\27-\30/\31\61\32\63\33\65")
-        buf.write('\34\67\359\2;\36=\37? A!\3\2\7\4\2\13\13""\4\2\f\f\17')
+        buf.write("\37\21!\22#\23%\24\'\25)\26+\27-\30/\31\61\32\63\33\65")
+        buf.write("\34\67\359\2;\36=\37? A!\3\2\7\4\2\13\13\"\"\4\2\f\f\17")
         buf.write("\17\3\2\62;\5\2C\\aac|\7\2/\60\62;C\\aac|\2\u013d\2\3")
         buf.write("\3\2\2\2\2\5\3\2\2\2\2\7\3\2\2\2\2\t\3\2\2\2\2\13\3\2")
         buf.write("\2\2\2\r\3\2\2\2\2\17\3\2\2\2\2\21\3\2\2\2\2\23\3\2\2")
         buf.write("\2\2\25\3\2\2\2\2\27\3\2\2\2\2\31\3\2\2\2\2\33\3\2\2\2")
         buf.write("\2\35\3\2\2\2\2\37\3\2\2\2\2!\3\2\2\2\2#\3\2\2\2\2%\3")
-        buf.write("\2\2\2\2'\3\2\2\2\2)\3\2\2\2\2+\3\2\2\2\2-\3\2\2\2\2")
+        buf.write("\2\2\2\2\'\3\2\2\2\2)\3\2\2\2\2+\3\2\2\2\2-\3\2\2\2\2")
         buf.write("/\3\2\2\2\2\61\3\2\2\2\2\63\3\2\2\2\2\65\3\2\2\2\2\67")
         buf.write("\3\2\2\2\2;\3\2\2\2\2=\3\2\2\2\2?\3\2\2\2\2A\3\2\2\2\3")
         buf.write("C\3\2\2\2\5K\3\2\2\2\7V\3\2\2\2\t_\3\2\2\2\13e\3\2\2\2")
         buf.write("\rh\3\2\2\2\17k\3\2\2\2\21n\3\2\2\2\23q\3\2\2\2\25t\3")
         buf.write("\2\2\2\27w\3\2\2\2\31y\3\2\2\2\33{\3\2\2\2\35\u0089\3")
         buf.write("\2\2\2\37\u0092\3\2\2\2!\u0097\3\2\2\2#\u00ad\3\2\2\2")
-        buf.write("%\u00c2\3\2\2\2'\u00c4\3\2\2\2)\u00c6\3\2\2\2+\u00c8")
+        buf.write("%\u00c2\3\2\2\2\'\u00c4\3\2\2\2)\u00c6\3\2\2\2+\u00c8")
         buf.write("\3\2\2\2-\u00cb\3\2\2\2/\u00d3\3\2\2\2\61\u00e1\3\2\2")
         buf.write("\2\63\u00e8\3\2\2\2\65\u00ea\3\2\2\2\67\u00ec\3\2\2\2")
         buf.write("9\u00ee\3\2\2\2;\u00f0\3\2\2\2=\u00ff\3\2\2\2?\u010e\3")
@@ -85,7 +85,7 @@ def serializedATN():
         buf.write("\7o\2\2\u00a3\u00a4\7c\2\2\u00a4\u00a5\7a\2\2\u00a5\u00a6")
         buf.write("\7k\2\2\u00a6\u00a7\7p\2\2\u00a7\u00a8\7e\2\2\u00a8\u00a9")
         buf.write("\7n\2\2\u00a9\u00aa\7w\2\2\u00aa\u00ab\7f\2\2\u00ab\u00ac")
-        buf.write('\7g\2\2\u00ac"\3\2\2\2\u00ad\u00ae\7u\2\2\u00ae\u00af')
+        buf.write("\7g\2\2\u00ac\"\3\2\2\2\u00ad\u00ae\7u\2\2\u00ae\u00af")
         buf.write("\7k\2\2\u00af\u00b0\7o\2\2\u00b0\u00b1\7r\2\2\u00b1\u00b2")
         buf.write("\7n\2\2\u00b2\u00b3\7g\2\2\u00b3\u00b4\7a\2\2\u00b4\u00b5")
         buf.write("\7u\2\2\u00b5\u00b6\7e\2\2\u00b6\u00b7\7j\2\2\u00b7\u00b8")
@@ -142,181 +142,106 @@ def serializedATN():
 
 class SimpleSchemaLexer(Lexer):
 
-    atn                                     = ATNDeserializer().deserialize(serializedATN())
+    atn = ATNDeserializer().deserialize(serializedATN())
 
-    decisionsToDFA                          = [DFA(ds, i) for i, ds in enumerate(atn.decisionToState)]
+    decisionsToDFA = [ DFA(ds, i) for i, ds in enumerate(atn.decisionToState) ]
 
-    MULTI_LINE_NEWLINE                      = 1
-    NEWLINE                                 = 2
-    MULTI_LINE_ESCAPE                       = 3
-    HORIZONTAL_WHITESPACE                   = 4
-    LPAREN                                  = 5
-    RPAREN                                  = 6
-    LBRACK                                  = 7
-    RBRACK                                  = 8
-    LT                                      = 9
-    GT                                      = 10
-    LBRACE                                  = 11
-    RBRACE                                  = 12
-    MULTI_LINE_COMMENT                      = 13
-    COMMENT                                 = 14
-    PASS                                    = 15
-    INCLUDE                                 = 16
-    CONFIG                                  = 17
-    SCOPE_DELIMITER                         = 18
-    ASSIGNMENT                              = 19
-    COMMA                                   = 20
-    OR                                      = 21
-    INT                                     = 22
-    NUMBER                                  = 23
-    ID                                      = 24
-    ARITY_OPTIONAL                          = 25
-    ARITY_ZERO_OR_MORE                      = 26
-    ARITY_ONE_OR_MORE                       = 27
-    DOUBLE_QUOTE_STRING                     = 28
-    SINGLE_QUOTE_STRING                     = 29
-    TRIPLE_DOUBLE_QUOTE_STRING              = 30
-    TRIPLE_SINGLE_QUOTE_STRING              = 31
+    MULTI_LINE_NEWLINE = 1
+    NEWLINE = 2
+    MULTI_LINE_ESCAPE = 3
+    HORIZONTAL_WHITESPACE = 4
+    LPAREN = 5
+    RPAREN = 6
+    LBRACK = 7
+    RBRACK = 8
+    LT = 9
+    GT = 10
+    LBRACE = 11
+    RBRACE = 12
+    MULTI_LINE_COMMENT = 13
+    COMMENT = 14
+    PASS = 15
+    INCLUDE = 16
+    CONFIG = 17
+    SCOPE_DELIMITER = 18
+    ASSIGNMENT = 19
+    COMMA = 20
+    PIPE = 21
+    INT = 22
+    NUMBER = 23
+    ID = 24
+    ARITY_OPTIONAL = 25
+    ARITY_ZERO_OR_MORE = 26
+    ARITY_ONE_OR_MORE = 27
+    DOUBLE_QUOTE_STRING = 28
+    SINGLE_QUOTE_STRING = 29
+    TRIPLE_DOUBLE_QUOTE_STRING = 30
+    TRIPLE_SINGLE_QUOTE_STRING = 31
 
-    channelNames                            = [u"DEFAULT_TOKEN_CHANNEL", u"HIDDEN"]
+    channelNames = [ u"DEFAULT_TOKEN_CHANNEL", u"HIDDEN" ]
 
-    modeNames                               = ["DEFAULT_MODE"]
+    modeNames = [ "DEFAULT_MODE" ]
 
-    literalNames                            = [
-        "<INVALID>",
-        "'('",
-        "')'",
-        "'['",
-        "']'",
-        "'<'",
-        "'>'",
-        "'{'",
-        "'}'",
-        "'pass'",
-        "'simple_schema_include'",
-        "'simple_schema_config'",
-        "':'",
-        "'='",
-        "','",
-        "'|'",
-        "'?'",
-        "'*'",
-        "'+'",
-    ]
+    literalNames = [ "<INVALID>",
+            "'('", "')'", "'['", "']'", "'<'", "'>'", "'{'", "'}'", "'pass'", 
+            "'simple_schema_include'", "'simple_schema_config'", "':'", 
+            "'='", "','", "'|'", "'?'", "'*'", "'+'" ]
 
-    symbolicNames                           = [
-        "<INVALID>",
-        "MULTI_LINE_NEWLINE",
-        "NEWLINE",
-        "MULTI_LINE_ESCAPE",
-        "HORIZONTAL_WHITESPACE",
-        "LPAREN",
-        "RPAREN",
-        "LBRACK",
-        "RBRACK",
-        "LT",
-        "GT",
-        "LBRACE",
-        "RBRACE",
-        "MULTI_LINE_COMMENT",
-        "COMMENT",
-        "PASS",
-        "INCLUDE",
-        "CONFIG",
-        "SCOPE_DELIMITER",
-        "ASSIGNMENT",
-        "COMMA",
-        "OR",
-        "INT",
-        "NUMBER",
-        "ID",
-        "ARITY_OPTIONAL",
-        "ARITY_ZERO_OR_MORE",
-        "ARITY_ONE_OR_MORE",
-        "DOUBLE_QUOTE_STRING",
-        "SINGLE_QUOTE_STRING",
-        "TRIPLE_DOUBLE_QUOTE_STRING",
-        "TRIPLE_SINGLE_QUOTE_STRING",
-    ]
+    symbolicNames = [ "<INVALID>",
+            "MULTI_LINE_NEWLINE", "NEWLINE", "MULTI_LINE_ESCAPE", "HORIZONTAL_WHITESPACE", 
+            "LPAREN", "RPAREN", "LBRACK", "RBRACK", "LT", "GT", "LBRACE", 
+            "RBRACE", "MULTI_LINE_COMMENT", "COMMENT", "PASS", "INCLUDE", 
+            "CONFIG", "SCOPE_DELIMITER", "ASSIGNMENT", "COMMA", "PIPE", 
+            "INT", "NUMBER", "ID", "ARITY_OPTIONAL", "ARITY_ZERO_OR_MORE", 
+            "ARITY_ONE_OR_MORE", "DOUBLE_QUOTE_STRING", "SINGLE_QUOTE_STRING", 
+            "TRIPLE_DOUBLE_QUOTE_STRING", "TRIPLE_SINGLE_QUOTE_STRING" ]
 
-    ruleNames                               = [
-        "MULTI_LINE_NEWLINE",
-        "NEWLINE",
-        "MULTI_LINE_ESCAPE",
-        "HORIZONTAL_WHITESPACE",
-        "LPAREN",
-        "RPAREN",
-        "LBRACK",
-        "RBRACK",
-        "LT",
-        "GT",
-        "LBRACE",
-        "RBRACE",
-        "MULTI_LINE_COMMENT",
-        "COMMENT",
-        "PASS",
-        "INCLUDE",
-        "CONFIG",
-        "SCOPE_DELIMITER",
-        "ASSIGNMENT",
-        "COMMA",
-        "OR",
-        "INT",
-        "NUMBER",
-        "ID",
-        "ARITY_OPTIONAL",
-        "ARITY_ZERO_OR_MORE",
-        "ARITY_ONE_OR_MORE",
-        "HWS",
-        "DOUBLE_QUOTE_STRING",
-        "SINGLE_QUOTE_STRING",
-        "TRIPLE_DOUBLE_QUOTE_STRING",
-        "TRIPLE_SINGLE_QUOTE_STRING",
-    ]
+    ruleNames = [ "MULTI_LINE_NEWLINE", "NEWLINE", "MULTI_LINE_ESCAPE", 
+                  "HORIZONTAL_WHITESPACE", "LPAREN", "RPAREN", "LBRACK", 
+                  "RBRACK", "LT", "GT", "LBRACE", "RBRACE", "MULTI_LINE_COMMENT", 
+                  "COMMENT", "PASS", "INCLUDE", "CONFIG", "SCOPE_DELIMITER", 
+                  "ASSIGNMENT", "COMMA", "PIPE", "INT", "NUMBER", "ID", 
+                  "ARITY_OPTIONAL", "ARITY_ZERO_OR_MORE", "ARITY_ONE_OR_MORE", 
+                  "HWS", "DOUBLE_QUOTE_STRING", "SINGLE_QUOTE_STRING", "TRIPLE_DOUBLE_QUOTE_STRING", 
+                  "TRIPLE_SINGLE_QUOTE_STRING" ]
 
-    grammarFileName                         = "SimpleSchema.g4"
+    grammarFileName = "SimpleSchema.g4"
 
-    def __init__(
-        self,
-        input=None,
-        output: TextIO = sys.stdout,
-    ):
+    def __init__(self, input=None, output:TextIO = sys.stdout):
         super().__init__(input, output)
         self.checkVersion("4.7.1")
-        self._interp                        = LexerATNSimulator(
-            self,
-            self.atn,
-            self.decisionsToDFA,
-            PredictionContextCache(),
-        )
-        self._actions                       = None
-        self._predicates                    = None
+        self._interp = LexerATNSimulator(self, self.atn, self.decisionsToDFA, PredictionContextCache())
+        self._actions = None
+        self._predicates = None
 
-    multiline_statement_ctr                 = 0
+
+
+    multiline_statement_ctr = 0
 
     def nextToken(self):
         if not hasattr(self, "_denter"):
             from CommonEnvironmentEx.Antlr4Helpers.DenterHelper import DenterHelper
             from SimpleSchemaParser import SimpleSchemaParser
 
-            self._denter = DenterHelper(
-                super(SimpleSchemaLexer, self).nextToken,
-                SimpleSchemaParser.NEWLINE,
-                SimpleSchemaParser.INDENT,
-                SimpleSchemaParser.DEDENT,
-            )
+            self._denter = DenterHelper( super(SimpleSchemaLexer, self).nextToken,
+                                         SimpleSchemaParser.NEWLINE,
+                                         SimpleSchemaParser.INDENT,
+                                         SimpleSchemaParser.DEDENT,
+                                       )
 
         return self._denter.nextToken()
 
-    def action(self, localctx: RuleContext, ruleIndex: int, actionIndex: int):
+
+
+    def action(self, localctx:RuleContext, ruleIndex:int, actionIndex:int):
         if self._actions is None:
             actions = dict()
-            actions[4] = self.LPAREN_action
-            actions[5] = self.RPAREN_action
-            actions[6] = self.LBRACK_action
-            actions[7] = self.RBRACK_action
-            actions[8] = self.LT_action
-            actions[9] = self.GT_action
+            actions[4] = self.LPAREN_action 
+            actions[5] = self.RPAREN_action 
+            actions[6] = self.LBRACK_action 
+            actions[7] = self.RBRACK_action 
+            actions[8] = self.LT_action 
+            actions[9] = self.GT_action 
             self._actions = actions
         action = self._actions.get(ruleIndex, None)
         if action is not None:
@@ -324,31 +249,37 @@ class SimpleSchemaLexer(Lexer):
         else:
             raise Exception("No registered action for:" + str(ruleIndex))
 
-    def LPAREN_action(self, localctx: RuleContext, actionIndex: int):
+    def LPAREN_action(self, localctx:RuleContext , actionIndex:int):
         if actionIndex == 0:
-            SimpleSchemaLexer.multiline_statement_ctr += 1
+             SimpleSchemaLexer.multiline_statement_ctr += 1 
+     
 
-    def RPAREN_action(self, localctx: RuleContext, actionIndex: int):
+    def RPAREN_action(self, localctx:RuleContext , actionIndex:int):
         if actionIndex == 1:
-            SimpleSchemaLexer.multiline_statement_ctr -= 1
+             SimpleSchemaLexer.multiline_statement_ctr -= 1 
+     
 
-    def LBRACK_action(self, localctx: RuleContext, actionIndex: int):
+    def LBRACK_action(self, localctx:RuleContext , actionIndex:int):
         if actionIndex == 2:
-            SimpleSchemaLexer.multiline_statement_ctr += 1
+             SimpleSchemaLexer.multiline_statement_ctr += 1 
+     
 
-    def RBRACK_action(self, localctx: RuleContext, actionIndex: int):
+    def RBRACK_action(self, localctx:RuleContext , actionIndex:int):
         if actionIndex == 3:
-            SimpleSchemaLexer.multiline_statement_ctr -= 1
+             SimpleSchemaLexer.multiline_statement_ctr -= 1 
+     
 
-    def LT_action(self, localctx: RuleContext, actionIndex: int):
+    def LT_action(self, localctx:RuleContext , actionIndex:int):
         if actionIndex == 4:
-            SimpleSchemaLexer.multiline_statement_ctr += 1
+             SimpleSchemaLexer.multiline_statement_ctr += 1 
+     
 
-    def GT_action(self, localctx: RuleContext, actionIndex: int):
+    def GT_action(self, localctx:RuleContext , actionIndex:int):
         if actionIndex == 5:
-            SimpleSchemaLexer.multiline_statement_ctr -= 1
+             SimpleSchemaLexer.multiline_statement_ctr -= 1 
+     
 
-    def sempred(self, localctx: RuleContext, ruleIndex: int, predIndex: int):
+    def sempred(self, localctx:RuleContext, ruleIndex:int, predIndex:int):
         if self._predicates is None:
             preds = dict()
             preds[0] = self.MULTI_LINE_NEWLINE_sempred
@@ -360,10 +291,14 @@ class SimpleSchemaLexer(Lexer):
         else:
             raise Exception("No registered predicate for:" + str(ruleIndex))
 
-    def MULTI_LINE_NEWLINE_sempred(self, localctx: RuleContext, predIndex: int):
-        if predIndex == 0:
-            return SimpleSchemaLexer.multiline_statement_ctr != 0
+    def MULTI_LINE_NEWLINE_sempred(self, localctx:RuleContext, predIndex:int):
+            if predIndex == 0:
+                return  SimpleSchemaLexer.multiline_statement_ctr != 0 
+         
 
-    def NEWLINE_sempred(self, localctx: RuleContext, predIndex: int):
-        if predIndex == 1:
-            return SimpleSchemaLexer.multiline_statement_ctr == 0
+    def NEWLINE_sempred(self, localctx:RuleContext, predIndex:int):
+            if predIndex == 1:
+                return  SimpleSchemaLexer.multiline_statement_ctr == 0 
+         
+
+

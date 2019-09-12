@@ -720,12 +720,12 @@ class NamedObjSuite(unittest.TestCase):
 
         self.assertEqual(len(root.items), 1)
         self.assertEqual(root.items[0].name, "foo")
-        self.assertEqual(root.items[0].reference, None)
+        self.assertEqual(root.items[0].BugBug_reference, None)
         self.assertEqual(len(root.items[0].items), 2)
         self.assertEqual(root.items[0].items[0].name, "bar")
-        self.assertEqual(root.items[0].items[0].reference, None)
+        self.assertEqual(root.items[0].items[0].BugBug_reference, None)
         self.assertEqual(root.items[0].items[1].name, "baz")
-        self.assertEqual(root.items[0].items[1].reference, None)
+        self.assertEqual(root.items[0].items[1].BugBug_reference, None)
         self.assertEqual(len(root.items[0].items[0].items), 0)
         self.assertEqual(len(root.items[0].items[1].items), 0)
 
@@ -734,7 +734,7 @@ class NamedObjSuite(unittest.TestCase):
         item = _Invoke("<foo one='two'>: pass").items[0]
 
         self.assertEqual(item.name, "foo")
-        self.assertEqual(item.reference, None)
+        self.assertEqual(item.BugBug_reference, None)
         self.assertEqual(list(item.metadata.Values.keys()), ["one"])
         self.assertEqual(item.metadata.Values["one"].Value, "two")
         self.assertEqual(item.arity, None)
@@ -744,7 +744,7 @@ class NamedObjSuite(unittest.TestCase):
         item = _Invoke("<foo ?>: pass").items[0]
 
         self.assertEqual(item.name, "foo")
-        self.assertEqual(item.reference, None)
+        self.assertEqual(item.BugBug_reference, None)
         self.assertEqual(item.metadata.Values, {})
         self.assertEqual(item.arity, Arity.FromString("?"))
 
@@ -753,7 +753,7 @@ class NamedObjSuite(unittest.TestCase):
         item = _Invoke("<foo one='two' ?>: pass").items[0]
 
         self.assertEqual(item.name, "foo")
-        self.assertEqual(item.reference, None)
+        self.assertEqual(item.BugBug_reference, None)
         self.assertEqual(list(item.metadata.Values.keys()), ["one"])
         self.assertEqual(item.metadata.Values["one"].Value, "two")
         self.assertEqual(item.arity, Arity.FromString("?"))
@@ -766,14 +766,14 @@ class NamedObjSuite(unittest.TestCase):
 
             item = root.items[0]
             self.assertEqual(item.name, "foo")
-            self.assertEqual(item.reference, None)
+            self.assertEqual(item.BugBug_reference, None)
             self.assertEqual(list(item.metadata.Values.keys()), ["one"])
             self.assertEqual(item.metadata.Values["one"].Value, "two")
             self.assertEqual(len(item.items), 0)
 
             item = root.items[1]
             self.assertEqual(item.name, "bar")
-            self.assertEqual(item.reference, None)
+            self.assertEqual(item.BugBug_reference, None)
             self.assertEqual(list(item.metadata.Values.keys()), ["one", "three"])
             self.assertEqual(item.metadata.Values["one"].Value, "two")
             self.assertEqual(item.metadata.Values["three"].Value, "four")
@@ -859,13 +859,13 @@ class NamedObjSuite(unittest.TestCase):
         item = root.items[0]
 
         self.assertEqual(item.name, "foo")
-        self.assertEqual(item.reference, "bar")
+        self.assertEqual(item.BugBug_reference, "bar")
         self.assertEqual(len(item.items), 0)
 
         item = root.items[1]
 
         self.assertEqual(item.name, "baz")
-        self.assertEqual(item.reference, "biz")
+        self.assertEqual(item.BugBug_reference, "biz")
         self.assertEqual(list(item.metadata.Values.keys()), ["one"])
         self.assertEqual(item.metadata.Values["one"].Value, "two")
 
@@ -878,7 +878,7 @@ class UnnamedDeclarationSuite(unittest.TestCase):
         item = _Invoke("<string>").items[0]
 
         self.assertEqual(item.name, None)
-        self.assertEqual(item.reference, "string")
+        self.assertEqual(item.BugBug_reference, "string")
         self.assertFalse(item.metadata.Values)
         self.assertFalse(item.arity)
 
@@ -887,7 +887,7 @@ class UnnamedDeclarationSuite(unittest.TestCase):
         item = _Invoke("<string one='two'>").items[0]
 
         self.assertEqual(item.name, None)
-        self.assertEqual(item.reference, "string")
+        self.assertEqual(item.BugBug_reference, "string")
         self.assertEqual(list(item.metadata.Values.keys()), ["one"])
         self.assertEqual(item.metadata.Values["one"].Value, "two")
         self.assertFalse(item.arity)
@@ -897,7 +897,7 @@ class UnnamedDeclarationSuite(unittest.TestCase):
         item = _Invoke("<string ?>").items[0]
 
         self.assertEqual(item.name, None)
-        self.assertEqual(item.reference, "string")
+        self.assertEqual(item.BugBug_reference, "string")
         self.assertEqual(item.metadata.Values, {})
         self.assertEqual(item.arity, Arity.FromString("?"))
 
@@ -906,7 +906,7 @@ class UnnamedDeclarationSuite(unittest.TestCase):
         item = _Invoke("<string one='two' ?>").items[0]
 
         self.assertEqual(item.name, None)
-        self.assertEqual(item.reference, "string")
+        self.assertEqual(item.BugBug_reference, "string")
         self.assertEqual(list(item.metadata.Values.keys()), ["one"])
         self.assertEqual(item.metadata.Values["one"].Value, "two")
         self.assertEqual(item.arity, Arity.FromString("?"))
@@ -916,7 +916,7 @@ class UnnamedDeclarationSuite(unittest.TestCase):
         item = _Invoke("<(a|b|c)>").items[0]
 
         self.assertEqual(item.name, None)
-        self.assertEqual([name for name, _ in item.reference], ["a", "b", "c"])
+        self.assertEqual([name for name, _ in item.BugBug_reference], ["a", "b", "c"])
         self.assertEqual(item.metadata.Values, {})
         self.assertEqual(item.arity, None)
 
@@ -925,7 +925,7 @@ class UnnamedDeclarationSuite(unittest.TestCase):
         item = _Invoke("<(a|b|c) one='two'>").items[0]
 
         self.assertEqual(item.name, None)
-        self.assertEqual([name for name, _ in item.reference], ["a", "b", "c"])
+        self.assertEqual([name for name, _ in item.BugBug_reference], ["a", "b", "c"])
         self.assertEqual(list(item.metadata.Values.keys()), ["one"])
         self.assertEqual(item.metadata.Values["one"].Value, "two")
         self.assertEqual(item.arity, None)
@@ -935,11 +935,11 @@ class UnnamedDeclarationSuite(unittest.TestCase):
         item = _Invoke("<(a|b inner=2.0|c) one='two'>").items[0]
 
         self.assertEqual(item.name, None)
-        self.assertEqual([name for name, _ in item.reference], ["a", "b", "c"])
-        self.assertEqual(item.reference[0][1].Values, {})
-        self.assertEqual(list(item.reference[1][1].Values.keys()), ["inner"])
-        self.assertEqual(item.reference[1][1].Values["inner"].Value, 2.0)
-        self.assertEqual(item.reference[2][1].Values, {})
+        self.assertEqual([name for name, _ in item.BugBug_reference], ["a", "b", "c"])
+        self.assertEqual(item.BugBug_reference[0][1].Values, {})
+        self.assertEqual(list(item.BugBug_reference[1][1].Values.keys()), ["inner"])
+        self.assertEqual(item.BugBug_reference[1][1].Values["inner"].Value, 2.0)
+        self.assertEqual(item.BugBug_reference[2][1].Values, {})
         self.assertEqual(list(item.metadata.Values.keys()), ["one"])
         self.assertEqual(item.metadata.Values["one"].Value, "two")
         self.assertEqual(item.arity, None)
@@ -1002,7 +1002,7 @@ class NamedDeclarationSuite(unittest.TestCase):
         item = _Invoke("<foo string>").items[0]
 
         self.assertEqual(item.name, "foo")
-        self.assertEqual(item.reference, "string")
+        self.assertEqual(item.BugBug_reference, "string")
         self.assertFalse(item.metadata.Values)
         self.assertFalse(item.arity)
 
@@ -1011,7 +1011,7 @@ class NamedDeclarationSuite(unittest.TestCase):
         item = _Invoke("<foo string one='two'>").items[0]
 
         self.assertEqual(item.name, "foo")
-        self.assertEqual(item.reference, "string")
+        self.assertEqual(item.BugBug_reference, "string")
         self.assertEqual(list(item.metadata.Values.keys()), ["one"])
         self.assertEqual(item.metadata.Values["one"].Value, "two")
         self.assertFalse(item.arity)
@@ -1021,7 +1021,7 @@ class NamedDeclarationSuite(unittest.TestCase):
         item = _Invoke("<foo string ?>").items[0]
 
         self.assertEqual(item.name, "foo")
-        self.assertEqual(item.reference, "string")
+        self.assertEqual(item.BugBug_reference, "string")
         self.assertEqual(item.metadata.Values, {})
         self.assertEqual(item.arity, Arity.FromString("?"))
 
@@ -1030,7 +1030,7 @@ class NamedDeclarationSuite(unittest.TestCase):
         item = _Invoke("<foo string one='two' ?>").items[0]
 
         self.assertEqual(item.name, "foo")
-        self.assertEqual(item.reference, "string")
+        self.assertEqual(item.BugBug_reference, "string")
         self.assertEqual(list(item.metadata.Values.keys()), ["one"])
         self.assertEqual(item.metadata.Values["one"].Value, "two")
         self.assertEqual(item.arity, Arity.FromString("?"))
@@ -1040,7 +1040,7 @@ class NamedDeclarationSuite(unittest.TestCase):
         item = _Invoke("<(a|b|c)>").items[0]
 
         self.assertEqual(item.name, None)
-        self.assertEqual([name for name, _ in item.reference], ["a", "b", "c"])
+        self.assertEqual([name for name, _ in item.BugBug_reference], ["a", "b", "c"])
         self.assertEqual(item.metadata.Values, {})
         self.assertEqual(item.arity, None)
 
@@ -1049,7 +1049,7 @@ class NamedDeclarationSuite(unittest.TestCase):
         item = _Invoke("<foo (a|b|c) one='two'>").items[0]
 
         self.assertEqual(item.name, "foo")
-        self.assertEqual([name for name, _ in item.reference], ["a", "b", "c"])
+        self.assertEqual([name for name, _ in item.BugBug_reference], ["a", "b", "c"])
         self.assertEqual(list(item.metadata.Values.keys()), ["one"])
         self.assertEqual(item.metadata.Values["one"].Value, "two")
         self.assertEqual(item.arity, None)
@@ -1059,11 +1059,11 @@ class NamedDeclarationSuite(unittest.TestCase):
         item = _Invoke("<foo (a|b inner=2.0|c) one='two'>").items[0]
 
         self.assertEqual(item.name, "foo")
-        self.assertEqual([name for name, _ in item.reference], ["a", "b", "c"])
-        self.assertEqual(item.reference[0][1].Values, {})
-        self.assertEqual(list(item.reference[1][1].Values.keys()), ["inner"])
-        self.assertEqual(item.reference[1][1].Values["inner"].Value, 2.0)
-        self.assertEqual(item.reference[2][1].Values, {})
+        self.assertEqual([name for name, _ in item.BugBug_reference], ["a", "b", "c"])
+        self.assertEqual(item.BugBug_reference[0][1].Values, {})
+        self.assertEqual(list(item.BugBug_reference[1][1].Values.keys()), ["inner"])
+        self.assertEqual(item.BugBug_reference[1][1].Values["inner"].Value, 2.0)
+        self.assertEqual(item.BugBug_reference[2][1].Values, {})
         self.assertEqual(list(item.metadata.Values.keys()), ["one"])
         self.assertEqual(item.metadata.Values["one"].Value, "two")
         self.assertEqual(item.arity, None)

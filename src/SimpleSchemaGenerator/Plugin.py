@@ -187,7 +187,7 @@ class Plugin(PluginBase):
             if not recurse:
                 break
 
-            element = getattr(element, "Base", None)
+            element = getattr(element, "BugBug_Base", None)
 
     # ----------------------------------------------------------------------
     class IncludeMapType(Enum):
@@ -253,7 +253,7 @@ class Plugin(PluginBase):
             with CallOnExit(lambda: stack.pop()):
                 for potential_item_name in [
                     "Children",
-                    "Base",
+                    "BugBug_Base",
                     "Derived",
                     "Reference",
                 ]:

@@ -414,7 +414,7 @@ def Populate(source_name_content_generators, parse_flags):                  # { 
                 self._ValidateName(item, name)
 
                 item.name = name
-                item.reference = reference
+                item.BugBug_reference = reference
 
         # ----------------------------------------------------------------------
         def visitObjAttributes(self, ctx):
@@ -511,7 +511,7 @@ def Populate(source_name_content_generators, parse_flags):                  # { 
             item = self._GetStackParent()
 
             # First item will always be the id or attributes list
-            item.reference = values.pop(0)
+            item.BugBug_reference = values.pop(0)
 
             assert values, "Metadata is always present"
 
@@ -652,7 +652,7 @@ def Populate(source_name_content_generators, parse_flags):                  # { 
         # ----------------------------------------------------------------------
         def _GetStackParent(self):
             """\
-            Return the parent item. The parent item won't always be the last item on the stack, 
+            Return the parent item. The parent item won't always be the last item on the stack,
             as we may have pushed ids that have yet to be consumed.
             """
 

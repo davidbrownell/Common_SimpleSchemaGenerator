@@ -112,7 +112,7 @@ class TypeInfoElementVisitor(ElementVisitor):
 
                     yield k, v
 
-                element = getattr(element, "Base", None)
+                element = getattr(element, "BugBug_Base", None)
 
         # ----------------------------------------------------------------------
 

@@ -157,7 +157,7 @@ class CompoundElement(ChildrenMixin, Element):
         Element.__init__(self, *args, **kwargs)
         ChildrenMixin.__init__(self, children)
 
-        self.Base                           = base
+        self.BugBug_Base                    = base
         self.Derived                        = derived
 
     # ----------------------------------------------------------------------
@@ -165,7 +165,7 @@ class CompoundElement(ChildrenMixin, Element):
         return CommonEnvironment.ObjectReprImpl(
             self,
             Parent=lambda e: e.Name if e else "None",
-            Base=lambda b: b.DottedName if b else "<None>",
+            BugBug_Base=lambda b: b.DottedName if b else "<None>",
             Derived=lambda derived: [d.DottedName for d in derived],
         )
 

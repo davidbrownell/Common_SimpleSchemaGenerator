@@ -155,7 +155,7 @@ class Item(object):
         self.IsExternal                     = is_external
 
         self.name                           = None
-        self.reference                      = None
+        self.BugBug_reference               = None
 
         self.metadata                       = None
         self.arity                          = None
@@ -205,7 +205,7 @@ class Item(object):
             if variant_includes_self:
                 yield self
 
-            for item in self.reference:
+            for item in self.BugBug_reference:
                 yield item
         else:
             yield self

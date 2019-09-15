@@ -304,11 +304,14 @@ class _CreateElementVisitor(ItemVisitor):
         cls._ApplyParent(element, metadata_item, elements, delayed_instruction_queue)
 
         # BugBug_Base and Derived
-        if item.BugBug_reference is not None:
+        if item.references:
+            # BugBug: Only handling one reference right now
+            assert len(item.references) == 1, item.references
+
             # ----------------------------------------------------------------------
             def ApplyBase():
-                assert item.BugBug_reference.Key in elements, item.BugBug_reference.Key
-                base_element = elements[item.BugBug_reference.Key]
+                assert item.references[0].Key in elements, item.references[0].Key
+                base_element = elements[item.references[0].Key]
                 assert base_element
 
                 element.BugBug_Base = base_element
@@ -316,7 +319,7 @@ class _CreateElementVisitor(ItemVisitor):
 
             # ----------------------------------------------------------------------
 
-            if elements.get(item.BugBug_reference.Key, None) is None:
+            if elements.get(item.references[0].Key, None) is None:
                 delayed_instruction_queue.append(ApplyBase)
             else:
                 ApplyBase()
@@ -391,7 +394,7 @@ class _CreateElementVisitor(ItemVisitor):
         element = Elements.VariantElement(
             variations=cls._CreateChildElements(
                 item,
-                item.BugBug_reference,
+                item.references,
                 elements,
                 delayed_instruction_queue,
                 create_element_func,
@@ -432,8 +435,10 @@ class _CreateElementVisitor(ItemVisitor):
         is_definition_only,
     ):                                      # <Parameters differ from overridden...> pylint: disable = W0221
         if metadata_item.is_augmenting_reference:
+            assert len(item.references) == 1, item.references
+
             return cls.Accept(
-                item.BugBug_reference,
+                item.references[0],
                 metadata_item,
                 plugin,
                 elements,
@@ -690,13 +695,16 @@ class _CreateElementVisitor(ItemVisitor):
         delayed_instruction_queue,
         create_element_func,
     ):
+        assert len(item.references) == 1, item.references
+        reference = item.references[0]
+
         # The element will be placed in the elements map
-        create_element_func(item.BugBug_reference)
+        create_element_func(reference)
 
         # ----------------------------------------------------------------------
         def ApplyReference():
-            assert item.BugBug_reference.Key in elements, item.BugBug_reference.Key
-            referenced_element = elements[item.BugBug_reference.Key]
+            assert reference.Key in elements, reference.Key
+            referenced_element = elements[reference.Key]
             assert referenced_element
 
             assert element.Reference is None, element.Reference
@@ -704,7 +712,7 @@ class _CreateElementVisitor(ItemVisitor):
 
         # ----------------------------------------------------------------------
 
-        if elements.get(item.BugBug_reference.Key, None) is None:
+        if elements.get(reference.Key, None) is None:
             delayed_instruction_queue.append(ApplyReference)
         else:
             ApplyReference()
@@ -765,13 +773,10 @@ class _ApplyTypeInfoVisitor(ItemVisitor):
     @classmethod
     @override
     def OnReference(cls, item, metadata_item, element, elements, delayed_instruction_queue): # <Parameters differ from overridden...> pylint: disable = W0221
-        cls.Accept(
-            item.BugBug_reference,
-            metadata_item,
-            element,
-            elements,
-            delayed_instruction_queue,
-        )
+        assert len(item.references) == 1, item.references
+        reference = item.references[0]
+
+        cls.Accept(reference, metadata_item, element, elements, delayed_instruction_queue)
 
     # ----------------------------------------------------------------------
     @classmethod
@@ -782,10 +787,13 @@ class _ApplyTypeInfoVisitor(ItemVisitor):
             arity=metadata_item.arity,
         )
 
+        assert len(item.references) == 1, item.references
+        reference = item.references[0]
+
         # ----------------------------------------------------------------------
         def ApplyTypeInfo():
-            assert item.BugBug_reference.Key in elements, item.BugBug_reference.Key
-            referenced_element = elements[item.BugBug_reference.Key]
+            assert reference.Key in elements, reference.Key
+            referenced_element = elements[reference.Key]
             assert referenced_element
             assert referenced_element.TypeInfo
             assert isinstance(
@@ -796,7 +804,7 @@ class _ApplyTypeInfoVisitor(ItemVisitor):
 
         # ----------------------------------------------------------------------
 
-        referenced_element = elements.get(item.BugBug_reference.Key, None)
+        referenced_element = elements.get(reference.Key, None)
         if referenced_element is None or referenced_element.TypeInfo is None:
             delayed_instruction_queue.append(ApplyTypeInfo)
         else:
@@ -848,17 +856,17 @@ class _ApplyTypeInfoVisitor(ItemVisitor):
         resolved_item,
         arity_override=None,
     ):
+        assert len(resolved_item.references) == 1, resolved_item.references
+        reference = resolved_item.references[0]
+
         kwargs = {"arity": arity_override or item.arity}
 
-        for md in itertools.chain(
-            resolved_item.BugBug_reference.RequiredItems,
-            resolved_item.BugBug_reference.OptionalItems,
-        ):
+        for md in itertools.chain(reference.RequiredItems, reference.OptionalItems):
             if md.Name in item.metadata.Values:
                 kwargs[md.Name] = item.metadata.Values[md.Name].Value
                 del item.metadata.Values[md.Name]
 
-        return resolved_item.BugBug_reference.TypeInfoClass(**kwargs)
+        return reference.TypeInfoClass(**kwargs)
 
     # ----------------------------------------------------------------------
     @classmethod

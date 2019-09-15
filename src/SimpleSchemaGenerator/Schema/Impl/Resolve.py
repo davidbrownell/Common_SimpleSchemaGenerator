@@ -92,7 +92,7 @@ _ReferenceState                             = namedtuple("ReferenceState", ["Has
 def _ResolveReference(item):
     """Convert string names into Items"""
 
-    if item.BugBug_reference is None:
+    if not item.references:
         return
 
     # ----------------------------------------------------------------------
@@ -144,10 +144,12 @@ def _ResolveReference(item):
 
     # ----------------------------------------------------------------------
 
-    if isinstance(item.BugBug_reference, list):
-        new_items = []
+    new_reference_items = []
 
-        for var_index, (var, var_metadata) in enumerate(item.BugBug_reference):
+    for ref_index, ref in enumerate(item.references):
+        if item.multi_reference_type == Item.MultiReferenceType.Variant:
+            ref, ref_metadata = ref
+
             new_item = Item(
                 Item.DeclarationType.Declaration,
                 Item.ItemType.Standard,
@@ -158,15 +160,15 @@ def _ResolveReference(item):
                 item.IsExternal,
             )
 
-            new_item.name = str(var_index)
-            new_item.BugBug_reference = Impl(var)
-            new_item.metadata = var_metadata
+            new_item.name = str(ref_index)
+            new_item.references = [Impl(ref)]
+            new_item.metadata = ref_metadata
 
-            new_items.append(new_item)
+            new_reference_items.append(new_item)
+        else:
+            new_reference_items.append(Impl(ref))
 
-        item.BugBug_reference = new_items
-    else:
-        item.BugBug_reference = Impl(item.BugBug_reference)
+    item.references = new_reference_items
 
 
 # ----------------------------------------------------------------------
@@ -197,9 +199,9 @@ def _ResolveName(item):
 def _ResolveElementType(plugin, reference_states, item):
     """Assign an element type for the item"""
 
-    if isinstance(item.BugBug_reference, list):
+    if item.multi_reference_type == Item.MultiReferenceType.Variant:
         item.element_type = Elements.VariantElement
-        items = item.BugBug_reference
+        items = item.references
     else:
         items = [item]
 
@@ -213,11 +215,22 @@ def _ResolveElementType(plugin, reference_states, item):
 
             # ----------------------------------------------------------------------
             def IsSimple():
-                ref = item.BugBug_reference
-                while isinstance(ref, Item):
-                    ref = ref.BugBug_reference
+                search_queue = list(item.references)
+                searched = set()
 
-                return isinstance(ref, Attributes.FundamentalAttributeInfo)
+                while search_queue:
+                    ref = search_queue.pop(0)
+                    if ref in searched:
+                        continue
+
+                    searched.add(ref)
+
+                    if isinstance(ref, Attributes.FundamentalAttributeInfo):
+                        return True
+
+                    search_queue += ref.references
+
+                return False
 
             # ----------------------------------------------------------------------
 
@@ -265,12 +278,12 @@ def _ResolveElementType(plugin, reference_states, item):
                     )
 
                     new_item.name = fundamental_name
-                    new_item.BugBug_reference = item.BugBug_reference
+                    new_item.references = item.references
                     new_item.metadata = Metadata(new_metadata, item.Source, item.Line, item.Column)
 
                     # Apply the change
                     item.is_converted = True
-                    item.BugBug_reference = None
+                    item.references = []
 
                     item.items.insert(0, new_item)
 
@@ -282,9 +295,11 @@ def _ResolveElementType(plugin, reference_states, item):
                 element_type = Elements.CompoundElement
 
         elif item.DeclarationType == Item.DeclarationType.Declaration:
-            assert item.BugBug_reference is not None
+            assert len(item.references) == 1, item.references
+            reference = item.references[0]
 
-            if isinstance(item.BugBug_reference, Item):
+            if isinstance(reference, Item):
+
                 # ----------------------------------------------------------------------
                 def IsList():
                     # This item is a list if it meets the following conditions:
@@ -300,9 +315,10 @@ def _ResolveElementType(plugin, reference_states, item):
                         return False
 
                     # 3 and 4
-                    ref = item.BugBug_reference
+                    ref = reference
                     while ref.element_type == Elements.ReferenceElement and ref.arity is None:
-                        ref = ref.BugBug_reference
+                        assert len(ref.references) == 1, ref.references
+                        ref = ref.references[0]
 
                     if ref.arity is None or not ref.arity.IsCollection:
                         return False
@@ -351,14 +367,14 @@ def _ResolveElementType(plugin, reference_states, item):
                         list(six.iterkeys(item.metadata.Values)),
                     )
 
-            elif isinstance(item.BugBug_reference, Attributes.FundamentalAttributeInfo):
+            elif isinstance(reference, Attributes.FundamentalAttributeInfo):
                 element_type = Elements.FundamentalElement
-            elif item.BugBug_reference == Attributes.ANY_ATTRIBUTE_INFO:
+            elif reference == Attributes.ANY_ATTRIBUTE_INFO:
                 element_type = Elements.AnyElement
-            elif item.BugBug_reference == Attributes.CUSTOM_ATTRIBUTE_INFO:
+            elif reference == Attributes.CUSTOM_ATTRIBUTE_INFO:
                 element_type = Elements.CustomElement
             else:
-                assert False, item.BugBug_reference
+                assert False, reference
 
         else:
             assert False, item.DeclarationType
@@ -375,8 +391,10 @@ def _ResolveArity(item):
             continue
 
         if sub_item.element_type == Elements.ReferenceElement:
-            _ResolveArity(sub_item.BugBug_reference)
-            sub_item.arity = sub_item.BugBug_reference.arity
+            assert len(sub_item.references) == 1, sub_item.references
+
+            _ResolveArity(sub_item.references[0])
+            sub_item.arity = sub_item.references[0].arity
         else:
             sub_item.arity = Arity(1, 1)
 
@@ -416,21 +434,35 @@ def _ResolveMetadata(plugin, config_values, item):
 
         # SimpleElement items may be decorated with metadata associated with the fundamental type
         if item.element_type == Elements.SimpleElement:
-            if isinstance(item.BugBug_reference, Item):
-                _ResolveMetadata(plugin, config_values, item.BugBug_reference)
+            # Ensure that all item information has been resolved to metadata
+            for ref in item.references:
+                if isinstance(ref, Item):
+                    _ResolveMetadata(plugin, config_values, ref)
 
-            ref = item.BugBug_reference
-            while isinstance(ref, Item):
-                ref = ref.BugBug_reference
+            # Find the fundamental item and clone its metadata
+            search_queue = list(item.references)
+            searched = set()
 
-            assert isinstance(ref, Attributes.FundamentalAttributeInfo), ref
-            item.metadata = item.metadata.Clone(ref)
+            while search_queue:
+                ref = search_queue.pop(0)
+                if ref in searched:
+                    continue
+
+                searched.add(ref)
+
+                if isinstance(ref, Attributes.FundamentalAttributeInfo):
+                    item.metadata = item.metadata.Clone(ref)
+                    break
+
+                search_queue += ref.references
 
         # Reference items may be decorated with metadata associated with the referenced type
         if item.element_type == Elements.ReferenceElement:
-            _ResolveMetadata(plugin, config_values, item.BugBug_reference)
+            assert len(item.references) == 1, item.references
 
-            item.metadata = item.metadata.Clone(item.BugBug_reference.metadata)
+            _ResolveMetadata(plugin, config_values, item.references[0])
+
+            item.metadata = item.metadata.Clone(item.references[0].metadata)
 
 
 # ----------------------------------------------------------------------
@@ -488,18 +520,17 @@ def _ResolveMetadataDefaults(item):
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
-# ----------------------------------------------------------------------
 @staticderived
 class _MetadataInfoVisitor(ItemVisitor):
     # ----------------------------------------------------------------------
     @staticmethod
     @override
     def OnFundamental(item, *args, **kwargs):
-        assert isinstance(
-            item.BugBug_reference,
+        assert len(item.references) == 1 and isinstance(
+            item.references[0],
             Attributes.FundamentalAttributeInfo,
-        ), item.BugBug_reference
-        return item.BugBug_reference
+        ), item.references
+        return item.references[0]
 
     # ----------------------------------------------------------------------
     @staticmethod
@@ -517,15 +548,21 @@ class _MetadataInfoVisitor(ItemVisitor):
     @staticmethod
     @override
     def OnAny(item, *args, **kwargs):
-        assert isinstance(item.BugBug_reference, Attributes.AttributeInfo), item.BugBug_reference
-        return item.BugBug_reference
+        assert len(item.references) == 1 and isinstance(
+            item.references[0],
+            Attributes.AttributeInfo,
+        ), item.references
+        return item.references[0]
 
     # ----------------------------------------------------------------------
     @staticmethod
     @override
     def OnCustom(item, *args, **kwargs):
-        assert isinstance(item.BugBug_reference, Attributes.AttributeInfo), item.BugBug_reference
-        return item.BugBug_reference
+        assert len(item.references) == 1 and isinstance(
+            item.references[0],
+            Attributes.AttributeInfo,
+        ), item.references[0]
+        return item.references[0]
 
     # ----------------------------------------------------------------------
     @staticmethod

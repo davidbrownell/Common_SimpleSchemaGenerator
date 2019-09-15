@@ -95,7 +95,7 @@ class FundamentalSuite(unittest.TestCase):
         )
 
         child1.name = "child1"
-        child1.BugBug_reference = "string"
+        child1.references = ["string"]
 
         root = Resolve(parent, _CreatePlugin())
 
@@ -103,8 +103,8 @@ class FundamentalSuite(unittest.TestCase):
         self.assertEqual(root.items[0].name, "child1")
         self.assertEqual(root.items[0].element_type, Elements.FundamentalElement)
         self.assertEqual(
-            root.items[0].BugBug_reference,
-            Attributes.FUNDAMENTAL_ATTRIBUTE_INFO_MAP["string"],
+            root.items[0].references,
+            [Attributes.FUNDAMENTAL_ATTRIBUTE_INFO_MAP["string"]],
         )
 
     # ----------------------------------------------------------------------
@@ -118,14 +118,14 @@ class FundamentalSuite(unittest.TestCase):
         )
 
         child1.name = "child1"
-        child1.BugBug_reference = "any"
+        child1.references = ["any"]
 
         root = Resolve(parent, _CreatePlugin())
 
         self.assertEqual(len(root.items), 1)
         self.assertEqual(root.items[0].name, "child1")
         self.assertEqual(root.items[0].element_type, Elements.AnyElement)
-        self.assertEqual(root.items[0].BugBug_reference, Attributes.ANY_ATTRIBUTE_INFO)
+        self.assertEqual(root.items[0].references, [Attributes.ANY_ATTRIBUTE_INFO])
 
     # ----------------------------------------------------------------------
     def test_Custom(self):
@@ -138,14 +138,14 @@ class FundamentalSuite(unittest.TestCase):
         )
 
         child1.name = "child1"
-        child1.BugBug_reference = "custom"
+        child1.references = ["custom"]
 
         root = Resolve(parent, _CreatePlugin())
 
         self.assertEqual(len(root.items), 1)
         self.assertEqual(root.items[0].name, "child1")
         self.assertEqual(root.items[0].element_type, Elements.CustomElement)
-        self.assertEqual(root.items[0].BugBug_reference, Attributes.CUSTOM_ATTRIBUTE_INFO)
+        self.assertEqual(root.items[0].references, [Attributes.CUSTOM_ATTRIBUTE_INFO])
 
     # ----------------------------------------------------------------------
     def test_Variant(self):
@@ -158,34 +158,23 @@ class FundamentalSuite(unittest.TestCase):
         )
 
         child1.name = "child1"
-        child1.BugBug_reference = [
+        child1.references = [
             ("int", Metadata({}, "<source>", 0, 0)),
             ("bool", Metadata({}, "<source>", 1, 1)),
             ("string", Metadata({}, "<source>", 2, 2)),
         ]
+        child1.multi_reference_type = Item.MultiReferenceType.Variant
 
         root = Resolve(parent, _CreatePlugin())
 
         self.assertEqual(len(root.items), 1)
         self.assertEqual(root.items[0].name, "child1")
         self.assertEqual(root.items[0].element_type, Elements.VariantElement)
-        self.assertEqual(len(root.items[0].BugBug_reference), 3)
-        self.assertEqual(
-            root.items[0].BugBug_reference[0].element_type,
-            Elements.FundamentalElement,
-        )
-        self.assertEqual(
-            root.items[0].BugBug_reference[0].BugBug_reference.TypeInfoClass,
-            IntTypeInfo,
-        )
-        self.assertEqual(
-            root.items[0].BugBug_reference[1].BugBug_reference.TypeInfoClass,
-            BoolTypeInfo,
-        )
-        self.assertEqual(
-            root.items[0].BugBug_reference[2].BugBug_reference.TypeInfoClass,
-            StringTypeInfo,
-        )
+        self.assertEqual(len(root.items[0].references), 3)
+        self.assertEqual(root.items[0].references[0].element_type, Elements.FundamentalElement)
+        self.assertEqual(root.items[0].references[0].references[0].TypeInfoClass, IntTypeInfo)
+        self.assertEqual(root.items[0].references[1].references[0].TypeInfoClass, BoolTypeInfo)
+        self.assertEqual(root.items[0].references[2].references[0].TypeInfoClass, StringTypeInfo)
 
 
 # ----------------------------------------------------------------------
@@ -201,21 +190,21 @@ class ReferenceSuite(unittest.TestCase):
             parent=parent,
         )
         child1.name = "child1"
-        child1.BugBug_reference = "string"
+        child1.references = ["string"]
 
         child2 = _CreateItem(
             declaration_type=Item.DeclarationType.Declaration,
             parent=parent,
         )
         child2.name = "child2"
-        child2.BugBug_reference = "child1"
+        child2.references = ["child1"]
 
         root = Resolve(parent, _CreatePlugin())
 
         self.assertEqual(len(root.items), 2)
         self.assertEqual(root.items[0].name, "child1")
         self.assertEqual(root.items[1].name, "child2")
-        self.assertEqual(root.items[1].BugBug_reference, root.items[0])
+        self.assertEqual(root.items[1].references[0], root.items[0])
         self.assertEqual(root.items[1].element_type, Elements.ReferenceElement)
 
     # ----------------------------------------------------------------------
@@ -234,14 +223,14 @@ class ReferenceSuite(unittest.TestCase):
             parent=parent,
         )
         child2.name = "child2"
-        child2.BugBug_reference = "child1"
+        child2.references = ["child1"]
 
         root = Resolve(parent, _CreatePlugin())
 
         self.assertEqual(len(root.items), 2)
         self.assertEqual(root.items[0].name, "child1")
         self.assertEqual(root.items[1].name, "child2")
-        self.assertEqual(root.items[1].BugBug_reference, root.items[0])
+        self.assertEqual(root.items[1].references[0], root.items[0])
         self.assertEqual(root.items[1].element_type, Elements.ReferenceElement)
 
     # ----------------------------------------------------------------------
@@ -254,7 +243,7 @@ class ReferenceSuite(unittest.TestCase):
             parent=parent,
         )
         child1.name = "child1"
-        child1.BugBug_reference = "does_not_exist"
+        child1.references = ["does_not_exist"]
 
         self.assertRaises(
             Exceptions.ResolveInvalidReferenceException,
@@ -274,7 +263,7 @@ class MetadataSuite(unittest.TestCase):
             parent=parent,
         )
         child1.name = "this_should_be_overridden"
-        child1.BugBug_reference = "string"
+        child1.references = ["string"]
         child1.metadata.Values["name"] = MetadataValue(
             "new_name",
             MetadataSource.Explicit,
@@ -299,7 +288,7 @@ class MetadataSuite(unittest.TestCase):
             parent=parent,
         )
         child1.name = "this_should_be_overridden"
-        child1.BugBug_reference = "string"
+        child1.references = ["string"]
         child1.metadata.Values["name"] = MetadataValue(
             "new_name",
             MetadataSource.Explicit,
@@ -326,7 +315,7 @@ class MetadataSuite(unittest.TestCase):
             parent=parent,
         )
         child1.name = "this_should_be_overridden"
-        child1.BugBug_reference = "string"
+        child1.referneces = ["string"]
         child1.metadata.Values["name"] = MetadataValue(
             "",
             MetadataSource.Explicit,
@@ -350,7 +339,7 @@ class MetadataSuite(unittest.TestCase):
             parent=parent,
         )
         child1.name = "item"
-        child1.BugBug_reference = "string"
+        child1.references = ["string"]
         child1.arity = Arity(0, 1)
 
         root = Resolve(parent, _CreatePlugin())

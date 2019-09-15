@@ -197,6 +197,9 @@ class ValidateInvalidReferenceException(SimpleSchemaException):
     Display                                 = "An extension may not be the target of a reference"
 
 
+# BugBug: Only 1 fundamental derived for simple elements
+
+
 class ValidateInvalidSimpleChildException(SimpleSchemaException):
     Display                                 = "The children of simple elements must be fundamental attributes or references to fundamental elements/attributes with an arity of 1"
 

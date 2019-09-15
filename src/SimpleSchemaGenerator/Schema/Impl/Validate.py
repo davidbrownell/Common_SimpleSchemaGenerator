@@ -165,8 +165,9 @@ def _ValidateUniqueNames(
 
         names[child.name] = child
 
-    if isinstance(item.BugBug_reference, Item):
-        _ValidateUniqueNames(extensions_allowing_duplicate_names, item.BugBug_reference, names)
+    for ref in item.references:
+        if isinstance(ref, Item):
+            _ValidateUniqueNames(extensions_allowing_duplicate_names, ref, names)
 
 
 # ----------------------------------------------------------------------
@@ -257,7 +258,8 @@ def _ValidateSimpleElements(item):
             return False
 
         while child.element_type == Elements.ReferenceElement:
-            child = child.BugBug_reference
+            assert len(child.references) == 1, child.references
+            child = child.references[0]
 
         return child.element_type == Elements.FundamentalElement
 
@@ -299,8 +301,8 @@ def _ValidateReference(item):
         return
 
     ref = item
-    while isinstance(ref.BugBug_reference, Item):
-        ref = ref.BugBug_reference
+    while len(ref.references) == 1 and isinstance(ref.references[0], Item):
+        ref = ref.references[0]
 
     if ref.element_type == Elements.ExtensionElement:
         raise Exceptions.ValidateInvalidReferenceException(item.Source, item.Line, item.Column)

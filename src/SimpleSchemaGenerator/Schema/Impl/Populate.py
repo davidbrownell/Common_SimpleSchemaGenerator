@@ -414,7 +414,10 @@ def Populate(source_name_content_generators, parse_flags):                  # { 
                 self._ValidateName(item, name)
 
                 item.name = name
-                item.BugBug_reference = reference
+
+                if reference is not None:
+                    # BugBug: This will be updated soon
+                    item.references.append(reference)
 
         # ----------------------------------------------------------------------
         def visitObjAttributes(self, ctx):
@@ -511,7 +514,15 @@ def Populate(source_name_content_generators, parse_flags):                  # { 
             item = self._GetStackParent()
 
             # First item will always be the id or attributes list
-            item.BugBug_reference = values.pop(0)
+            value = values.pop(0)
+            assert value
+            assert not item.references, item.references
+
+            if isinstance(value, list):
+                item.references = value
+                item.multi_reference_type = Item.MultiReferenceType.Variant
+            else:
+                item.references.append(value)
 
             assert values, "Metadata is always present"
 

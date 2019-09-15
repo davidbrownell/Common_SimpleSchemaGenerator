@@ -105,14 +105,20 @@ class TypeInfoElementVisitor(ElementVisitor):
 
         # ----------------------------------------------------------------------
         def GenerateChildren(element):
-            while isinstance(element, (Elements.CompoundElement, Elements.SimpleElement)):
+            queue = [element]
+
+            while queue:
+                element = queue.pop(0)
+                if not isinstance(element, (Elements.CommonEnvironment, Elements.SimpleElement)):
+                    continue
+
                 for k, v in six.iteritems(element.TypeInfo.Items):
                     if k is None:
                         continue
 
                     yield k, v
 
-                element = getattr(element, "BugBug_Base", None)
+                queue += getattr(element, "Bases", None)
 
         # ----------------------------------------------------------------------
 

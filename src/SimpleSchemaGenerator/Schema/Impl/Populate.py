@@ -416,7 +416,7 @@ def Populate(source_name_content_generators, parse_flags):                  # { 
                 item.name = name
 
                 if reference is not None:
-                    # BugBug: This will be updated soon
+                    # TODO: This will be updated soon
                     item.references.append(reference)
 
         # ----------------------------------------------------------------------

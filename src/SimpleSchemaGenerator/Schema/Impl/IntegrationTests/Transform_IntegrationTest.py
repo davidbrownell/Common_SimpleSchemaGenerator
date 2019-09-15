@@ -142,7 +142,7 @@ class TestBase(unittest.TestCase):
         self.assertTrue(isinstance(self._element, CompoundElement))
         self.assertEqual(self._element.Name, "test_base")
         self.assertEqual([child.Name for child in self._element.Children], ["a"])
-        self.assertEqual(self._element.BugBug_Base, None)
+        self.assertEqual(self._element.Bases, [])
         self.assertEqual(
             set([other.Name for other in self._element.Derived]),
             set(["test_derived", "test_derived_ref2", "test_derived_ref4"]),
@@ -207,7 +207,7 @@ class TestDerived(unittest.TestCase):
                 "test_derived_ref5",
             ],
         )
-        self.assertEqual(self._element.BugBug_Base.Name, "test_base")
+        self.assertEqual([base.Name for base in self._element.Bases], ["test_base"])
         self.assertEqual(self._element.Derived, [])
 
     # ----------------------------------------------------------------------

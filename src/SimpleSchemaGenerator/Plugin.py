@@ -179,15 +179,18 @@ class Plugin(PluginBase):
         else:
             filter_func = lambda element: False
 
-        while element:
+        queue = [element]
+        while queue:
+            element = queue.pop(0)
+
             for child in element.Children:
                 if filter_func(child):
                     yield child
 
             if not recurse:
-                break
+                continue
 
-            element = getattr(element, "BugBug_Base", None)
+            queue += getattr(element, "Bases", [])
 
     # ----------------------------------------------------------------------
     class IncludeMapType(Enum):
@@ -253,7 +256,7 @@ class Plugin(PluginBase):
             with CallOnExit(lambda: stack.pop()):
                 for potential_item_name in [
                     "Children",
-                    "BugBug_Base",
+                    "Bases",
                     "Derived",
                     "Reference",
                 ]:

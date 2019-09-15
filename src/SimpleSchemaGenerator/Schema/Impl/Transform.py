@@ -288,7 +288,7 @@ class _CreateElementVisitor(ItemVisitor):
                 delayed_instruction_queue,
                 create_element_func,
             ),
-            base=None,                                  # Set below
+            bases=[],                                   # Set below
             derived=[],                                 # Set below
             type_info=None,                             # Set below
             name=metadata_item.name,
@@ -303,26 +303,28 @@ class _CreateElementVisitor(ItemVisitor):
         # Parent
         cls._ApplyParent(element, metadata_item, elements, delayed_instruction_queue)
 
-        # BugBug_Base and Derived
+        # Apply the bases
         if item.references:
-            # BugBug: Only handling one reference right now
-            assert len(item.references) == 1, item.references
+            element.Bases = [None] * len(item.references)
 
             # ----------------------------------------------------------------------
-            def ApplyBase():
-                assert item.references[0].Key in elements, item.references[0].Key
-                base_element = elements[item.references[0].Key]
+            def ApplyBase(ref_index, ref):
+                assert ref.Key in elements, ref.Key
+                base_element = elements[ref.Key]
                 assert base_element
 
-                element.BugBug_Base = base_element
-                element.BugBug_Base.Derived.append(element)
+                element.Bases[ref_index] = base_element
+                element.Bases[ref_index].Derived.append(element)
 
             # ----------------------------------------------------------------------
 
-            if elements.get(item.references[0].Key, None) is None:
-                delayed_instruction_queue.append(ApplyBase)
-            else:
-                ApplyBase()
+            for ref_index, ref in enumerate(item.references):
+                if elements.get(ref.Key, None) is None:
+                    delayed_instruction_queue.append(
+                        lambda ref_index=ref_index, ref=ref: ApplyBase(ref_index, ref),
+                    )
+                else:
+                    ApplyBase(ref_index, ref)
 
         # TypeInfo
         apply_type_info_func(item, metadata_item, element)

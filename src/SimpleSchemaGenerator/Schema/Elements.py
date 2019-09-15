@@ -153,11 +153,11 @@ class FundamentalElement(IsAttributeMixin, Element):
 # ----------------------------------------------------------------------
 class CompoundElement(ChildrenMixin, Element):
     # ----------------------------------------------------------------------
-    def __init__(self, children, base, derived, *args, **kwargs):
+    def __init__(self, children, bases, derived, *args, **kwargs):
         Element.__init__(self, *args, **kwargs)
         ChildrenMixin.__init__(self, children)
 
-        self.BugBug_Base                    = base
+        self.Bases                          = bases
         self.Derived                        = derived
 
     # ----------------------------------------------------------------------
@@ -165,7 +165,7 @@ class CompoundElement(ChildrenMixin, Element):
         return CommonEnvironment.ObjectReprImpl(
             self,
             Parent=lambda e: e.Name if e else "None",
-            BugBug_Base=lambda b: b.DottedName if b else "<None>",
+            Bases=lambda bases: [b.DottedName for b in bases],
             Derived=lambda derived: [d.DottedName for d in derived],
         )
 

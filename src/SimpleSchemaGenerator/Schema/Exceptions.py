@@ -171,10 +171,6 @@ class ValidateUnsupportedListElementsException(SimpleSchemaException):
     Display                                 = "List elements are not supported"
 
 
-class ValidateUnsupportedSimpleObjectElementsException(SimpleSchemaException):
-    Display                                 = "Pure simple object elements are not supported by this plugin; consider adding the attribute 'fundamental_name' to automatically convert this element into a compound element"
-
-
 class ValidateUnsupportedVariantElementsException(SimpleSchemaException):
     Display                                 = "Variant elements are not supported"
 
@@ -197,7 +193,8 @@ class ValidateInvalidReferenceException(SimpleSchemaException):
     Display                                 = "An extension may not be the target of a reference"
 
 
-# TODO: Only 1 fundamental derived for simple elements
+class ValidateInvalidSimpleReferenceException(SimpleSchemaException):
+    Display                                 = "A simple element may only be based on a single simple element"
 
 
 class ValidateInvalidSimpleChildException(SimpleSchemaException):

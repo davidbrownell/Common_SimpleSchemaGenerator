@@ -64,6 +64,15 @@ SIMPLE_SCHEMA                               = textwrap.dedent(
         <test_derived_ref3 test_derived_ref2>
         <test_derived_ref4 test_derived_ref2 refines_arity=true {30}>
         <test_derived_ref5 test_derived_ref2 {20}>
+
+    <test_simple string>:
+        [a int]
+        [b string]
+
+    <test_simple_derived test_simple>:
+        [c string]
+
+    # BugBug: Multiple inheritance
     """,
 )
 
@@ -72,15 +81,13 @@ class InternalPlugin(Plugin):
     Name                                    = DerivedProperty("InternalPlugin")
     Description                             = DerivedProperty("")
     Flags                                   = DerivedProperty(
-        # ParseFlag.SupportAttributes |
-        ParseFlag.SupportIncludeStatements |                                                                                                                                                                         # ParseFlag.SupportConfigStatements |
+        ParseFlag.SupportAttributes | ParseFlag.SupportIncludeStatements |                                                                                                                                           # ParseFlag.SupportConfigStatements |
                                                                                                                                                                                                                      # ParseFlag.SupportExtensionsStatements |
                                                                                                                                                                                                                      # ParseFlag.SupportUnnamedDeclarations |
                                                                                                                                                                                                                      # ParseFlag.SupportUnnamedObjects |
         ParseFlag.SupportNamedDeclarations | ParseFlag.SupportNamedObjects | ParseFlag.SupportRootDeclarations | ParseFlag.SupportRootObjects | ParseFlag.SupportChildDeclarations | ParseFlag.SupportChildObjects | # ParseFlag.SupportCustomElements |
                                                                                                                                                                                                                      # ParseFlag.SupportAnyElements |
-        ParseFlag.SupportReferenceElements | ParseFlag.SupportListElements |                                                                                                                                         # ParseFlag.SupportSimpleObjectElements |
-        ParseFlag.SupportVariantElements | ParseFlag.ResolveReferences,
+        ParseFlag.SupportReferenceElements | ParseFlag.SupportListElements | ParseFlag.SupportSimpleObjectElements | ParseFlag.SupportVariantElements | ParseFlag.ResolveReferences,
     )
 
     # ----------------------------------------------------------------------
@@ -587,6 +594,77 @@ class TestDerived(unittest.TestCase):
                 type_info.Items["test_derived_ref5"].ElementTypeInfo,
                 verify_derived_refs=False,
             )
+
+
+# ----------------------------------------------------------------------
+class TestSimple(unittest.TestCase):
+
+    # ----------------------------------------------------------------------
+    def setUp(self):
+        self.maxDiff = None
+        self.assertGreater(len(_elements), 2)
+        self._element = _elements[2]
+
+    # ----------------------------------------------------------------------
+    def test_ElementInfo(self):
+        self.assertTrue(isinstance(self._element, SimpleElement))
+        self.assertEqual(self._element.Name, "test_simple")
+        self.assertEqual([child.Name for child in self._element.Children], [None, "a", "b"])
+
+    # ----------------------------------------------------------------------
+    def test_TypeInfo(self):
+        self.assertTrue(self._element.TypeInfo, ClassTypeInfo)
+        self.assertEqual(self._element.TypeInfo.Arity, Arity(1, 1))
+        self.assertEqual(
+            self._element.TypeInfo,
+            ClassTypeInfo(
+                {"a": IntTypeInfo(), "b": StringTypeInfo(), None: StringTypeInfo()},
+                require_exact_match=True,
+                arity=Arity(1, 1),
+            ),
+        )
+
+
+# ----------------------------------------------------------------------
+class TestSimpleDerived(unittest.TestCase):
+
+    # ----------------------------------------------------------------------
+    def setUp(self):
+        self.maxDiff = None
+        self.assertGreater(len(_elements), 3)
+        self._element = _elements[3]
+
+    # ----------------------------------------------------------------------
+    def test_ElementInfo(self):
+        self.assertTrue(isinstance(self._element, SimpleElement))
+        self.assertEqual(self._element.Name, "test_simple_derived")
+        self.assertEqual(
+            [child.Name for child in self._element.Children],
+            [
+                "c",
+                None,
+                "a",
+                "b",
+            ],
+        )
+
+    # ----------------------------------------------------------------------
+    def test_TypeInfo(self):
+        self.assertTrue(self._element.TypeInfo, ClassTypeInfo)
+        self.assertEqual(self._element.TypeInfo.Arity, Arity(1, 1))
+        self.assertEqual(
+            self._element.TypeInfo,
+            ClassTypeInfo(
+                {
+                    "a": IntTypeInfo(),
+                    "b": StringTypeInfo(),
+                    "c": StringTypeInfo(),
+                    None: StringTypeInfo(),
+                },
+                require_exact_match=True,
+                arity=Arity(1, 1),
+            ),
+        )
 
 
 # ----------------------------------------------------------------------

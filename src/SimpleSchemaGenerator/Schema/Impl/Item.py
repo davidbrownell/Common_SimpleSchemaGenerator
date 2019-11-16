@@ -166,7 +166,6 @@ class Item(object):
         self.arity                          = None
 
         self.items                          = []
-        self.is_converted                   = False                         # Only used for SimpleElements that were converted to CompoundElements
         self.is_augmenting_reference        = False                         # Only used for ReferenceElements that modify the referenced type
         self.positional_arguments           = []                            # Only used for extensions
         self.keyword_arguments              = OrderedDict()                 # Only used for extensions

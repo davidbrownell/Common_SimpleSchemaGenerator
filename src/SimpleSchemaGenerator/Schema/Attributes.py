@@ -59,7 +59,7 @@ class Attribute(object):
         missing_validate_func=None,         # Called when the attribute item is not present:
                                             #   def Func(plugin, element) -> string if error
         is_metadata=False,                  # In generic terms, this value should be true if the attribute should be considered metadata and
-        # does not change the type information of the corresponding element. This is a general statement,#                                    # is often something that is detemined by different plugins.
+                                            # does not change the type information of the corresponding element. This is a general statement,#                                    # is often something that is detemined by different plugins.
     ):
         self.Name                           = name
         self.TypeInfo                       = type_info
@@ -132,6 +132,10 @@ def _ValidateRefinesArity(plugin, element):
     return __ValidateRefinesArity(plugin, element)
 
 
+def _ValidateCompoundFundamentalName(plugin, element):
+    return __ValidateCompoundFundamentalName(plugin, element)
+
+
 def _ValidateFundamentalName(plugin, element):
     return __ValidateFundamentalName(plugin, element)
 
@@ -186,15 +190,25 @@ OPTIONAL_ATTRIBUTE_INFO                     = AttributeInfo(
 )
 
 # ----------------------------------------------------------------------
-COMPOUND_ATTRIBUTE_INFO                     = AttributeInfo()
+COMPOUND_ATTRIBUTE_INFO                     = AttributeInfo(
+    optional_items=[
+        Attribute(
+            SIMPLE_FUNDAMENTAL_NAME_ATTRIBUTE_NAME,
+            StringTypeInfo(),
+            validate_func=_ValidateCompoundFundamentalName,
+        ),
+    ],
+)
 
 SIMPLE_ATTRIBUTE_INFO                       = AttributeInfo(
-    optional_items=[                                                        # Create a named child with this name for plugins that don't support simple objects
-    Attribute(
-        SIMPLE_FUNDAMENTAL_NAME_ATTRIBUTE_NAME,
-        StringTypeInfo(),
-        missing_validate_func=_ValidateFundamentalName,
-    )],
+    optional_items=[
+        # Create a named child with this name for plugins that don't support simple objects
+        Attribute(
+            SIMPLE_FUNDAMENTAL_NAME_ATTRIBUTE_NAME,
+            StringTypeInfo(),
+            missing_validate_func=_ValidateFundamentalName,
+        ),
+    ],
 )
 
 ANY_ATTRIBUTE_INFO                          = AttributeInfo()
@@ -464,6 +478,21 @@ def __ValidateRefinesArity(plugin, element):            # <Unused argument> pyli
     if not isinstance(element, Elements.ReferenceElement):
         return "'{}' may only be used with reference elements".format(
             COLLECTION_REFINES_ARITY_ATTRIBUTE_NAME,
+        )
+
+    return None
+
+
+# ----------------------------------------------------------------------
+def __ValidateCompoundFundamentalName(plugin, element):
+    if plugin.Flags & ParseFlag.SupportSimpleObjectElements:
+        return "The attribute '{}' should not be provided with plugins that support simple objects".format(
+            SIMPLE_FUNDAMENTAL_NAME_ATTRIBUTE_NAME,
+        )
+
+    if not hasattr(element, "FundamentalAttributeName"):
+        return "The attribute '{}' should only be used with simple objects".format(
+            SIMPLE_FUNDAMENTAL_NAME_ATTRIBUTE_NAME,
         )
 
     return None

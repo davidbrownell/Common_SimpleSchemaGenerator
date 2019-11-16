@@ -36,6 +36,7 @@ _script_dir, _script_name                   = os.path.split(_script_fullpath)
 with InitRelativeImports():
     from .Item import Item
 
+    from .. import Attributes
     from .. import Elements
     from .. import Exceptions
 
@@ -111,16 +112,6 @@ def _ValidateSupported(plugin_flags, item):
             and not plugin_flags & ParseFlag.SupportListElements
         ):
             raise Exceptions.ValidateUnsupportedListElementsException(
-                item.Source,
-                item.Line,
-                item.Column,
-            )
-
-        if (
-            item.element_type == Elements.SimpleElement
-            and not plugin_flags & ParseFlag.SupportSimpleObjectElements
-        ):
-            raise Exceptions.ValidateUnsupportedSimpleObjectElementsException(
                 item.Source,
                 item.Line,
                 item.Column,
@@ -244,9 +235,7 @@ def _ValidateMetadata(filter_unsupported_metadata, item):
 
 # ----------------------------------------------------------------------
 def _ValidateSimpleElements(item):
-    if item.element_type != Elements.SimpleElement and not (
-        item.element_type == Elements.CompoundElement and item.is_converted
-    ):
+    if item.element_type != Elements.SimpleElement:
         return
 
     # ----------------------------------------------------------------------
@@ -265,8 +254,21 @@ def _ValidateSimpleElements(item):
 
     # ----------------------------------------------------------------------
 
-    # Note that we don't need to validate that the reference points to a fundamental type,
-    # as that is the thing that made this a SimpleElement rather than a CompoundElement.
+    # Validate that this element is only based on 1 FundamentalElement
+    found_simple = False
+
+    for reference in item.references:
+        if (
+            isinstance(reference, Attributes.FundamentalAttributeInfo)
+            or reference.element_type == Elements.SimpleElement
+        ):
+            if found_simple:
+                raise Exceptions.ValidateInvalidSimpleReferenceException(
+                    item.Source,
+                    item.Line,
+                    item.Column,
+                )
+            found_simple = True
 
     # Validate the attributes
     for child in item.items:

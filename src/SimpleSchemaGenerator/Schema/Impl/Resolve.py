@@ -228,6 +228,9 @@ def _ResolveElementType(plugin, reference_states, item):
                     if isinstance(ref, Attributes.FundamentalAttributeInfo):
                         return True
 
+                    if ref.element_type == Elements.SimpleElement:
+                        return True
+
                     search_queue += ref.references
 
                 return False
@@ -235,16 +238,20 @@ def _ResolveElementType(plugin, reference_states, item):
             # ----------------------------------------------------------------------
 
             if IsSimple():
-                if (
-                    not plugin.Flags & ParseFlag.SupportSimpleObjectElements
-                    and Attributes.SIMPLE_FUNDAMENTAL_NAME_ATTRIBUTE_NAME in item.metadata.Values
-                ):
-                    # Convert this item into a compound element
-                    fundamental_name = item.metadata.Values.pop(
-                        Attributes.SIMPLE_FUNDAMENTAL_NAME_ATTRIBUTE_NAME,
-                    ).Value
+                element_type = Elements.SimpleElement
 
-                    # Extract all metadata values that aren't associated with the item itself
+                reference_index = 0
+                while reference_index < len(item.references):
+                    reference = item.references[reference_index]
+
+                    if not isinstance(reference, Attributes.FundamentalAttributeInfo):
+                        reference_index += 1
+
+                        continue
+
+                    # Split the item into a parent/child relationship for later processing
+
+                    # Extract all the metadata values that belong to the fundamental item
                     simple_object_metadata_names = set()
 
                     for attributes in [
@@ -259,15 +266,17 @@ def _ResolveElementType(plugin, reference_states, item):
                         ):
                             simple_object_metadata_names.add(md.Name)
 
-                    new_metadata = OrderedDict()
+                    fundamental_metadata = OrderedDict()
 
                     metadata_keys = list(item.metadata.Values.keys())
                     for metadata_key in metadata_keys:
                         if metadata_key not in simple_object_metadata_names:
-                            new_metadata[metadata_key] = item.metadata.Values.pop(metadata_key)
+                            fundamental_metadata[metadata_key] = item.metadata.Values.pop(
+                                metadata_key,
+                            )
 
                     # Create the new item
-                    new_item = Item(
+                    fundamental_item = Item(
                         Item.DeclarationType.Declaration,
                         Item.ItemType.Attribute,
                         item,
@@ -277,25 +286,25 @@ def _ResolveElementType(plugin, reference_states, item):
                         item.IsExternal,
                     )
 
-                    new_item.name = fundamental_name
-                    new_item.references = item.references
-                    new_item.metadata = Metadata(new_metadata, item.Source, item.Line, item.Column)
+                    fundamental_item.name = None
+                    fundamental_item.references = [reference]
+
+                    fundamental_item.metadata = Metadata(
+                        fundamental_metadata,
+                        item.Source,
+                        item.Line,
+                        item.Column,
+                    )
 
                     # Apply the change
-                    item.is_converted = True
-                    item.references = []
-
-                    item.items.insert(0, new_item)
-
-                    element_type = Elements.CompoundElement
-                else:
-                    element_type = Elements.SimpleElement
+                    del item.references[reference_index]
+                    item.items.insert(0, fundamental_item)
 
             else:
                 element_type = Elements.CompoundElement
 
         elif item.DeclarationType == Item.DeclarationType.Declaration:
-            assert len(item.references) == 1, item.references
+            assert len(item.references) == 1, (item.references, item)
             reference = item.references[0]
 
             if isinstance(reference, Item):
@@ -432,31 +441,26 @@ def _ResolveMetadata(plugin, config_values, item):
     for item in item.Enumerate():
         _ResolveMetadata(plugin, config_values, item)
 
-        # SimpleElement items may be decorated with metadata associated with the fundamental type
+        # Squash metadata for SimpleElememt types
         if item.element_type == Elements.SimpleElement:
-            # Ensure that all item information has been resolved to metadata
-            for ref in item.references:
-                if isinstance(ref, Item):
-                    _ResolveMetadata(plugin, config_values, ref)
+            # A SimpleElement will either reference other SimpleElement(s) or
+            # contain a child that references a FundamentalElement, but never both.
+            if item.references:
+                assert not item.items or item.items[0].name is not None, item.items
 
-            # Find the fundamental item and clone its metadata
-            search_queue = list(item.references)
-            searched = set()
+                for ref in item.references:
+                    if isinstance(ref, Item):
+                        _ResolveMetadata(plugin, config_values, ref)
+                        item.metadata = item.metadata.Clone(ref.metadata)
 
-            while search_queue:
-                ref = search_queue.pop(0)
-                if ref in searched:
-                    continue
+            else:
+                assert item.items
+                assert item.items[0].name is None, item.items[0]
 
-                searched.add(ref)
+                _ResolveMetadata(plugin, config_values, item.items[0])
+                item.metadata = item.metadata.Clone(item.items[0].metadata)
 
-                if isinstance(ref, Attributes.FundamentalAttributeInfo):
-                    item.metadata = item.metadata.Clone(ref)
-                    break
-
-                search_queue += ref.references
-
-        # Reference items may be decorated with metadata associated with the referenced type
+        # Squash metadata for ReferenceElement types
         if item.element_type == Elements.ReferenceElement:
             assert len(item.references) == 1, item.references
 

@@ -14,6 +14,7 @@
 # ----------------------------------------------------------------------
 """Transforms Items into Element objects"""
 
+import copy
 import itertools
 import os
 
@@ -149,16 +150,69 @@ def Transform(root, plugin):
                     result = md.MissingValidateFunc(plugin, element)
 
             if result is not None:
+                if md.Name in element._item.metadata.Values:
+                    location_source = element._item.metadata.Values[md.Name]
+                else:
+                    location_source = element
+
                 raise Exceptions.InvalidAttributeException(
-                    element._item.metadata.Values[md.Name].Source,
-                    element._item.metadata.Values[md.Name].Line,
-                    element._item.metadata.Values[md.Name].Column,
+                    location_source.Source,
+                    location_source.Line,
+                    location_source.Column,
                     desc=result,
                 )
 
         # Commit
         element.Metadata = element._item.metadata
         element.AttributeNames = list(six.iterkeys(element._item.metadata.Values))
+
+    # ----------------------------------------------------------------------
+    def ResolveSimpleTypeInfo(element):
+        if not isinstance(element, (Elements.SimpleElement, Elements.CompoundElement)):
+            return
+
+        if isinstance(element, Elements.CompoundElement) and not hasattr(
+            element,
+            "FundamentalAttributeName",
+        ):
+            return
+
+        for reference in element._item.references:
+            assert reference.Key in elements, reference.Key
+            ref_element = elements[reference.Key]
+            assert ref_element
+
+            for k, v in six.iteritems(ref_element.TypeInfo.Items):
+                assert k not in element.TypeInfo.Items, k
+                element.TypeInfo.Items[k] = v
+
+    # ----------------------------------------------------------------------
+    def ResolveSimpleFundamentalName(element):
+        if not isinstance(element, (Elements.SimpleElement, Elements.CompoundElement)):
+            return
+
+        if isinstance(element, Elements.CompoundElement) and not hasattr(
+            element,
+            "FundamentalAttrbuteName",
+        ):
+            return
+
+        # Update the element to reflect the fundamental attribute name. Note that
+        # this needs to be done after all of the elements have been created so that
+        # each SimpleElement sees the value to be set as None.
+
+        if element.FundamentalAttributeName:
+            # Update the Element's Children
+            found = False
+
+            for child in element.Children:
+                if child.Name is None:
+                    child.Name = element.FundamentalAttributeName
+
+                    found = True
+                    break
+
+            assert found, element.Children
 
     # ----------------------------------------------------------------------
     def CreateVariantTypeInfoList(element):
@@ -176,7 +230,7 @@ def Transform(root, plugin):
         return [element.TypeInfo]
 
     # ----------------------------------------------------------------------
-    def FlattenVariant(element):
+    def ResolveVariantTypeInfo(element):
         if not isinstance(element, Elements.VariantElement):
             return
 
@@ -219,7 +273,9 @@ def Transform(root, plugin):
         instruction()
 
     Impl(root_element, ValidateAndApplyMetadata)
-    Impl(root_element, FlattenVariant)
+    Impl(root_element, ResolveSimpleTypeInfo)
+    Impl(root_element, ResolveSimpleFundamentalName)
+    Impl(root_element, ResolveVariantTypeInfo)
     Impl(root_element, Cleanup)
 
     return root_element
@@ -345,7 +401,6 @@ class _CreateElementVisitor(ItemVisitor):
         create_element_func,
         is_definition_only,
     ):                                      # <Parameters differ from overridden...> pylint: disable = W0221
-
         fundamental_attribute_name = metadata_item.metadata.Values.get(
             Attributes.SIMPLE_FUNDAMENTAL_NAME_ATTRIBUTE_NAME,
             None,
@@ -353,28 +408,72 @@ class _CreateElementVisitor(ItemVisitor):
         if fundamental_attribute_name is not None:
             fundamental_attribute_name = fundamental_attribute_name.Value
 
-        element = Elements.SimpleElement(
-            fundamental_attribute_name=fundamental_attribute_name,
-            attributes=cls._CreateChildElements(
-                item,
-                item.items,
-                elements,
-                delayed_instruction_queue,
-                create_element_func,
-            ),
-            type_info=None,                                                           # Set below
-            name=metadata_item.name,
-            parent=None,                                                              # Set below
-            source=metadata_item.Source,
-            line=metadata_item.Line,
-            column=metadata_item.Column,
-            is_definition_only=is_definition_only,
-            is_external=metadata_item.IsExternal,
-        )
-                                                                                      # Parent
+        if plugin.Flags & ParseFlag.SupportSimpleObjectElements:
+            element = Elements.SimpleElement(
+                fundamental_attribute_name=fundamental_attribute_name,
+                attributes=cls._CreateChildElements(
+                    item,
+                    item.items,
+                    elements,
+                    delayed_instruction_queue,
+                    create_element_func,
+                ),
+                type_info=None,                         # Set below
+                name=metadata_item.name,
+                parent=None,                            # Set below
+                source=metadata_item.Source,
+                line=metadata_item.Line,
+                column=metadata_item.Column,
+                is_definition_only=is_definition_only,
+                is_external=metadata_item.IsExternal,
+            )
+        else:
+            # Treat this object as a CompoundElement
+            element = Elements.CompoundElement(
+                children=cls._CreateChildElements(
+                    item,
+                    item.items,
+                    elements,
+                    delayed_instruction_queue,
+                    create_element_func,
+                ),
+                bases=[],
+                derived=[],
+                type_info=None,                                             # Set below
+                name=metadata_item.name,
+                parent=None,                                                # Set below
+                source=metadata_item.Source,
+                line=metadata_item.Line,
+                column=metadata_item.Column,
+                is_definition_only=is_definition_only,
+                is_external=metadata_item.IsExternal,
+            )
+            element.FundamentalAttributeName = fundamental_attribute_name
+
+        # Parent                                                                           # Parent
         cls._ApplyParent(element, metadata_item, elements, delayed_instruction_queue)
 
-        # TypeInfo
+        # Apply the bases
+        if item.references:
+            # ----------------------------------------------------------------------
+            def ApplyBase(ref):
+                assert ref.Key in elements, ref.key
+                base_element = elements[ref.Key]
+                assert base_element
+
+                for child in base_element.Children:
+                    element.Children.append(copy.deepcopy(child))
+
+            # ----------------------------------------------------------------------
+
+            for ref in item.references:
+                if elements.get(ref.Key, None) is None:
+                    delayed_instruction_queue.append(
+                        lambda ref=ref: ApplyBase(ref),
+                    )
+                else:
+                    ApplyBase(ref)
+
         apply_type_info_func(item, metadata_item, element)
 
         return element
@@ -753,12 +852,6 @@ class _ApplyTypeInfoVisitor(ItemVisitor):
             elements,
             delayed_instruction_queue,
             item.items,
-        )
-
-        element.TypeInfo.Items[element.FundamentalAttributeName] = cls._CreateFundamentalTypeInfo(
-            metadata_item,
-            item,
-            arity_override=Arity(1, 1),
         )
 
     # ----------------------------------------------------------------------

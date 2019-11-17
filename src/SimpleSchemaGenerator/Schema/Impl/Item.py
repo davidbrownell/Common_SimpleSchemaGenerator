@@ -143,6 +143,10 @@ class Item(object):
         Attribute                           = 2
         Definition                          = 3
 
+    class MultiReferenceType(Enum):
+        Variant                             = 1
+        Compound                            = 2
+
     # ----------------------------------------------------------------------
     def __init__(self, declaration_type, item_type, parent, source, line, column, is_external): # True if the item is defined in another file
         # Populated during Populate
@@ -155,13 +159,13 @@ class Item(object):
         self.IsExternal                     = is_external
 
         self.name                           = None
-        self.reference                      = None
+        self.references                     = []
+        self.multi_reference_type           = None
 
         self.metadata                       = None
         self.arity                          = None
 
         self.items                          = []
-        self.is_converted                   = False                         # Only used for SimpleElements that were converted to CompoundElements
         self.is_augmenting_reference        = False                         # Only used for ReferenceElements that modify the referenced type
         self.positional_arguments           = []                            # Only used for extensions
         self.keyword_arguments              = OrderedDict()                 # Only used for extensions
@@ -205,7 +209,7 @@ class Item(object):
             if variant_includes_self:
                 yield self
 
-            for item in self.reference:
+            for item in self.references:
                 yield item
         else:
             yield self

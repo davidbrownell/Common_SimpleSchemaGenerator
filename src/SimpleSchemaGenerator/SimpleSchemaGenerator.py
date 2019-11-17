@@ -38,11 +38,7 @@ with InitRelativeImports():
     from .Schema.Parse import ParseFiles
 
 # ----------------------------------------------------------------------
-PLUGINS                                     = GeneratorFactory.CreatePluginMap(
-    "DEVELOPMENT_ENVIRONMENT_SIMPLE_SCHEMA_PLUGINS",
-    os.path.join(_script_dir, "Plugins"),
-    sys.stdout,
-)
+PLUGINS                                     = GeneratorFactory.CreatePluginMap("DEVELOPMENT_ENVIRONMENT_SIMPLE_SCHEMA_PLUGINS", os.path.join(_script_dir, "Plugins"), sys.stdout)
 
 _PluginTypeInfo                             = CommandLine.EnumTypeInfo(list(six.iterkeys(PLUGINS)))
 
@@ -72,30 +68,16 @@ CodeGenerator                               = GeneratorFactory.CodeGeneratorFact
 # ----------------------------------------------------------------------
 @CommandLine.EntryPoint(
     plugin=CommandLine.EntryPoint.Parameter("Name of plugin used for generation"),
-    output_name=CommandLine.EntryPoint.Parameter(
-        "Output name used during generation; the way in which this value impacts generated output varies from plugin to plugin",
-    ),
-    output_dir=CommandLine.EntryPoint.Parameter(
-        "Output directory used during generation; the way in which this value impacts generated output varies from plugin to plugin",
-    ),
-    input=CommandLine.EntryPoint.Parameter(
-        "SimpleSchema input filename or a directory containing SimpleSchema files",
-    ),
-    include=CommandLine.EntryPoint.Parameter(
-        "Elements names to explicitly include; other elements are ignored",
-    ),
-    exclude=CommandLine.EntryPoint.Parameter(
-        "Element names to explicitly exclude; other elements are processed",
-    ),
+    output_name=CommandLine.EntryPoint.Parameter("Output name used during generation; the way in which this value impacts generated output varies from plugin to plugin"),
+    output_dir=CommandLine.EntryPoint.Parameter("Output directory used during generation; the way in which this value impacts generated output varies from plugin to plugin"),
+    input=CommandLine.EntryPoint.Parameter("SimpleSchema input filename or a directory containing SimpleSchema files"),
+    include=CommandLine.EntryPoint.Parameter("Elements names to explicitly include; other elements are ignored"),
+    exclude=CommandLine.EntryPoint.Parameter("Element names to explicitly exclude; other elements are processed"),
     output_data_filename_prefix=CommandLine.EntryPoint.Parameter(
         "Prefix used by the code generation implementation; provide this value to generated content from multiple plugins in the same output directory",
     ),
-    filter_unsupported_extensions=CommandLine.EntryPoint.Parameter(
-        "Ignore extensions that aren't supported; by default, unsupported extensions will generate an error",
-    ),
-    filter_unsupported_attributes=CommandLine.EntryPoint.Parameter(
-        "Ignore element attributes that aren't supported; by default, unsupported attributes will generate an error",
-    ),
+    filter_unsupported_extensions=CommandLine.EntryPoint.Parameter("Ignore extensions that aren't supported; by default, unsupported extensions will generate an error"),
+    filter_unsupported_attributes=CommandLine.EntryPoint.Parameter("Ignore element attributes that aren't supported; by default, unsupported attributes will generate an error"),
     plugin_arg=CommandLine.EntryPoint.Parameter("Argument passes directly to the plugin"),
     force=CommandLine.EntryPoint.Parameter("Force generation"),
     verbose=CommandLine.EntryPoint.Parameter("Generate verbose output during generation"),
@@ -204,12 +186,7 @@ def __GetOptionalMetadata():
 
 # ----------------------------------------------------------------------
 def __CreateContext(context, plugin):
-    elements = ParseFiles(
-        context["inputs"],
-        plugin,
-        context["filter_unsupported_extensions"],
-        context["filter_unsupported_attributes"],
-    )
+    elements = ParseFiles(context["inputs"], plugin, context["filter_unsupported_extensions"], context["filter_unsupported_attributes"])
 
     # Calculate the include indexes
     includes = [re.compile("^{}$".format(include)) for include in context["includes"]]
@@ -221,18 +198,10 @@ def __CreateContext(context, plugin):
     include_indexes = range(len(elements))
 
     if excludes:
-        include_indexes = [
-            index
-            for index in include_indexes
-            if not any(exclude for exclude in excludes if exclude.match(elements[index].Name))
-        ]
+        include_indexes = [index for index in include_indexes if not any(exclude for exclude in excludes if exclude.match(elements[index].Name))]
 
     if includes:
-        include_indexes = [
-            index
-            for index in include_indexes
-            if any(include for include in includes if include.match(elements[index].Name))
-        ]
+        include_indexes = [index for index in include_indexes if any(include for include in includes if include.match(elements[index].Name))]
 
     # This is a bit strange, but to detect changes, we need to compare the data in the elements rather
     # than the elements themselves (as the elements will be different object instances during each invocation).
@@ -253,15 +222,7 @@ def __CreateContext(context, plugin):
 
 
 # ----------------------------------------------------------------------
-def __Invoke(
-    code_generator,
-    invoke_reason,
-    context,
-    status_stream,
-    verbose_stream,
-    verbose,
-    plugin,
-):
+def __Invoke(code_generator, invoke_reason, context, status_stream, verbose_stream, verbose, plugin):
     elements = pickle.loads(context["pickled_elements"])
 
     return plugin.Generate(

@@ -14,6 +14,7 @@
 # ----------------------------------------------------------------------
 """Transforms Items into Element objects"""
 
+import copy
 import itertools
 import os
 
@@ -59,9 +60,7 @@ def Transform(root, plugin):
     # before can be created at this time.
     delayed_instruction_queue = []
 
-    extensions_allowing_duplicate_names = {
-        ext.Name for ext in plugin.GetExtensions() if ext.AllowDuplicates
-    }
+    extensions_allowing_duplicate_names = {ext.Name for ext in plugin.GetExtensions() if ext.AllowDuplicates}
 
     apply_type_info_visitor = _ApplyTypeInfoVisitor()
     create_element_visitor = _CreateElementVisitor()
@@ -81,10 +80,7 @@ def Transform(root, plugin):
         if item.ignore:
             return False
 
-        allow_duplicates = (
-            item.element_type == Elements.ExtensionElement
-            and item.name in extensions_allowing_duplicate_names
-        )
+        allow_duplicates = item.element_type == Elements.ExtensionElement and item.name in extensions_allowing_duplicate_names
 
         if item.Key in elements and not allow_duplicates:
             return elements[item.Key]
@@ -135,10 +131,7 @@ def Transform(root, plugin):
             setattr(element, k, v.Value)
 
         # Validate
-        for md in itertools.chain(
-            element._item.metadata.RequiredItems,
-            element._item.metadata.OptionalItems,
-        ):
+        for md in itertools.chain(element._item.metadata.RequiredItems, element._item.metadata.OptionalItems):
             result = None
 
             if md.Name in element._item.metadata.Values:
@@ -149,16 +142,69 @@ def Transform(root, plugin):
                     result = md.MissingValidateFunc(plugin, element)
 
             if result is not None:
+                if md.Name in element._item.metadata.Values:
+                    location_source = element._item.metadata.Values[md.Name]
+                else:
+                    location_source = element
+
                 raise Exceptions.InvalidAttributeException(
-                    element._item.metadata.Values[md.Name].Source,
-                    element._item.metadata.Values[md.Name].Line,
-                    element._item.metadata.Values[md.Name].Column,
+                    location_source.Source,
+                    location_source.Line,
+                    location_source.Column,
                     desc=result,
                 )
 
         # Commit
         element.Metadata = element._item.metadata
         element.AttributeNames = list(six.iterkeys(element._item.metadata.Values))
+
+    # ----------------------------------------------------------------------
+    def ResolveSimpleTypeInfo(element):
+        if not isinstance(element, (Elements.SimpleElement, Elements.CompoundElement)):
+            return
+
+        if isinstance(element, Elements.CompoundElement) and not hasattr(element, "FundamentalAttributeName"):
+            return
+
+        for reference in element._item.references:
+            assert reference.Key in elements, reference.Key
+            ref_element = elements[reference.Key]
+            assert ref_element
+
+            for k, v in six.iteritems(ref_element.TypeInfo.Items):
+                if k in element.TypeInfo.Items:
+                    assert id(element.TypeInfo.Items[k]) == id(v), k
+                    continue
+
+                element.TypeInfo.Items[k] = v
+
+    # ----------------------------------------------------------------------
+    def ResolveSimpleFundamentalName(element):
+        if not isinstance(element, (Elements.SimpleElement, Elements.CompoundElement)):
+            return
+
+        if isinstance(element, Elements.CompoundElement) and not hasattr(element, "FundamentalAttributeName"):
+            return
+
+        # Remove the None child
+        child_index = 0
+        while child_index < len(element.Children):
+            child = element.Children[child_index]
+
+            if child.Name is None:
+                del element.Children[child_index]
+                continue
+
+            child_index += 1
+
+        # Update the element to reflect the fundamental attribute name. Note that
+        # this needs to be done after all of the elements have been created so that
+        # each SimpleElement sees the value to be set as None (rather than the resolved
+        # value).
+
+        if element.FundamentalAttributeName:
+            if None in element.TypeInfo.Items:
+                element.TypeInfo.Items[element.FundamentalAttributeName] = element.TypeInfo.Items.pop(None)
 
     # ----------------------------------------------------------------------
     def CreateVariantTypeInfoList(element):
@@ -176,7 +222,7 @@ def Transform(root, plugin):
         return [element.TypeInfo]
 
     # ----------------------------------------------------------------------
-    def FlattenVariant(element):
+    def ResolveVariantTypeInfo(element):
         if not isinstance(element, Elements.VariantElement):
             return
 
@@ -219,7 +265,9 @@ def Transform(root, plugin):
         instruction()
 
     Impl(root_element, ValidateAndApplyMetadata)
-    Impl(root_element, FlattenVariant)
+    Impl(root_element, ResolveSimpleTypeInfo)
+    Impl(root_element, ResolveSimpleFundamentalName)
+    Impl(root_element, ResolveVariantTypeInfo)
     Impl(root_element, Cleanup)
 
     return root_element
@@ -245,9 +293,7 @@ class _CreateElementVisitor(ItemVisitor):
         is_definition_only,
     ):                                      # <Parameters differ from overridden...> pylint: disable = W0221
         element = Elements.FundamentalElement(
-            is_attribute=metadata_item.ItemType == Item.ItemType.Attribute and (
-                plugin.Flags & ParseFlag.SupportAttributes
-            ) != 0,
+            is_attribute=metadata_item.ItemType == Item.ItemType.Attribute and (plugin.Flags & ParseFlag.SupportAttributes) != 0,
             type_info=None,                             # Set below
             name=metadata_item.name,
             parent=None,                                # Set below
@@ -281,14 +327,8 @@ class _CreateElementVisitor(ItemVisitor):
         is_definition_only,
     ):                                      # <Parameters differ from overridden...> pylint: disable = W0221
         element = Elements.CompoundElement(
-            children=cls._CreateChildElements(
-                item,
-                item.items,
-                elements,
-                delayed_instruction_queue,
-                create_element_func,
-            ),
-            base=None,                                  # Set below
+            children=cls._CreateChildElements(item, item.items, elements, delayed_instruction_queue, create_element_func),
+            bases=[],                                   # Set below
             derived=[],                                 # Set below
             type_info=None,                             # Set below
             name=metadata_item.name,
@@ -303,23 +343,28 @@ class _CreateElementVisitor(ItemVisitor):
         # Parent
         cls._ApplyParent(element, metadata_item, elements, delayed_instruction_queue)
 
-        # Base and Derived
-        if item.reference is not None:
+        # Apply the bases
+        if item.references:
+            element.Bases = [None] * len(item.references)
+
             # ----------------------------------------------------------------------
-            def ApplyBase():
-                assert item.reference.Key in elements, item.reference.Key
-                base_element = elements[item.reference.Key]
+            def ApplyBase(ref_index, ref):
+                assert ref.Key in elements, ref.Key
+                base_element = elements[ref.Key]
                 assert base_element
 
-                element.Base = base_element
-                element.Base.Derived.append(element)
+                element.Bases[ref_index] = base_element
+                element.Bases[ref_index].Derived.append(element)
 
             # ----------------------------------------------------------------------
 
-            if elements.get(item.reference.Key, None) is None:
-                delayed_instruction_queue.append(ApplyBase)
-            else:
-                ApplyBase()
+            for ref_index, ref in enumerate(item.references):
+                if elements.get(ref.Key, None) is None:
+                    delayed_instruction_queue.append(
+                        lambda ref_index=ref_index, ref=ref: ApplyBase(ref_index, ref),
+                    )
+                else:
+                    ApplyBase(ref_index, ref)
 
         # TypeInfo
         apply_type_info_func(item, metadata_item, element)
@@ -340,36 +385,64 @@ class _CreateElementVisitor(ItemVisitor):
         create_element_func,
         is_definition_only,
     ):                                      # <Parameters differ from overridden...> pylint: disable = W0221
-
-        fundamental_attribute_name = metadata_item.metadata.Values.get(
-            Attributes.SIMPLE_FUNDAMENTAL_NAME_ATTRIBUTE_NAME,
-            None,
-        )
+        fundamental_attribute_name = metadata_item.metadata.Values.get(Attributes.SIMPLE_FUNDAMENTAL_NAME_ATTRIBUTE_NAME, None)
         if fundamental_attribute_name is not None:
             fundamental_attribute_name = fundamental_attribute_name.Value
 
-        element = Elements.SimpleElement(
-            fundamental_attribute_name=fundamental_attribute_name,
-            attributes=cls._CreateChildElements(
-                item,
-                item.items,
-                elements,
-                delayed_instruction_queue,
-                create_element_func,
-            ),
-            type_info=None,                                                           # Set below
-            name=metadata_item.name,
-            parent=None,                                                              # Set below
-            source=metadata_item.Source,
-            line=metadata_item.Line,
-            column=metadata_item.Column,
-            is_definition_only=is_definition_only,
-            is_external=metadata_item.IsExternal,
-        )
-                                                                                      # Parent
+        if plugin.Flags & ParseFlag.SupportSimpleObjectElements:
+            element = Elements.SimpleElement(
+                fundamental_attribute_name=fundamental_attribute_name,
+                attributes=cls._CreateChildElements(item, item.items, elements, delayed_instruction_queue, create_element_func),
+                type_info=None,                         # Set below
+                name=metadata_item.name,
+                parent=None,                            # Set below
+                source=metadata_item.Source,
+                line=metadata_item.Line,
+                column=metadata_item.Column,
+                is_definition_only=is_definition_only,
+                is_external=metadata_item.IsExternal,
+            )
+        else:
+            # Treat this object as a CompoundElement
+            element = Elements.CompoundElement(
+                children=cls._CreateChildElements(item, item.items, elements, delayed_instruction_queue, create_element_func),
+                bases=[],
+                derived=[],
+                type_info=None,                                             # Set below
+                name=metadata_item.name,
+                parent=None,                                                # Set below
+                source=metadata_item.Source,
+                line=metadata_item.Line,
+                column=metadata_item.Column,
+                is_definition_only=is_definition_only,
+                is_external=metadata_item.IsExternal,
+            )
+            element.FundamentalAttributeName = fundamental_attribute_name
+
+        # Parent                                                                           # Parent
         cls._ApplyParent(element, metadata_item, elements, delayed_instruction_queue)
 
-        # TypeInfo
+        # Apply the bases
+        if item.references:
+            # ----------------------------------------------------------------------
+            def ApplyBase(ref):
+                assert ref.Key in elements, ref.key
+                base_element = elements[ref.Key]
+                assert base_element
+
+                for child in base_element.Children:
+                    element.Children.append(copy.deepcopy(child))
+
+            # ----------------------------------------------------------------------
+
+            for ref in item.references:
+                if elements.get(ref.Key, None) is None:
+                    delayed_instruction_queue.append(
+                        lambda ref=ref: ApplyBase(ref),
+                    )
+                else:
+                    ApplyBase(ref)
+
         apply_type_info_func(item, metadata_item, element)
 
         return element
@@ -389,16 +462,8 @@ class _CreateElementVisitor(ItemVisitor):
         is_definition_only,
     ):                                      # <Parameters differ from overridden...> pylint: disable = W0221
         element = Elements.VariantElement(
-            variations=cls._CreateChildElements(
-                item,
-                item.reference,
-                elements,
-                delayed_instruction_queue,
-                create_element_func,
-            ),
-            is_attribute=metadata_item.ItemType == Item.ItemType.Attribute and (
-                plugin.Flags & ParseFlag.SupportAttributes
-            ) != 0,
+            variations=cls._CreateChildElements(item, item.references, elements, delayed_instruction_queue, create_element_func),
+            is_attribute=metadata_item.ItemType == Item.ItemType.Attribute and (plugin.Flags & ParseFlag.SupportAttributes) != 0,
             type_info=None,                             # Set below
             name=metadata_item.name,
             parent=None,                                # Set below
@@ -432,16 +497,9 @@ class _CreateElementVisitor(ItemVisitor):
         is_definition_only,
     ):                                      # <Parameters differ from overridden...> pylint: disable = W0221
         if metadata_item.is_augmenting_reference:
-            return cls.Accept(
-                item.reference,
-                metadata_item,
-                plugin,
-                elements,
-                delayed_instruction_queue,
-                apply_type_info_func,
-                create_element_func,
-                is_definition_only,
-            )
+            assert len(item.references) == 1, item.references
+
+            return cls.Accept(item.references[0], metadata_item, plugin, elements, delayed_instruction_queue, apply_type_info_func, create_element_func, is_definition_only)
 
         element = Elements.ReferenceElement(
             reference=None,                             # Set below
@@ -628,14 +686,7 @@ class _CreateElementVisitor(ItemVisitor):
 
     # ----------------------------------------------------------------------
     @classmethod
-    def _CreateChildElements(
-        cls,
-        item,
-        child_items,
-        elements,
-        delayed_instruction_queue,
-        create_element_func,
-    ):
+    def _CreateChildElements(cls, item, child_items, elements, delayed_instruction_queue, create_element_func):
         child_elements = []
 
         for child_item in child_items:
@@ -682,21 +733,17 @@ class _CreateElementVisitor(ItemVisitor):
 
     # ----------------------------------------------------------------------
     @classmethod
-    def _ApplyReference(
-        cls,
-        element,
-        item,
-        elements,
-        delayed_instruction_queue,
-        create_element_func,
-    ):
+    def _ApplyReference(cls, element, item, elements, delayed_instruction_queue, create_element_func):
+        assert len(item.references) == 1, item.references
+        reference = item.references[0]
+
         # The element will be placed in the elements map
-        create_element_func(item.reference)
+        create_element_func(reference)
 
         # ----------------------------------------------------------------------
         def ApplyReference():
-            assert item.reference.Key in elements, item.reference.Key
-            referenced_element = elements[item.reference.Key]
+            assert reference.Key in elements, reference.Key
+            referenced_element = elements[reference.Key]
             assert referenced_element
 
             assert element.Reference is None, element.Reference
@@ -704,7 +751,7 @@ class _CreateElementVisitor(ItemVisitor):
 
         # ----------------------------------------------------------------------
 
-        if elements.get(item.reference.Key, None) is None:
+        if elements.get(reference.Key, None) is None:
             delayed_instruction_queue.append(ApplyReference)
         else:
             ApplyReference()
@@ -723,33 +770,13 @@ class _ApplyTypeInfoVisitor(ItemVisitor):
     @classmethod
     @override
     def OnCompound(cls, item, metadata_item, element, elements, delayed_instruction_queue): # <Parameters differ from overridden...> pylint: disable = W0221
-        cls._ApplyClass(
-            metadata_item,
-            item,
-            element,
-            elements,
-            delayed_instruction_queue,
-            item.items,
-        )
+        cls._ApplyClass(metadata_item, item, element, elements, delayed_instruction_queue, item.items)
 
     # ----------------------------------------------------------------------
     @classmethod
     @override
     def OnSimple(cls, item, metadata_item, element, elements, delayed_instruction_queue): # <Parameters differ from overridden...> pylint: disable = W0221
-        cls._ApplyClass(
-            metadata_item,
-            item,
-            element,
-            elements,
-            delayed_instruction_queue,
-            item.items,
-        )
-
-        element.TypeInfo.Items[element.FundamentalAttributeName] = cls._CreateFundamentalTypeInfo(
-            metadata_item,
-            item,
-            arity_override=Arity(1, 1),
-        )
+        cls._ApplyClass(metadata_item, item, element, elements, delayed_instruction_queue, item.items)
 
     # ----------------------------------------------------------------------
     @classmethod
@@ -765,7 +792,10 @@ class _ApplyTypeInfoVisitor(ItemVisitor):
     @classmethod
     @override
     def OnReference(cls, item, metadata_item, element, elements, delayed_instruction_queue): # <Parameters differ from overridden...> pylint: disable = W0221
-        cls.Accept(item.reference, metadata_item, element, elements, delayed_instruction_queue)
+        assert len(item.references) == 1, item.references
+        reference = item.references[0]
+
+        cls.Accept(reference, metadata_item, element, elements, delayed_instruction_queue)
 
     # ----------------------------------------------------------------------
     @classmethod
@@ -776,21 +806,21 @@ class _ApplyTypeInfoVisitor(ItemVisitor):
             arity=metadata_item.arity,
         )
 
+        assert len(item.references) == 1, item.references
+        reference = item.references[0]
+
         # ----------------------------------------------------------------------
         def ApplyTypeInfo():
-            assert item.reference.Key in elements, item.reference.Key
-            referenced_element = elements[item.reference.Key]
+            assert reference.Key in elements, reference.Key
+            referenced_element = elements[reference.Key]
             assert referenced_element
             assert referenced_element.TypeInfo
-            assert isinstance(
-                element.TypeInfo.ElementTypeInfo,
-                cls._PlaceholderTypeInfo,
-            ), element.TypeInfo.ElementTypeInfo
+            assert isinstance(element.TypeInfo.ElementTypeInfo, cls._PlaceholderTypeInfo), element.TypeInfo.ElementTypeInfo
             element.TypeInfo.ElementTypeInfo = referenced_element.TypeInfo
 
         # ----------------------------------------------------------------------
 
-        referenced_element = elements.get(item.reference.Key, None)
+        referenced_element = elements.get(reference.Key, None)
         if referenced_element is None or referenced_element.TypeInfo is None:
             delayed_instruction_queue.append(ApplyTypeInfo)
         else:
@@ -842,29 +872,21 @@ class _ApplyTypeInfoVisitor(ItemVisitor):
         resolved_item,
         arity_override=None,
     ):
+        assert len(resolved_item.references) == 1, resolved_item.references
+        reference = resolved_item.references[0]
+
         kwargs = {"arity": arity_override or item.arity}
 
-        for md in itertools.chain(
-            resolved_item.reference.RequiredItems,
-            resolved_item.reference.OptionalItems,
-        ):
+        for md in itertools.chain(reference.RequiredItems, reference.OptionalItems):
             if md.Name in item.metadata.Values:
                 kwargs[md.Name] = item.metadata.Values[md.Name].Value
                 del item.metadata.Values[md.Name]
 
-        return resolved_item.reference.TypeInfoClass(**kwargs)
+        return reference.TypeInfoClass(**kwargs)
 
     # ----------------------------------------------------------------------
     @classmethod
-    def _ApplyClass(
-        cls,
-        item,
-        resolved_item,
-        element,
-        elements,
-        delayed_instruction_queue,
-        child_items,
-    ):
+    def _ApplyClass(cls, item, resolved_item, element, elements, delayed_instruction_queue, child_items):
         child_type_info_placeholders = OrderedDict()
 
         for child_item in child_items:
@@ -900,15 +922,9 @@ class _ApplyTypeInfoVisitor(ItemVisitor):
                 child_element = elements[child_item.Key]
                 assert child_element
                 assert child_element.TypeInfo
-                assert not isinstance(
-                    child_element.TypeInfo,
-                    cls._PlaceholderTypeInfo,
-                ), child_element.Name
+                assert not isinstance(child_element.TypeInfo, cls._PlaceholderTypeInfo), child_element.Name
                 assert child_element.Name in element.TypeInfo.Items, child_element.Name
-                assert isinstance(
-                    element.TypeInfo.Items[child_element.Name],
-                    cls._PlaceholderTypeInfo,
-                ), element.TypeInfo.Items[child_element.Name]
+                assert isinstance(element.TypeInfo.Items[child_element.Name], cls._PlaceholderTypeInfo), element.TypeInfo.Items[child_element.Name]
                 element.TypeInfo.Items[child_element.Name] = child_element.TypeInfo
 
             # ----------------------------------------------------------------------

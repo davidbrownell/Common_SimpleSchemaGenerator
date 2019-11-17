@@ -22,9 +22,7 @@ import six
 import CommonEnvironment
 
 from CommonEnvironment.TypeInfo import ValidationException
-from CommonEnvironment.TypeInfo.FundamentalTypes.Serialization.StringSerialization import (
-    StringSerialization,
-)
+from CommonEnvironment.TypeInfo.FundamentalTypes.Serialization.StringSerialization import StringSerialization
 
 from CommonEnvironmentEx.Package import InitRelativeImports
 
@@ -36,6 +34,7 @@ _script_dir, _script_name                   = os.path.split(_script_fullpath)
 with InitRelativeImports():
     from .Item import Item
 
+    from .. import Attributes
     from .. import Elements
     from .. import Exceptions
 
@@ -53,19 +52,14 @@ def Validate(root, plugin, filter_unsupported_extensions, filter_unsupported_met
     # ----------------------------------------------------------------------
 
     extension_names = {ext.Name for ext in plugin.GetExtensions()}
-    extensions_allowing_duplicate_names = {
-        ext.Name for ext in plugin.GetExtensions() if ext.AllowDuplicates
-    }
+    extensions_allowing_duplicate_names = {ext.Name for ext in plugin.GetExtensions() if ext.AllowDuplicates}
 
     Impl(root, lambda item: _ValidateSupported(plugin.Flags, item))
     Impl(root, lambda item: _ValidateUniqueNames(extensions_allowing_duplicate_names, item))
     Impl(root, _ValidateVariantArity)
     Impl(root, lambda item: _ValidateMetadata(filter_unsupported_metadata, item))
     Impl(root, _ValidateSimpleElements)
-    Impl(
-        root,
-        lambda item: _ValidateExtension(filter_unsupported_extensions, extension_names, item),
-    )
+    Impl(root, lambda item: _ValidateExtension(filter_unsupported_extensions, extension_names, item))
     Impl(root, _ValidateReference)
 
     return root
@@ -76,65 +70,20 @@ def Validate(root, plugin, filter_unsupported_extensions, filter_unsupported_met
 # ----------------------------------------------------------------------
 def _ValidateSupported(plugin_flags, item):
     for item in item.Enumerate():
-        if (
-            item.element_type == Elements.CustomElement
-            and not plugin_flags & ParseFlag.SupportCustomElements
-        ):
-            raise Exceptions.ValidateUnsupportedCustomElementsException(
-                item.Source,
-                item.Line,
-                item.Column,
-            )
+        if item.element_type == Elements.CustomElement and not plugin_flags & ParseFlag.SupportCustomElements:
+            raise Exceptions.ValidateUnsupportedCustomElementsException(item.Source, item.Line, item.Column)
 
-        if (
-            item.element_type == Elements.AnyElement
-            and not plugin_flags & ParseFlag.SupportAnyElements
-        ):
-            raise Exceptions.ValidateUnsupportedAnyElementsException(
-                item.Source,
-                item.Line,
-                item.Column,
-            )
+        if item.element_type == Elements.AnyElement and not plugin_flags & ParseFlag.SupportAnyElements:
+            raise Exceptions.ValidateUnsupportedAnyElementsException(item.Source, item.Line, item.Column)
 
-        if (
-            item.element_type == Elements.ReferenceElement
-            and not plugin_flags & ParseFlag.SupportReferenceElements
-        ):
-            raise Exceptions.ValidateUnsupportedReferenceElementsException(
-                item.Source,
-                item.Line,
-                item.Column,
-            )
+        if item.element_type == Elements.ReferenceElement and not plugin_flags & ParseFlag.SupportReferenceElements:
+            raise Exceptions.ValidateUnsupportedReferenceElementsException(item.Source, item.Line, item.Column)
 
-        if (
-            item.element_type == Elements.ListElement
-            and not plugin_flags & ParseFlag.SupportListElements
-        ):
-            raise Exceptions.ValidateUnsupportedListElementsException(
-                item.Source,
-                item.Line,
-                item.Column,
-            )
+        if item.element_type == Elements.ListElement and not plugin_flags & ParseFlag.SupportListElements:
+            raise Exceptions.ValidateUnsupportedListElementsException(item.Source, item.Line, item.Column)
 
-        if (
-            item.element_type == Elements.SimpleElement
-            and not plugin_flags & ParseFlag.SupportSimpleObjectElements
-        ):
-            raise Exceptions.ValidateUnsupportedSimpleObjectElementsException(
-                item.Source,
-                item.Line,
-                item.Column,
-            )
-
-        if (
-            item.element_type == Elements.VariantElement
-            and not plugin_flags & ParseFlag.SupportVariantElements
-        ):
-            raise Exceptions.ValidateUnsupportedVariantElementsException(
-                item.Source,
-                item.Line,
-                item.Column,
-            )
+        if item.element_type == Elements.VariantElement and not plugin_flags & ParseFlag.SupportVariantElements:
+            raise Exceptions.ValidateUnsupportedVariantElementsException(item.Source, item.Line, item.Column)
 
 
 # ----------------------------------------------------------------------
@@ -146,13 +95,13 @@ def _ValidateUniqueNames(
     names = names or {}
 
     for child in item.items:
-        if (
-            child.element_type == Elements.ExtensionElement
-            and child.name in extensions_allowing_duplicate_names
-        ):
+        if child.element_type == Elements.ExtensionElement and child.name in extensions_allowing_duplicate_names:
             continue
 
         if child.name in names:
+            if item.element_type == Elements.SimpleElement and child.name is None:
+                raise Exceptions.ValidateInvalidSimpleReferenceException(item.Source, item.Line, item.Column)
+
             raise Exceptions.ValidateDuplicateNameException(
                 child.Source,
                 child.Line,
@@ -165,8 +114,9 @@ def _ValidateUniqueNames(
 
         names[child.name] = child
 
-    if isinstance(item.reference, Item):
-        _ValidateUniqueNames(extensions_allowing_duplicate_names, item.reference, names)
+    for ref in item.references:
+        if isinstance(ref, Item):
+            _ValidateUniqueNames(extensions_allowing_duplicate_names, ref, names)
 
 
 # ----------------------------------------------------------------------
@@ -198,10 +148,7 @@ def _ValidateMetadata(filter_unsupported_metadata, item):
                 )
 
         # Verify / eliminate / Convert extra metadata
-        md_lookup = {
-            md.Name: md
-            for md in itertools.chain(item.metadata.RequiredItems, item.metadata.OptionalItems)
-        }
+        md_lookup = {md.Name: md for md in itertools.chain(item.metadata.RequiredItems, item.metadata.OptionalItems)}
 
         md_keys = list(six.iterkeys(item.metadata.Values))
 
@@ -243,9 +190,7 @@ def _ValidateMetadata(filter_unsupported_metadata, item):
 
 # ----------------------------------------------------------------------
 def _ValidateSimpleElements(item):
-    if item.element_type != Elements.SimpleElement and not (
-        item.element_type == Elements.CompoundElement and item.is_converted
-    ):
+    if item.element_type != Elements.SimpleElement:
         return
 
     # ----------------------------------------------------------------------
@@ -257,23 +202,17 @@ def _ValidateSimpleElements(item):
             return False
 
         while child.element_type == Elements.ReferenceElement:
-            child = child.reference
+            assert len(child.references) == 1, child.references
+            child = child.references[0]
 
         return child.element_type == Elements.FundamentalElement
 
     # ----------------------------------------------------------------------
 
-    # Note that we don't need to validate that the reference points to a fundamental type,
-    # as that is the thing that made this a SimpleElement rather than a CompoundElement.
-
     # Validate the attributes
     for child in item.items:
         if not ValidateAttribute(child):
-            raise Exceptions.ValidateInvalidSimpleChildException(
-                child.Source,
-                child.Line,
-                child.Column,
-            )
+            raise Exceptions.ValidateInvalidSimpleChildException(child.Source, child.Line, child.Column)
 
 
 # ----------------------------------------------------------------------
@@ -299,8 +238,8 @@ def _ValidateReference(item):
         return
 
     ref = item
-    while isinstance(ref.reference, Item):
-        ref = ref.reference
+    while len(ref.references) == 1 and isinstance(ref.references[0], Item):
+        ref = ref.references[0]
 
     if ref.element_type == Elements.ExtensionElement:
         raise Exceptions.ValidateInvalidReferenceException(item.Source, item.Line, item.Column)

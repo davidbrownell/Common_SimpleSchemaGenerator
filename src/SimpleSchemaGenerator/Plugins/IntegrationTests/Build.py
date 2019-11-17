@@ -76,13 +76,7 @@ def Build(
             if isinstance(schema_name, tuple):
                 schema_name, schema_flags = schema_name
 
-            dm.stream.write(
-                "Processing '{}' ({} of {})...".format(
-                    schema_name,
-                    schema_name_index + 1,
-                    len(schema_names),
-                ),
-            )
+            dm.stream.write("Processing '{}' ({} of {})...".format(schema_name, schema_name_index + 1, len(schema_names)))
             with dm.stream.DoneManager(
                 suffix="\n",
             ) as schema_dm:
@@ -94,13 +88,7 @@ def Build(
                 assert os.path.isfile(schema_name), schema_name
 
                 for plugin_index, plugin_name in enumerate(plugin_names):
-                    schema_dm.stream.write(
-                        "Plugin '{}' ({} of {})...".format(
-                            plugin_name,
-                            plugin_index + 1,
-                            len(plugin_names),
-                        ),
-                    )
+                    schema_dm.stream.write("Plugin '{}' ({} of {})...".format(plugin_name, plugin_index + 1, len(plugin_names)))
                     with schema_dm.stream.DoneManager(
                         suffix="\n" if verbose else None,
                     ) as plugin_dm:

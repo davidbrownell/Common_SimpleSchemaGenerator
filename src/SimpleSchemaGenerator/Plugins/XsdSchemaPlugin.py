@@ -29,12 +29,8 @@ from CommonEnvironment import RegularExpression
 from CommonEnvironment.StreamDecorator import StreamDecorator
 from CommonEnvironment import StringHelpers
 from CommonEnvironment.TypeInfo.FundamentalTypes.BoolTypeInfo import BoolTypeInfo
-from CommonEnvironment.TypeInfo.FundamentalTypes.Serialization.StringSerialization import (
-    RegularExpressionVisitor,
-)
-from CommonEnvironment.TypeInfo.FundamentalTypes.Visitor import (
-    Visitor as FundamentalTypeInfoVisitor,
-)
+from CommonEnvironment.TypeInfo.FundamentalTypes.Serialization.StringSerialization import RegularExpressionVisitor
+from CommonEnvironment.TypeInfo.FundamentalTypes.Visitor import Visitor as FundamentalTypeInfoVisitor
 
 from CommonEnvironmentEx.Package import InitRelativeImports
 
@@ -130,13 +126,7 @@ class Plugin(PluginBase):
         include_map = cls._GenerateIncludeMap(elements, include_indexes)
         include_dotted_names = set(six.iterkeys(include_map))
 
-        top_level_elements = [
-            element
-            for element in elements
-            if element.Parent is None
-            and not element.IsDefinitionOnly
-            and element.DottedName in include_map
-        ]
+        top_level_elements = [element for element in elements if element.Parent is None and not element.IsDefinitionOnly and element.DottedName in include_map]
 
         status_stream.write("Creating '{}'...".format(output_filename))
         with status_stream.DoneManager() as dm:
@@ -243,10 +233,7 @@ class Plugin(PluginBase):
                                     </xsd:simpleType>
 
                                     """,
-                                ).format(
-                                    element.DottedName,
-                                    StringHelpers.LeftJustify(content, 2).strip(),
-                                ),
+                                ).format(element.DottedName, StringHelpers.LeftJustify(content, 2).strip()),
                             )
                         else:
                             element._xsd_base_type = content
@@ -279,10 +266,7 @@ class Plugin(PluginBase):
                                         name=child.Name,
                                         use="optional" if child.TypeInfo.Arity.IsOptional else "required",
                                         type=GetBaseTypeName(child.Resolve()),
-                                        default="" if not hasattr(
-                                            child,
-                                            "default",
-                                        ) else ' default="{}"'.format(child.default),
+                                        default="" if not hasattr(child, "default") else ' default="{}"'.format(child.default),
                                     ),
                                 )
                             else:
@@ -295,21 +279,16 @@ class Plugin(PluginBase):
                                         name=child.Name,
                                         type=child.DottedName,
                                         min="0" if child.TypeInfo.Arity.Min == 0 else "1",
-                                        default="" if not hasattr(
-                                            child,
-                                            "default",
-                                        ) else ' default="{}"'.format(child.default),
+                                        default="" if not hasattr(child, "default") else ' default="{}"'.format(child.default),
                                     ),
                                 )
 
-                        element_allow_additional_children = element.allow_additional_children
+                        element_allow_additional_children = getattr(element, "allow_additional_children", None)
                         if element_allow_additional_children is None:
                             element_allow_additional_children = allow_additional_children
 
                         if element_allow_additional_children:
-                            elements.append(
-                                '<xsd:any minOccurs="0" maxOccurs="unbounded" processContents="skip" />\n',
-                            )
+                            elements.append('<xsd:any minOccurs="0" maxOccurs="unbounded" processContents="skip" />\n')
 
                         content = textwrap.dedent(
                             """\
@@ -349,9 +328,7 @@ class Plugin(PluginBase):
                     @staticmethod
                     @Interface.override
                     def OnSimple_VisitedChildren(element):
-                        content = fundamental_type_info_visitor.Accept(
-                            element.TypeInfo.Items[element.FundamentalAttributeName],
-                        )
+                        content = fundamental_type_info_visitor.Accept(element.TypeInfo.Items[element.FundamentalAttributeName])
 
                         if content.startswith("<xsd:restriction"):
                             f.write(
@@ -362,10 +339,7 @@ class Plugin(PluginBase):
                                     </xsd:simpleType>
 
                                     """,
-                                ).format(
-                                    element.DottedName,
-                                    StringHelpers.LeftJustify(content.strip(), 2),
-                                ),
+                                ).format(element.DottedName, StringHelpers.LeftJustify(content.strip(), 2)),
                             )
 
                             content = "_{}_Item_content".format(element.DottedName)
@@ -495,10 +469,7 @@ class Plugin(PluginBase):
 
                                 """,
                             ).format(
-                                type="simple" if isinstance(
-                                    element.Resolve(),
-                                    Elements.FundamentalElement,
-                                ) else "complex",
+                                type="simple" if isinstance(element.Resolve(), Elements.FundamentalElement) else "complex",
                                 name=element.DottedName,
                                 base=typ,
                                 min=element.TypeInfo.Arity.Min,
@@ -701,9 +672,7 @@ class _FundamentalTypeInfoVisitor(FundamentalTypeInfoVisitor):
         restrictions = OrderedDict()
 
         if type_info.ValidationExpression is not None:
-            restrictions["pattern"] = RegularExpression.PythonToJavaScript(
-                type_info.ValidationExpression,
-            )
+            restrictions["pattern"] = RegularExpression.PythonToJavaScript(type_info.ValidationExpression)
         else:
             if type_info.MinLength not in [None, 0]:
                 restrictions["minLength"] = type_info.MinLength

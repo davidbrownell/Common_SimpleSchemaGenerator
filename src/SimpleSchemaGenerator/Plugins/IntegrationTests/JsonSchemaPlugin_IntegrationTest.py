@@ -62,12 +62,7 @@ class JsonSchema(unittest.TestCase):
             to_string=True,
         )
 
-        all_types_filename = os.path.join(
-            _script_dir,
-            "Generated",
-            "AllTypes",
-            "AllTypes.schema.json",
-        )
+        all_types_filename = os.path.join(_script_dir, "Generated", "AllTypes", "AllTypes.schema.json")
         assert os.path.isfile(all_types_filename), all_types_filename
 
         # FileSystemTest.xml
@@ -80,12 +75,7 @@ class JsonSchema(unittest.TestCase):
             to_string=True,
         )
 
-        file_system_filename = os.path.join(
-            _script_dir,
-            "Generated",
-            "FileSystemTest",
-            "FileSystemTest.schema.json",
-        )
+        file_system_filename = os.path.join(_script_dir, "Generated", "FileSystemTest", "FileSystemTest.schema.json")
         assert os.path.isfile(file_system_filename), file_system_filename
 
         # Test.xml

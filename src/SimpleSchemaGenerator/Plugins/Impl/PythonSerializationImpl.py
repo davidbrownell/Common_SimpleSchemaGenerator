@@ -32,9 +32,7 @@ from CommonEnvironment.TypeInfo.AnyOfTypeInfo import AnyOfTypeInfo
 from CommonEnvironment.TypeInfo.ClassTypeInfo import ClassTypeInfo
 from CommonEnvironment.TypeInfo.DictTypeInfo import DictTypeInfo
 from CommonEnvironment.TypeInfo.ListTypeInfo import ListTypeInfo
-from CommonEnvironment.TypeInfo.FundamentalTypes.Serialization.PythonCodeVisitor import (
-    PythonCodeVisitor,
-)
+from CommonEnvironment.TypeInfo.FundamentalTypes.Serialization.PythonCodeVisitor import PythonCodeVisitor
 
 from CommonEnvironmentEx.Package import InitRelativeImports
 
@@ -71,16 +69,11 @@ class PythonSerializationImpl(PluginBase):
     @classmethod
     def __clsinit__(cls):
         cls.Flags = Interface.DerivedProperty(
-            (
-                ParseFlag.SupportAttributes if cls._SupportAttributes else 0
-            ) | ParseFlag.SupportIncludeStatements
-            # | ParseFlag.SupportExtensionsStatements
-            # | ParseFlag.SupportUnnamedDeclarations
+            (ParseFlag.SupportAttributes if cls._SupportAttributes else 0) | ParseFlag.SupportIncludeStatements                                                                                                          # | ParseFlag.SupportExtensionsStatements
+                                                                                                                                                                                                                         # | ParseFlag.SupportUnnamedDeclarations
             # | ParseFlag.SupportUnnamedObjects
             | ParseFlag.SupportNamedDeclarations | ParseFlag.SupportNamedObjects | ParseFlag.SupportRootDeclarations | ParseFlag.SupportRootObjects | ParseFlag.SupportChildDeclarations | ParseFlag.SupportChildObjects # | ParseFlag.SupportCustomElements
-            | (
-                ParseFlag.SupportAnyElements if cls._SupportAnyElements else 0
-            ) | ParseFlag.SupportReferenceElements | ParseFlag.SupportListElements | (
+            | (ParseFlag.SupportAnyElements if cls._SupportAnyElements else 0) | ParseFlag.SupportReferenceElements | ParseFlag.SupportListElements | (
                 ParseFlag.SupportSimpleObjectElements if cls._SupportAttributes else 0
             ) | ParseFlag.SupportVariantElements | ParseFlag.ResolveReferences,
         )
@@ -118,10 +111,7 @@ class PythonSerializationImpl(PluginBase):
     @classmethod
     @Interface.override
     def GenerateOutputFilenames(cls, context):
-        yield os.path.join(
-            context["output_dir"],
-            "{}_{}Serialization.py".format(context["output_name"], cls.Name),
-        )
+        yield os.path.join(context["output_dir"], "{}_{}Serialization.py".format(context["output_name"], cls.Name))
 
     # ----------------------------------------------------------------------
     @classmethod
@@ -256,11 +246,7 @@ class PythonSerializationImpl(PluginBase):
 
                     elements = cls._CalculateElementsToWrite(elements, include_map)
 
-                    top_level_elements = [
-                        element
-                        for element in elements
-                        if not element.IsDefinitionOnly and element.Parent not in elements
-                    ]
+                    top_level_elements = [element for element in elements if not element.IsDefinitionOnly and element.Parent not in elements]
 
                     if not top_level_elements:
                         return
@@ -325,22 +311,10 @@ class PythonSerializationImpl(PluginBase):
 
                     # Serializer/Deserializer methods
                     if not no_serialization:
-                        cls._WriteSerializer(
-                            elements,
-                            f,
-                            serialize_source_writer,
-                            serialize_dest_writer,
-                            custom_serialize_item_args,
-                        )
+                        cls._WriteSerializer(elements, f, serialize_source_writer, serialize_dest_writer, custom_serialize_item_args)
 
                     if not no_deserialization:
-                        cls._WriteDeserializer(
-                            elements,
-                            f,
-                            deserialize_source_writer,
-                            deserialize_dest_writer,
-                            custom_deserialize_item_args,
-                        )
+                        cls._WriteDeserializer(elements, f, deserialize_source_writer, deserialize_dest_writer, custom_deserialize_item_args)
 
                     f.write(
                         textwrap.dedent(
@@ -487,14 +461,7 @@ class PythonSerializationImpl(PluginBase):
 
     # ----------------------------------------------------------------------
     @classmethod
-    def _WriteGlobalMethods(
-        cls,
-        elements,
-        output_stream,
-        source_writer,
-        dest_writer,
-        is_serialization,
-    ):
+    def _WriteGlobalMethods(cls, elements, output_stream, source_writer, dest_writer, is_serialization):
         if is_serialization:
             method_name = "Serialize"
 
@@ -527,10 +494,7 @@ class PythonSerializationImpl(PluginBase):
 
         if len(elements) == 1:
             # Just call the item func.
-            has_compound = isinstance(
-                elements[0].Resolve(),
-                (Elements.CompoundElement, Elements.SimpleElement),
-            )
+            has_compound = isinstance(elements[0].Resolve(), (Elements.CompoundElement, Elements.SimpleElement))
 
             args = ""
 
@@ -575,10 +539,7 @@ class PythonSerializationImpl(PluginBase):
             statements = []
 
             for element in elements:
-                if isinstance(
-                    element.Resolve(),
-                    (Elements.CompoundElement, Elements.SimpleElement),
-                ):
+                if isinstance(element.Resolve(), (Elements.CompoundElement, Elements.SimpleElement)):
                     has_compound = True
 
                     compound_args = textwrap.dedent(
@@ -607,14 +568,8 @@ class PythonSerializationImpl(PluginBase):
                         method_name=method_name,
                         name=ToPythonName(element),
                         compound_args=StringHelpers.LeftJustify(compound_args, 4),
-                        append_statement=StringHelpers.LeftJustify(
-                            dest_writer.AppendChild(element, "result", "this_result"),
-                            4,
-                        ).strip(),
-                        append_empty_statement=StringHelpers.LeftJustify(
-                            dest_writer.AppendChild(element, "result", None),
-                            4,
-                        ).strip(),
+                        append_statement=StringHelpers.LeftJustify(dest_writer.AppendChild(element, "result", "this_result"), 4).strip(),
+                        append_empty_statement=StringHelpers.LeftJustify(dest_writer.AppendChild(element, "result", None), 4).strip(),
                     ),
                 )
 
@@ -632,22 +587,10 @@ class PythonSerializationImpl(PluginBase):
                 ''',
             ).format(
                 method_name_lower=method_name.lower(),
-                convenience=StringHelpers.LeftJustify(
-                    source_writer.ConvenienceConversions("root", None)
-                    or "# No convenience conversions",
-                    4,
-                ).strip(),
-                create_compound=StringHelpers.LeftJustify(
-                    dest_writer.CreateCompoundElement(
-                        dest_writer.CreateTemporaryElement('"_"', "1"),
-                        None,
-                    ).rstrip(),
-                    4,
-                ),
+                convenience=StringHelpers.LeftJustify(source_writer.ConvenienceConversions("root", None) or "# No convenience conversions", 4).strip(),
+                create_compound=StringHelpers.LeftJustify(dest_writer.CreateCompoundElement(dest_writer.CreateTemporaryElement('"_"', "1"), None).rstrip(), 4),
                 statements="".join(statements).strip(),
-                suffix="{}\n\n".format(
-                    StringHelpers.LeftJustify(suffix, 4).rstrip(),
-                ) if suffix else "",
+                suffix="{}\n\n".format(StringHelpers.LeftJustify(suffix, 4).rstrip()) if suffix else "",
             )
 
         if has_compound:
@@ -681,14 +624,7 @@ class PythonSerializationImpl(PluginBase):
 
     # ----------------------------------------------------------------------
     @classmethod
-    def _WriteTopLevelMethods(
-        cls,
-        elements,
-        output_stream,
-        source_writer,
-        dest_writer,
-        is_serialize,
-    ):
+    def _WriteTopLevelMethods(cls, elements, output_stream, source_writer, dest_writer, is_serialize):
         if is_serialize:
             method_name = "Serialize"
         else:
@@ -797,17 +733,11 @@ class PythonSerializationImpl(PluginBase):
                     var_name=var_name,
                     compound_params=StringHelpers.LeftJustify(compound_params, 4).rstrip(),
                     compound_args=StringHelpers.LeftJustify(compound_args, 16).rstrip(),
-                    optional_collection_clause=StringHelpers.LeftJustify(
-                        optional_collection_clause,
-                        12,
-                    ).rstrip(),
+                    optional_collection_clause=StringHelpers.LeftJustify(optional_collection_clause, 12).rstrip(),
                     extra_args=StringHelpers.LeftJustify(extra_args, 4).rstrip(),
                     source_type=source_writer.ObjectTypeDesc,
                     dest_type=dest_writer.ObjectTypeDesc,
-                    convenience=StringHelpers.LeftJustify(
-                        convenience_conversions or "# No convenience conversions",
-                        4,
-                    ).strip(),
+                    convenience=StringHelpers.LeftJustify(convenience_conversions or "# No convenience conversions", 4).strip(),
                     suffix=StringHelpers.LeftJustify(suffix, 4),
                 ),
             )
@@ -834,12 +764,7 @@ class PythonSerializationImpl(PluginBase):
 
         # ----------------------------------------------------------------------
         def OnElement(element):
-            output_stream.write(
-                type_info_template.format(
-                    "{}_TypeInfo".format(ToPythonName(element)),
-                    python_code_visitor.Accept(element.TypeInfo),
-                ),
-            )
+            output_stream.write(type_info_template.format("{}_TypeInfo".format(ToPythonName(element)), python_code_visitor.Accept(element.TypeInfo)))
 
         # ----------------------------------------------------------------------
 
@@ -861,11 +786,7 @@ class PythonSerializationImpl(PluginBase):
                 type_infos["_{}_TypeInfo".format(python_name)] = type_info_value
 
                 if isinstance(element, Elements.SimpleElement):
-                    type_infos[
-                        "_{}__value__TypeInfo".format(python_name)
-                    ] = python_code_visitor.Accept(
-                        element.TypeInfo.Items[element.FundamentalAttributeName],
-                    )
+                    type_infos["_{}__value__TypeInfo".format(python_name)] = python_code_visitor.Accept(element.TypeInfo.Items[element.FundamentalAttributeName])
 
             if isinstance(element, Elements.VariantElement):
                 for variation in element.Variations:
@@ -895,14 +816,7 @@ class PythonSerializationImpl(PluginBase):
 
     # ----------------------------------------------------------------------
     @classmethod
-    def _WriteSerializer(
-        cls,
-        elements,
-        output_stream,
-        source_writer,
-        dest_writer,
-        custom_serialize_item_args,
-    ):
+    def _WriteSerializer(cls, elements, output_stream, source_writer, dest_writer, custom_serialize_item_args):
         output_stream.write(
             textwrap.dedent(
                 """\
@@ -933,14 +847,7 @@ class PythonSerializationImpl(PluginBase):
 
     # ----------------------------------------------------------------------
     @classmethod
-    def _WriteDeserializer(
-        cls,
-        elements,
-        output_stream,
-        source_writer,
-        dest_writer,
-        custom_deserialize_item_args,
-    ):
+    def _WriteDeserializer(cls, elements, output_stream, source_writer, dest_writer, custom_deserialize_item_args):
         output_stream.write(
             textwrap.dedent(
                 """\
@@ -966,15 +873,7 @@ class PythonSerializationImpl(PluginBase):
 
     # ----------------------------------------------------------------------
     @classmethod
-    def _WriteImpl(
-        cls,
-        elements,
-        output_stream,
-        custom_serialize_item_args,
-        source_writer,
-        dest_writer,
-        is_serializer,
-    ):
+    def _WriteImpl(cls, elements, output_stream, custom_serialize_item_args, source_writer, dest_writer, is_serializer):
         indented_stream = StreamDecorator(
             output_stream,
             line_prefix="    ",
@@ -1056,10 +955,7 @@ class PythonSerializationImpl(PluginBase):
 
                 # ----------------------------------------------------------------------
 
-            is_compound_like = isinstance(
-                resolved_element,
-                (Elements.CompoundElement, Elements.SimpleElement),
-            )
+            is_compound_like = isinstance(resolved_element, (Elements.CompoundElement, Elements.SimpleElement))
 
             if is_compound_like:
                 extra_params = ", always_include_optional, process_additional_data"
@@ -1227,27 +1123,15 @@ class PythonSerializationImpl(PluginBase):
         )
 
         if item_method_element_visitor.IncludeApplyOptionalChild:
-            optional_child_empty_element = source_writer.CreateTemporaryElement(
-                "attribute_name",
-                "?",
-            )
+            optional_child_empty_element = source_writer.CreateTemporaryElement("attribute_name", "?")
 
             indented_stream.write(
                 content_template.format(
                     method_name="_ApplyOptionalChild",
                     var_name="item",
-                    get_statement=StringHelpers.LeftJustify(
-                        source_writer.GetChild("item", optional_child_empty_element),
-                        4,
-                    ).strip(),
-                    add_child=StringHelpers.LeftJustify(
-                        dest_writer.AppendChild(optional_child_empty_element, "dest", "value"),
-                        12,
-                    ).strip(),
-                    add_child_empty=StringHelpers.LeftJustify(
-                        dest_writer.AppendChild(optional_child_empty_element, "dest", None),
-                        8,
-                    ).strip(),
+                    get_statement=StringHelpers.LeftJustify(source_writer.GetChild("item", optional_child_empty_element), 4).strip(),
+                    add_child=StringHelpers.LeftJustify(dest_writer.AppendChild(optional_child_empty_element, "dest", "value"), 12).strip(),
+                    add_child_empty=StringHelpers.LeftJustify(dest_writer.AppendChild(optional_child_empty_element, "dest", None), 8).strip(),
                     default_value_param=", default_value_func=None",
                     default_value_statement=StringHelpers.LeftJustify(
                         textwrap.dedent(
@@ -1257,43 +1141,22 @@ class PythonSerializationImpl(PluginBase):
                                 return
 
                             """,
-                        ).format(
-                            StringHelpers.LeftJustify(
-                                dest_writer.AppendChild(
-                                    optional_child_empty_element,
-                                    "dest",
-                                    "default_value_func()",
-                                ),
-                                4,
-                            ).strip(),
-                        ),
+                        ).format(StringHelpers.LeftJustify(dest_writer.AppendChild(optional_child_empty_element, "dest", "default_value_func()"), 4).strip()),
                         4,
                     ).strip(),
                 ),
             )
 
         if item_method_element_visitor.IncludeApplyOptionalChildren:
-            optional_children_empty_element = dest_writer.CreateTemporaryElement(
-                "attribute_name",
-                "*",
-            )
+            optional_children_empty_element = dest_writer.CreateTemporaryElement("attribute_name", "*")
 
             indented_stream.write(
                 content_template.format(
                     method_name="_ApplyOptionalChildren",
                     var_name="items",
-                    get_statement=StringHelpers.LeftJustify(
-                        source_writer.GetChild("items", optional_children_empty_element),
-                        4,
-                    ).strip(),
-                    add_child=StringHelpers.LeftJustify(
-                        dest_writer.AppendChild(optional_children_empty_element, "dest", "value"),
-                        12,
-                    ).strip(),
-                    add_child_empty=StringHelpers.LeftJustify(
-                        dest_writer.AppendChild(optional_children_empty_element, "dest", None),
-                        8,
-                    ).strip(),
+                    get_statement=StringHelpers.LeftJustify(source_writer.GetChild("items", optional_children_empty_element), 4).strip(),
+                    add_child=StringHelpers.LeftJustify(dest_writer.AppendChild(optional_children_empty_element, "dest", "value"), 12).strip(),
+                    add_child_empty=StringHelpers.LeftJustify(dest_writer.AppendChild(optional_children_empty_element, "dest", None), 8).strip(),
                     default_value_param="",
                     default_value_statement="# No default statement",
                 ),
@@ -1310,18 +1173,9 @@ class PythonSerializationImpl(PluginBase):
                 content_template.format(
                     method_name="_ApplyOptionalAttribute",
                     var_name="item",
-                    get_statement=StringHelpers.LeftJustify(
-                        source_writer.GetChild("item", optional_attribute_empty_element),
-                        4,
-                    ).strip(),
-                    add_child=StringHelpers.LeftJustify(
-                        dest_writer.AppendChild(optional_attribute_empty_element, "dest", "value"),
-                        12,
-                    ).strip(),
-                    add_child_empty=StringHelpers.LeftJustify(
-                        dest_writer.AppendChild(optional_attribute_empty_element, "dest", None),
-                        8,
-                    ),
+                    get_statement=StringHelpers.LeftJustify(source_writer.GetChild("item", optional_attribute_empty_element), 4).strip(),
+                    add_child=StringHelpers.LeftJustify(dest_writer.AppendChild(optional_attribute_empty_element, "dest", "value"), 12).strip(),
+                    add_child_empty=StringHelpers.LeftJustify(dest_writer.AppendChild(optional_attribute_empty_element, "dest", None), 8),
                     default_value_param=", default_value_func=None",
                     default_value_statement=StringHelpers.LeftJustify(
                         textwrap.dedent(
@@ -1331,16 +1185,7 @@ class PythonSerializationImpl(PluginBase):
                                 return
 
                             """,
-                        ).format(
-                            StringHelpers.LeftJustify(
-                                dest_writer.AppendChild(
-                                    optional_attribute_empty_element,
-                                    "dest",
-                                    "default_value_func()",
-                                ),
-                                4,
-                            ).strip(),
-                        ),
+                        ).format(StringHelpers.LeftJustify(dest_writer.AppendChild(optional_attribute_empty_element, "dest", "default_value_func()"), 4).strip()),
                         4,
                     ).strip(),
                 ),
@@ -1381,24 +1226,13 @@ class PythonSerializationImpl(PluginBase):
 
                 """,
             ).format(
-                get_additional_children=StringHelpers.LeftJustify(
-                    source_writer.GetAdditionalDataChildren(),
-                    4,
-                ).strip(),
+                get_additional_children=StringHelpers.LeftJustify(source_writer.GetAdditionalDataChildren(), 4).strip(),
                 append=StringHelpers.LeftJustify(
-                    dest_writer.AppendChild(
-                        source_writer.CreateTemporaryElement("name", "1"),
-                        "dest",
-                        "cls._CreateAdditionalDataItem(name, child)",
-                    ),
+                    dest_writer.AppendChild(source_writer.CreateTemporaryElement("name", "1"), "dest", "cls._CreateAdditionalDataItem(name, child)"),
                     12,
                 ).strip(),
                 append_children=StringHelpers.LeftJustify(
-                    dest_writer.AppendChild(
-                        temporary_children_element,
-                        "dest",
-                        dest_writer.CreateCollection(temporary_children_element, "children"),
-                    ),
+                    dest_writer.AppendChild(temporary_children_element, "dest", dest_writer.CreateCollection(temporary_children_element, "children")),
                     12,
                 ).strip(),
             ),
@@ -1415,10 +1249,7 @@ class PythonSerializationImpl(PluginBase):
 
                 """,
             ).format(
-                statements=StringHelpers.LeftJustify(
-                    source_writer.CreateAdditionalDataItem(dest_writer, "name", "source"),
-                    4,
-                ).strip(),
+                statements=StringHelpers.LeftJustify(source_writer.CreateAdditionalDataItem(dest_writer, "name", "source"), 4).strip(),
             ),
         )
 

@@ -114,13 +114,13 @@ class SimpleSchemaVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by SimpleSchemaParser#unnamedObj.
-    def visitUnnamedObj(self, ctx:SimpleSchemaParser.UnnamedObjContext):
+    # Visit a parse tree produced by SimpleSchemaParser#obj.
+    def visitObj(self, ctx:SimpleSchemaParser.ObjContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by SimpleSchemaParser#obj.
-    def visitObj(self, ctx:SimpleSchemaParser.ObjContext):
+    # Visit a parse tree produced by SimpleSchemaParser#unnamedObj.
+    def visitUnnamedObj(self, ctx:SimpleSchemaParser.UnnamedObjContext):
         return self.visitChildren(ctx)
 
 
@@ -129,18 +129,23 @@ class SimpleSchemaVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by SimpleSchemaParser#objAttributesItems.
+    def visitObjAttributesItems(self, ctx:SimpleSchemaParser.ObjAttributesItemsContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by SimpleSchemaParser#objContent__.
     def visitObjContent__(self, ctx:SimpleSchemaParser.ObjContent__Context):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by SimpleSchemaParser#unnamedDeclaration.
-    def visitUnnamedDeclaration(self, ctx:SimpleSchemaParser.UnnamedDeclarationContext):
+    # Visit a parse tree produced by SimpleSchemaParser#declaration.
+    def visitDeclaration(self, ctx:SimpleSchemaParser.DeclarationContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by SimpleSchemaParser#declaration.
-    def visitDeclaration(self, ctx:SimpleSchemaParser.DeclarationContext):
+    # Visit a parse tree produced by SimpleSchemaParser#unnamedDeclaration.
+    def visitUnnamedDeclaration(self, ctx:SimpleSchemaParser.UnnamedDeclarationContext):
         return self.visitChildren(ctx)
 
 

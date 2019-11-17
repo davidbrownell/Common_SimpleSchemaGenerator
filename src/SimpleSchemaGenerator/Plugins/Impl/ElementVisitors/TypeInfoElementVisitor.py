@@ -72,10 +72,7 @@ class TypeInfoElementVisitor(ElementVisitor):
     # ----------------------------------------------------------------------
     @Interface.override
     def OnList(self, element):
-        return "ListTypeInfo(_{}_TypeInfo{})".format(
-            ToPythonName(element.Reference),
-            self._ToArityString(element.TypeInfo.Arity),
-        )
+        return "ListTypeInfo(_{}_TypeInfo{})".format(ToPythonName(element.Reference), self._ToArityString(element.TypeInfo.Arity))
 
     # ----------------------------------------------------------------------
     @Interface.override
@@ -105,14 +102,20 @@ class TypeInfoElementVisitor(ElementVisitor):
 
         # ----------------------------------------------------------------------
         def GenerateChildren(element):
-            while isinstance(element, (Elements.CompoundElement, Elements.SimpleElement)):
+            queue = [element]
+
+            while queue:
+                element = queue.pop(0)
+                if not isinstance(element, (Elements.CompoundElement, Elements.SimpleElement)):
+                    continue
+
                 for k, v in six.iteritems(element.TypeInfo.Items):
                     if k is None:
                         continue
 
                     yield k, v
 
-                element = getattr(element, "Base", None)
+                queue += getattr(element, "Bases", [])
 
         # ----------------------------------------------------------------------
 
@@ -132,9 +135,7 @@ class TypeInfoElementVisitor(ElementVisitor):
         )
 
         if children_statement not in self._cached_children_statements:
-            self._cached_children_statements[children_statement] = "_{}_TypeInfo_Contents".format(
-                ToPythonName(element),
-            )
+            self._cached_children_statements[children_statement] = "_{}_TypeInfo_Contents".format(ToPythonName(element))
 
         return "AnyOfTypeInfo([ClassTypeInfo({children}, require_exact_match=False), DictTypeInfo({children}, require_exact_match=False)]{arity})".format(
             children=self._cached_children_statements[children_statement],

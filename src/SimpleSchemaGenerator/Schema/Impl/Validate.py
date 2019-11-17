@@ -144,6 +144,13 @@ def _ValidateUniqueNames(
             continue
 
         if child.name in names:
+            if item.element_type == Elements.SimpleElement and child.name is None:
+                raise Exceptions.ValidateInvalidSimpleReferenceException(
+                    item.Source,
+                    item.Line,
+                    item.Column,
+                )
+
             raise Exceptions.ValidateDuplicateNameException(
                 child.Source,
                 child.Line,
@@ -253,22 +260,6 @@ def _ValidateSimpleElements(item):
         return child.element_type == Elements.FundamentalElement
 
     # ----------------------------------------------------------------------
-
-    # Validate that this element is only based on 1 FundamentalElement
-    found_simple = False
-
-    for reference in item.references:
-        if (
-            isinstance(reference, Attributes.FundamentalAttributeInfo)
-            or reference.element_type == Elements.SimpleElement
-        ):
-            if found_simple:
-                raise Exceptions.ValidateInvalidSimpleReferenceException(
-                    item.Source,
-                    item.Line,
-                    item.Column,
-                )
-            found_simple = True
 
     # Validate the attributes
     for child in item.items:

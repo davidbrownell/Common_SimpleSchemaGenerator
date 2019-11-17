@@ -422,27 +422,43 @@ def Populate(source_name_content_generators, parse_flags):                  # { 
         # ----------------------------------------------------------------------
         def visitObjAttributes(self, ctx):
             values = self._GetChildValues(ctx)
-            assert values, "Metadata is always present"
+            assert len(values) <= 3, values
 
-            if len(values) == 2:
-                metadata, arity = values
+            item = self._GetStackParent()
 
-                assert self._IsMetadata(metadata), metadata
-                assert self._IsArity(arity), arity
+            references = None
+            metadata = None
+            arity = None
 
-            elif len(values) == 1:
-                metadata = values[0]
-                assert self._IsMetadata(values[0]), values[0]
+            for value in values:
+                if self._IsMetadata(value):
+                    assert metadata is None, (metadata, value)
+                    metadata = value
 
-                arity = None
+                elif self._IsArity(value):
+                    assert arity is None, (arity, value)
+                    arity = value
 
-            else:
-                assert False, values
+                else:
+                    if isinstance(value, list):
+                        item.multi_reference_type = Item.MultiReferenceType.Compound
+                    else:
+                        value = [value]
 
-            parent = self._GetStackParent()
+                    assert references is None, (references, value)
+                    references = value
 
-            parent.metadata = metadata
-            parent.arity = arity
+            assert not item.references, item.references
+            item.references = references or []
+            item.metadata = metadata
+            item.arity = arity
+
+        # ----------------------------------------------------------------------
+        def visitObjAttributesItems(self, ctx):
+            values = self._GetChildValues(ctx)
+            assert values
+
+            self._stack.append(values)
 
         # ----------------------------------------------------------------------
         def visitUnnamedDeclaration(self, ctx):

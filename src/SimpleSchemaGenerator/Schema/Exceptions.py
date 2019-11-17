@@ -155,6 +155,10 @@ class ResolveInvalidCustomNameException(SimpleSchemaException):
     Display                                 = "The value '{name}' is not a valid name"
 
 
+class ResolveMultipleSimpleFundamentalElementsException(SimpleSchemaException):
+    Display                                 = "A simple element may only be based on 1 fundamental element"
+
+
 class ValidateUnsupportedCustomElementsException(SimpleSchemaException):
     Display                                 = "Custom elements are not supported"
 
@@ -194,7 +198,7 @@ class ValidateInvalidReferenceException(SimpleSchemaException):
 
 
 class ValidateInvalidSimpleReferenceException(SimpleSchemaException):
-    Display                                 = "A simple element may only be based on a single simple element"
+    Display                                 = "A simple element may only be based on a single fundamental element"
 
 
 class ValidateInvalidSimpleChildException(SimpleSchemaException):

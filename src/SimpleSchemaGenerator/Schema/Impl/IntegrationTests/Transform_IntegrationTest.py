@@ -72,7 +72,17 @@ SIMPLE_SCHEMA                               = textwrap.dedent(
     <test_simple_derived test_simple>:
         [c string]
 
-    # BugBug: Multiple inheritance
+    # Multi inheritance for compound
+    <test_base2>:
+        [d string]
+        [e string]
+
+    <test_multi_compound (test_derived, test_base2)>:
+        pass
+
+    # Multi inheritance for simple
+    <test_multi_simple (test_simple_derived, test_base2)>:
+        pass
     """,
 )
 
@@ -215,7 +225,10 @@ class TestDerived(unittest.TestCase):
             ],
         )
         self.assertEqual([base.Name for base in self._element.Bases], ["test_base"])
-        self.assertEqual(self._element.Derived, [])
+        self.assertEqual(
+            [derived.Name for derived in self._element.Derived],
+            ["test_multi_compound"],
+        )
 
     # ----------------------------------------------------------------------
     def test_TypeInfo(self):
@@ -650,7 +663,7 @@ class TestSimpleDerived(unittest.TestCase):
 
     # ----------------------------------------------------------------------
     def test_TypeInfo(self):
-        self.assertTrue(self._element.TypeInfo, ClassTypeInfo)
+        self.assertTrue(isinstance(self._element.TypeInfo, ClassTypeInfo))
         self.assertEqual(self._element.TypeInfo.Arity, Arity(1, 1))
         self.assertEqual(
             self._element.TypeInfo,
@@ -662,6 +675,128 @@ class TestSimpleDerived(unittest.TestCase):
                     None: StringTypeInfo(),
                 },
                 require_exact_match=True,
+                arity=Arity(1, 1),
+            ),
+        )
+
+
+# ----------------------------------------------------------------------
+class TestBase2(unittest.TestCase):
+
+    # ----------------------------------------------------------------------
+    def setUp(self):
+        self.maxDiff = None
+        self.assertGreater(len(_elements), 4)
+        self._element = _elements[4]
+
+    # ----------------------------------------------------------------------
+    def test_ElementInfo(self):
+        self.assertTrue(isinstance(self._element, CompoundElement))
+        self.assertEqual(self._element.Name, "test_base2")
+        self.assertEqual([child.Name for child in self._element.Children], ["d", "e"])
+
+    # ----------------------------------------------------------------------
+    def test_TypeInfo(self):
+        self.assertTrue(isinstance(self._element.TypeInfo, ClassTypeInfo))
+        self.assertEqual(self._element.TypeInfo.Arity, Arity(1, 1))
+        self.assertEqual(
+            self._element.TypeInfo,
+            ClassTypeInfo(
+                {"d": StringTypeInfo(), "e": StringTypeInfo()},
+                require_exact_match=True,
+                arity=Arity(1, 1),
+            ),
+        )
+
+    # ----------------------------------------------------------------------
+    def test_Hierarchy(self):
+        self.assertEqual(self._element.Bases, [])
+        self.assertEqual(
+            [derived.Name for derived in self._element.Derived],
+            ["test_multi_compound"],
+        )
+
+
+# ----------------------------------------------------------------------
+class TestMultiCompound(unittest.TestCase):
+
+    # ----------------------------------------------------------------------
+    def setUp(self):
+        self.maxDiff = None
+        self.assertGreater(len(_elements), 5)
+        self._element = _elements[5]
+
+    # ----------------------------------------------------------------------
+    def test_ElementInfo(self):
+        self.assertTrue(isinstance(self._element, CompoundElement))
+        self.assertEqual(self._element.Name, "test_multi_compound")
+        self.assertEqual([child.Name for child in self._element.Children], [])
+
+    # ----------------------------------------------------------------------
+    def test_TypeInfo(self):
+        self.assertTrue(isinstance(self._element.TypeInfo, ClassTypeInfo))
+        self.assertEqual(self._element.TypeInfo.Arity, Arity(1, 1))
+
+        self.assertEqual(
+            self._element.TypeInfo,
+            ClassTypeInfo(
+                {},
+                require_exact_match=False,
+                arity=Arity(1, 1),
+            ),
+        )
+
+    # ----------------------------------------------------------------------
+    def test_Hierarchy(self):
+        self.assertEqual(
+            [base.Name for base in self._element.Bases],
+            ["test_derived", "test_base2"],
+        )
+        self.assertEqual(self._element.Derived, [])
+
+
+# ----------------------------------------------------------------------
+class TestMultiSimple(unittest.TestCase):
+
+    # ----------------------------------------------------------------------
+    def setUp(self):
+        self.maxDiff = None
+        self.assertGreater(len(_elements), 6)
+        self._element = _elements[6]
+
+    # ----------------------------------------------------------------------
+    def test_ElementInfo(self):
+        self.assertTrue(isinstance(self._element, SimpleElement))
+        self.assertEqual(self._element.Name, "test_multi_simple")
+        self.assertEqual(
+            [child.Name for child in self._element.Children],
+            [
+                "c",
+                None,
+                "a",
+                "b",
+                "d",
+                "e",
+            ],
+        )
+
+    # ----------------------------------------------------------------------
+    def test_TypeInfo(self):
+        self.assertTrue(isinstance(self._element.TypeInfo, ClassTypeInfo))
+        self.assertEqual(self._element.TypeInfo.Arity, Arity(1, 1))
+
+        self.assertEqual(
+            self._element.TypeInfo,
+            ClassTypeInfo(
+                {
+                    "a": IntTypeInfo(),
+                    "b": StringTypeInfo(),
+                    "c": StringTypeInfo(),
+                    "d": StringTypeInfo(),
+                    "e": StringTypeInfo(),
+                    None: StringTypeInfo(),
+                },
+                require_exact_match=False,
                 arity=Arity(1, 1),
             ),
         )

@@ -239,6 +239,7 @@ def _ResolveElementType(plugin, reference_states, item):
 
             if IsSimple():
                 element_type = Elements.SimpleElement
+                found_fundamental_element = False
 
                 reference_index = 0
                 while reference_index < len(item.references):
@@ -248,6 +249,15 @@ def _ResolveElementType(plugin, reference_states, item):
                         reference_index += 1
 
                         continue
+
+                    if found_fundamental_element:
+                        raise Exceptions.ResolveMultipleSimpleFundamentalElementsException(
+                            item.Source,
+                            item.Line,
+                            item.Column,
+                        )
+
+                    found_fundamental_element = True
 
                     # Split the item into a parent/child relationship for later processing
 
@@ -446,8 +456,6 @@ def _ResolveMetadata(plugin, config_values, item):
             # A SimpleElement will either reference other SimpleElement(s) or
             # contain a child that references a FundamentalElement, but never both.
             if item.references:
-                assert not item.items or item.items[0].name is not None, item.items
-
                 for ref in item.references:
                     if isinstance(ref, Item):
                         _ResolveMetadata(plugin, config_values, ref)

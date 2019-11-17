@@ -26,13 +26,8 @@ import CommonEnvironment
 from CommonEnvironment import Interface
 from CommonEnvironment import RegularExpression
 from CommonEnvironment.TypeInfo.FundamentalTypes.BoolTypeInfo import BoolTypeInfo
-from CommonEnvironment.TypeInfo.FundamentalTypes.Serialization.StringSerialization import (
-    RegularExpressionVisitor,
-    StringSerialization,
-)
-from CommonEnvironment.TypeInfo.FundamentalTypes.Visitor import (
-    Visitor as FundamentalTypeInfoVisitor,
-)
+from CommonEnvironment.TypeInfo.FundamentalTypes.Serialization.StringSerialization import RegularExpressionVisitor, StringSerialization
+from CommonEnvironment.TypeInfo.FundamentalTypes.Visitor import Visitor as FundamentalTypeInfoVisitor
 
 from CommonEnvironmentEx.Package import InitRelativeImports
 
@@ -54,9 +49,7 @@ class Plugin(PluginBase):
     # ----------------------------------------------------------------------
     # |  Public Properties
     Name                                    = Interface.DerivedProperty("JsonSchema")
-    Description                             = Interface.DerivedProperty(
-        "Generates a JSON Schema file (https://json-schema.org/)",
-    )
+    Description                             = Interface.DerivedProperty("Generates a JSON Schema file (https://json-schema.org/)")
     Flags                                   = Interface.DerivedProperty(
         # ParseFlag.SupportAttributes
         ParseFlag.SupportIncludeStatements                                                                                                                                                                           # | ParseFlag.SupportConfigStatements
@@ -136,13 +129,7 @@ class Plugin(PluginBase):
         include_map = cls._GenerateIncludeMap(elements, include_indexes)
         include_dotted_names = set(six.iterkeys(include_map))
 
-        top_level_elements = [
-            element
-            for element in elements
-            if element.Parent is None
-            and not element.IsDefinitionOnly
-            and element.DottedName in include_map
-        ]
+        top_level_elements = [element for element in elements if element.Parent is None and not element.IsDefinitionOnly and element.DottedName in include_map]
 
         # ----------------------------------------------------------------------
         def CreateDefinitions():
@@ -154,18 +141,13 @@ class Plugin(PluginBase):
                 @staticmethod
                 @Interface.override
                 def OnExitingElement(element):
-                    definitions_schema["_{}".format(element.DottedName)] = cls._Collectionize(
-                        element,
-                        {"$ref": "#/definitions/_{}_Item".format(element.DottedName)},
-                    )
+                    definitions_schema["_{}".format(element.DottedName)] = cls._Collectionize(element, {"$ref": "#/definitions/_{}_Item".format(element.DottedName)})
 
                 # ----------------------------------------------------------------------
                 @staticmethod
                 @Interface.override
                 def OnFundamental(element):
-                    definitions_schema[
-                        "_{}_Item".format(element.DottedName)
-                    ] = _FundamentalTypeInfoVisitor.Accept(element.TypeInfo)
+                    definitions_schema["_{}_Item".format(element.DottedName)] = _FundamentalTypeInfoVisitor.Accept(element.TypeInfo)
 
                 # ----------------------------------------------------------------------
                 @staticmethod
@@ -178,9 +160,7 @@ class Plugin(PluginBase):
                         element,
                         include_definitions=False,
                     ):
-                        properties[child.Name] = {
-                            "$ref": "#/definitions/_{}".format(child.Resolve().DottedName),
-                        }
+                        properties[child.Name] = {"$ref": "#/definitions/_{}".format(child.Resolve().DottedName)}
 
                         if child.TypeInfo.Arity.Min != 0:
                             required.append(child.Name)
@@ -217,21 +197,11 @@ class Plugin(PluginBase):
 
                         if not isinstance(variation, Elements.ReferenceElement):
                             assert isinstance(variation, Elements.FundamentalElement), variation
-                            definitions_schema[
-                                "_{}_Item".format(variation.DottedName)
-                            ] = _FundamentalTypeInfoVisitor.Accept(variation.TypeInfo)
+                            definitions_schema["_{}_Item".format(variation.DottedName)] = _FundamentalTypeInfoVisitor.Accept(variation.TypeInfo)
 
-                        any_of_options.append(
-                            {
-                                "$ref": "#/definitions/_{}_Item".format(
-                                    variation.Resolve().DottedName,
-                                ),
-                            },
-                        )
+                        any_of_options.append({"$ref": "#/definitions/_{}_Item".format(variation.Resolve().DottedName)})
 
-                    definitions_schema["_{}_Item".format(element.DottedName)] = {
-                        "anyOf": any_of_options,
-                    }
+                    definitions_schema["_{}_Item".format(element.DottedName)] = {"anyOf": any_of_options}
 
                 # ----------------------------------------------------------------------
                 @staticmethod
@@ -244,9 +214,7 @@ class Plugin(PluginBase):
                 @staticmethod
                 @Interface.override
                 def OnList(element):
-                    definitions_schema["_{}_Item".format(element.DottedName)] = {
-                        "$ref": "#/definitions/_{}".format(element.Reference.Resolve().DottedName),
-                    }
+                    definitions_schema["_{}_Item".format(element.DottedName)] = {"$ref": "#/definitions/_{}".format(element.Reference.Resolve().DottedName)}
 
                 # ----------------------------------------------------------------------
                 @staticmethod
@@ -280,9 +248,7 @@ class Plugin(PluginBase):
             schema = {}
 
             for element in top_level_elements:
-                schema[element.DottedName] = {
-                    "$ref": "#/definitions/_{}".format(element.Resolve().DottedName),
-                }
+                schema[element.DottedName] = {"$ref": "#/definitions/_{}".format(element.Resolve().DottedName)}
 
             return schema
 
@@ -290,11 +256,7 @@ class Plugin(PluginBase):
 
         status_stream.write("Creating '{}'...".format(output_filename))
         with status_stream.DoneManager() as dm:
-            schema = {
-                "$schema": schema_version,
-                "type": "object",
-                "definitions": CreateDefinitions(),
-            }
+            schema = {"$schema": schema_version, "type": "object", "definitions": CreateDefinitions()}
 
             if len(top_level_elements) > 1:
                 schema["properties"] = CreateElements()
@@ -302,11 +264,7 @@ class Plugin(PluginBase):
                 required = []
 
                 for element in elements:
-                    if (
-                        element.DottedName in include_dotted_names
-                        and not element.IsDefinitionOnly
-                        and element.TypeInfo.Arity.Min != 0
-                    ):
+                    if element.DottedName in include_dotted_names and not element.IsDefinitionOnly and element.TypeInfo.Arity.Min != 0:
                         required.append(element.Name)
 
                 if required:
@@ -343,10 +301,7 @@ class Plugin(PluginBase):
 
         if arity.Max == 1:
             if arity.Min == 0 and hasattr(element, "default"):
-                schema["default"] = StringSerialization.DeserializeItem(
-                    element.TypeInfo,
-                    element.default,
-                )
+                schema["default"] = StringSerialization.DeserializeItem(element.TypeInfo, element.default)
 
             return schema
 
@@ -381,14 +336,7 @@ class _FundamentalTypeInfoVisitor(FundamentalTypeInfoVisitor):
     @staticmethod
     @Interface.override
     def OnDate(type_info):
-        return {
-            "type": "string",
-            "pattern": "^{}$".format(
-                RegularExpression.PythonToJavaScript(
-                    RegularExpressionVisitor().Accept(type_info)[0],
-                ),
-            ),
-        }
+        return {"type": "string", "pattern": "^{}$".format(RegularExpression.PythonToJavaScript(RegularExpressionVisitor().Accept(type_info)[0]))}
 
     # ----------------------------------------------------------------------
     @staticmethod
@@ -400,14 +348,7 @@ class _FundamentalTypeInfoVisitor(FundamentalTypeInfoVisitor):
     @staticmethod
     @Interface.override
     def OnDuration(type_info):
-        return {
-            "type": "string",
-            "pattern": "^{}$".format(
-                RegularExpression.PythonToJavaScript(
-                    RegularExpressionVisitor().Accept(type_info)[0],
-                ),
-            ),
-        }
+        return {"type": "string", "pattern": "^{}$".format(RegularExpression.PythonToJavaScript(RegularExpressionVisitor().Accept(type_info)[0]))}
 
     # ----------------------------------------------------------------------
     @staticmethod
@@ -438,14 +379,7 @@ class _FundamentalTypeInfoVisitor(FundamentalTypeInfoVisitor):
     @staticmethod
     @Interface.override
     def OnGuid(type_info):
-        return {
-            "type": "string",
-            "pattern": "^{}$".format(
-                RegularExpression.PythonToJavaScript(
-                    RegularExpressionVisitor().Accept(type_info)[0],
-                ),
-            ),
-        }
+        return {"type": "string", "pattern": "^{}$".format(RegularExpression.PythonToJavaScript(RegularExpressionVisitor().Accept(type_info)[0]))}
 
     # ----------------------------------------------------------------------
     @staticmethod
@@ -488,24 +422,10 @@ class _FundamentalTypeInfoVisitor(FundamentalTypeInfoVisitor):
     @staticmethod
     @Interface.override
     def OnTime(type_info):
-        return {
-            "type": "string",
-            "pattern": "^{}$".format(
-                RegularExpression.PythonToJavaScript(
-                    RegularExpressionVisitor().Accept(type_info)[0],
-                ),
-            ),
-        }
+        return {"type": "string", "pattern": "^{}$".format(RegularExpression.PythonToJavaScript(RegularExpressionVisitor().Accept(type_info)[0]))}
 
     # ----------------------------------------------------------------------
     @staticmethod
     @Interface.override
     def OnUri(type_info):
-        return {
-            "type": "string",
-            "pattern": "^{}$".format(
-                RegularExpression.PythonToJavaScript(
-                    RegularExpressionVisitor().Accept(type_info)[0],
-                ),
-            ),
-        }
+        return {"type": "string", "pattern": "^{}$".format(RegularExpression.PythonToJavaScript(RegularExpressionVisitor().Accept(type_info)[0]))}

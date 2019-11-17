@@ -41,17 +41,11 @@ class StringSuite(unittest.TestCase):
 
     # ----------------------------------------------------------------------
     def test_Quote(self):
-        Populate(
-            {_script_fullpath: lambda: 'simple_schema_include("{}")'.format(_script_name)},
-            ParseFlag.AllFlags,
-        )
+        Populate({_script_fullpath: lambda: 'simple_schema_include("{}")'.format(_script_name)}, ParseFlag.AllFlags)
 
     # ----------------------------------------------------------------------
     def test_SingleQuote(self):
-        Populate(
-            {_script_fullpath: lambda: "simple_schema_include('{}')".format(_script_name)},
-            ParseFlag.AllFlags,
-        )
+        Populate({_script_fullpath: lambda: "simple_schema_include('{}')".format(_script_name)}, ParseFlag.AllFlags)
 
 
 # ----------------------------------------------------------------------
@@ -77,10 +71,7 @@ class EnhancedStringSuite(unittest.TestCase):
         self.assertTrue("config_name" in content.config)
         self.assertEqual(len(content.config["config_name"]), 1)
         self.assertTrue("one" in content.config["config_name"][0].Values)
-        self.assertEqual(
-            content.config["config_name"][0].Values["one"].Value,
-            "This is\n  a\nmulti-\nline\ntest.",
-        )
+        self.assertEqual(content.config["config_name"][0].Values["one"].Value, "This is\n  a\nmulti-\nline\ntest.")
 
     # ----------------------------------------------------------------------
     def test_StandardDouble(self):
@@ -101,10 +92,7 @@ class EnhancedStringSuite(unittest.TestCase):
         self.assertTrue("config_name" in content.config)
         self.assertEqual(len(content.config["config_name"]), 1)
         self.assertTrue("one" in content.config["config_name"][0].Values)
-        self.assertEqual(
-            content.config["config_name"][0].Values["one"].Value,
-            "This is\n  a\nmulti-\nline\ntest.",
-        )
+        self.assertEqual(content.config["config_name"][0].Values["one"].Value, "This is\n  a\nmulti-\nline\ntest.")
 
     # ----------------------------------------------------------------------
     def test_InvalidHeader(self):
@@ -201,10 +189,7 @@ class EnhancedStringSuite(unittest.TestCase):
         self.assertTrue("config_name" in content.config)
         self.assertEqual(len(content.config["config_name"]), 1)
         self.assertTrue("one" in content.config["config_name"][0].Values)
-        self.assertEqual(
-            content.config["config_name"][0].Values["one"].Value,
-            "Line 1\n\r\n\nLine 2",
-        )
+        self.assertEqual(content.config["config_name"][0].Values["one"].Value, "Line 1\n\r\n\nLine 2")
 
 
 # ----------------------------------------------------------------------
@@ -312,18 +297,9 @@ class AritySuite(unittest.TestCase):
     # ----------------------------------------------------------------------
     def test_Errors(self):
         self.assertRaises(Exceptions.PopulateInvalidArityException, lambda: _Invoke("<foo {-10}>"))
-        self.assertRaises(
-            Exceptions.PopulateInvalidArityException,
-            lambda: _Invoke("<foo {-10,10}>"),
-        )
-        self.assertRaises(
-            Exceptions.PopulateInvalidArityException,
-            lambda: _Invoke("<foo {10,-10}>"),
-        )
-        self.assertRaises(
-            Exceptions.PopulateInvalidMaxArityException,
-            lambda: _Invoke("<foo {10,5}>"),
-        )
+        self.assertRaises(Exceptions.PopulateInvalidArityException, lambda: _Invoke("<foo {-10,10}>"))
+        self.assertRaises(Exceptions.PopulateInvalidArityException, lambda: _Invoke("<foo {10,-10}>"))
+        self.assertRaises(Exceptions.PopulateInvalidMaxArityException, lambda: _Invoke("<foo {10,5}>"))
 
 
 # ----------------------------------------------------------------------
@@ -333,20 +309,14 @@ class IncludeSuite(unittest.TestCase):
     def test_UnsupportedError(self):
         self.assertRaises(
             Exceptions.PopulateUnsupportedIncludeStatementsException,
-            lambda: Populate(
-                {_script_fullpath: lambda: "simple_schema_include('{}')".format(_script_name)},
-                0,
-            ),
+            lambda: Populate({_script_fullpath: lambda: "simple_schema_include('{}')".format(_script_name)}, 0),
         )
 
     # ----------------------------------------------------------------------
     def test_InvalidError(self):
         self.assertRaises(
             Exceptions.PopulateInvalidIncludeFilenameException,
-            lambda: Populate(
-                {_script_fullpath: lambda: "simple_schema_include('Does not exist')"},
-                ParseFlag.AllFlags,
-            ),
+            lambda: Populate({_script_fullpath: lambda: "simple_schema_include('Does not exist')"}, ParseFlag.AllFlags),
         )
 
     # ----------------------------------------------------------------------

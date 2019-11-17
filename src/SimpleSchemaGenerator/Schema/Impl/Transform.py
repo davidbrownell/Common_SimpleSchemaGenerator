@@ -60,9 +60,7 @@ def Transform(root, plugin):
     # before can be created at this time.
     delayed_instruction_queue = []
 
-    extensions_allowing_duplicate_names = {
-        ext.Name for ext in plugin.GetExtensions() if ext.AllowDuplicates
-    }
+    extensions_allowing_duplicate_names = {ext.Name for ext in plugin.GetExtensions() if ext.AllowDuplicates}
 
     apply_type_info_visitor = _ApplyTypeInfoVisitor()
     create_element_visitor = _CreateElementVisitor()
@@ -82,10 +80,7 @@ def Transform(root, plugin):
         if item.ignore:
             return False
 
-        allow_duplicates = (
-            item.element_type == Elements.ExtensionElement
-            and item.name in extensions_allowing_duplicate_names
-        )
+        allow_duplicates = item.element_type == Elements.ExtensionElement and item.name in extensions_allowing_duplicate_names
 
         if item.Key in elements and not allow_duplicates:
             return elements[item.Key]
@@ -136,10 +131,7 @@ def Transform(root, plugin):
             setattr(element, k, v.Value)
 
         # Validate
-        for md in itertools.chain(
-            element._item.metadata.RequiredItems,
-            element._item.metadata.OptionalItems,
-        ):
+        for md in itertools.chain(element._item.metadata.RequiredItems, element._item.metadata.OptionalItems):
             result = None
 
             if md.Name in element._item.metadata.Values:
@@ -171,10 +163,7 @@ def Transform(root, plugin):
         if not isinstance(element, (Elements.SimpleElement, Elements.CompoundElement)):
             return
 
-        if isinstance(element, Elements.CompoundElement) and not hasattr(
-            element,
-            "FundamentalAttributeName",
-        ):
+        if isinstance(element, Elements.CompoundElement) and not hasattr(element, "FundamentalAttributeName"):
             return
 
         for reference in element._item.references:
@@ -191,10 +180,7 @@ def Transform(root, plugin):
         if not isinstance(element, (Elements.SimpleElement, Elements.CompoundElement)):
             return
 
-        if isinstance(element, Elements.CompoundElement) and not hasattr(
-            element,
-            "FundamentalAttrbuteName",
-        ):
+        if isinstance(element, Elements.CompoundElement) and not hasattr(element, "FundamentalAttrbuteName"):
             return
 
         # Update the element to reflect the fundamental attribute name. Note that
@@ -301,9 +287,7 @@ class _CreateElementVisitor(ItemVisitor):
         is_definition_only,
     ):                                      # <Parameters differ from overridden...> pylint: disable = W0221
         element = Elements.FundamentalElement(
-            is_attribute=metadata_item.ItemType == Item.ItemType.Attribute and (
-                plugin.Flags & ParseFlag.SupportAttributes
-            ) != 0,
+            is_attribute=metadata_item.ItemType == Item.ItemType.Attribute and (plugin.Flags & ParseFlag.SupportAttributes) != 0,
             type_info=None,                             # Set below
             name=metadata_item.name,
             parent=None,                                # Set below
@@ -337,13 +321,7 @@ class _CreateElementVisitor(ItemVisitor):
         is_definition_only,
     ):                                      # <Parameters differ from overridden...> pylint: disable = W0221
         element = Elements.CompoundElement(
-            children=cls._CreateChildElements(
-                item,
-                item.items,
-                elements,
-                delayed_instruction_queue,
-                create_element_func,
-            ),
+            children=cls._CreateChildElements(item, item.items, elements, delayed_instruction_queue, create_element_func),
             bases=[],                                   # Set below
             derived=[],                                 # Set below
             type_info=None,                             # Set below
@@ -401,23 +379,14 @@ class _CreateElementVisitor(ItemVisitor):
         create_element_func,
         is_definition_only,
     ):                                      # <Parameters differ from overridden...> pylint: disable = W0221
-        fundamental_attribute_name = metadata_item.metadata.Values.get(
-            Attributes.SIMPLE_FUNDAMENTAL_NAME_ATTRIBUTE_NAME,
-            None,
-        )
+        fundamental_attribute_name = metadata_item.metadata.Values.get(Attributes.SIMPLE_FUNDAMENTAL_NAME_ATTRIBUTE_NAME, None)
         if fundamental_attribute_name is not None:
             fundamental_attribute_name = fundamental_attribute_name.Value
 
         if plugin.Flags & ParseFlag.SupportSimpleObjectElements:
             element = Elements.SimpleElement(
                 fundamental_attribute_name=fundamental_attribute_name,
-                attributes=cls._CreateChildElements(
-                    item,
-                    item.items,
-                    elements,
-                    delayed_instruction_queue,
-                    create_element_func,
-                ),
+                attributes=cls._CreateChildElements(item, item.items, elements, delayed_instruction_queue, create_element_func),
                 type_info=None,                         # Set below
                 name=metadata_item.name,
                 parent=None,                            # Set below
@@ -430,13 +399,7 @@ class _CreateElementVisitor(ItemVisitor):
         else:
             # Treat this object as a CompoundElement
             element = Elements.CompoundElement(
-                children=cls._CreateChildElements(
-                    item,
-                    item.items,
-                    elements,
-                    delayed_instruction_queue,
-                    create_element_func,
-                ),
+                children=cls._CreateChildElements(item, item.items, elements, delayed_instruction_queue, create_element_func),
                 bases=[],
                 derived=[],
                 type_info=None,                                             # Set below
@@ -493,16 +456,8 @@ class _CreateElementVisitor(ItemVisitor):
         is_definition_only,
     ):                                      # <Parameters differ from overridden...> pylint: disable = W0221
         element = Elements.VariantElement(
-            variations=cls._CreateChildElements(
-                item,
-                item.references,
-                elements,
-                delayed_instruction_queue,
-                create_element_func,
-            ),
-            is_attribute=metadata_item.ItemType == Item.ItemType.Attribute and (
-                plugin.Flags & ParseFlag.SupportAttributes
-            ) != 0,
+            variations=cls._CreateChildElements(item, item.references, elements, delayed_instruction_queue, create_element_func),
+            is_attribute=metadata_item.ItemType == Item.ItemType.Attribute and (plugin.Flags & ParseFlag.SupportAttributes) != 0,
             type_info=None,                             # Set below
             name=metadata_item.name,
             parent=None,                                # Set below
@@ -538,16 +493,7 @@ class _CreateElementVisitor(ItemVisitor):
         if metadata_item.is_augmenting_reference:
             assert len(item.references) == 1, item.references
 
-            return cls.Accept(
-                item.references[0],
-                metadata_item,
-                plugin,
-                elements,
-                delayed_instruction_queue,
-                apply_type_info_func,
-                create_element_func,
-                is_definition_only,
-            )
+            return cls.Accept(item.references[0], metadata_item, plugin, elements, delayed_instruction_queue, apply_type_info_func, create_element_func, is_definition_only)
 
         element = Elements.ReferenceElement(
             reference=None,                             # Set below
@@ -734,14 +680,7 @@ class _CreateElementVisitor(ItemVisitor):
 
     # ----------------------------------------------------------------------
     @classmethod
-    def _CreateChildElements(
-        cls,
-        item,
-        child_items,
-        elements,
-        delayed_instruction_queue,
-        create_element_func,
-    ):
+    def _CreateChildElements(cls, item, child_items, elements, delayed_instruction_queue, create_element_func):
         child_elements = []
 
         for child_item in child_items:
@@ -788,14 +727,7 @@ class _CreateElementVisitor(ItemVisitor):
 
     # ----------------------------------------------------------------------
     @classmethod
-    def _ApplyReference(
-        cls,
-        element,
-        item,
-        elements,
-        delayed_instruction_queue,
-        create_element_func,
-    ):
+    def _ApplyReference(cls, element, item, elements, delayed_instruction_queue, create_element_func):
         assert len(item.references) == 1, item.references
         reference = item.references[0]
 
@@ -832,27 +764,13 @@ class _ApplyTypeInfoVisitor(ItemVisitor):
     @classmethod
     @override
     def OnCompound(cls, item, metadata_item, element, elements, delayed_instruction_queue): # <Parameters differ from overridden...> pylint: disable = W0221
-        cls._ApplyClass(
-            metadata_item,
-            item,
-            element,
-            elements,
-            delayed_instruction_queue,
-            item.items,
-        )
+        cls._ApplyClass(metadata_item, item, element, elements, delayed_instruction_queue, item.items)
 
     # ----------------------------------------------------------------------
     @classmethod
     @override
     def OnSimple(cls, item, metadata_item, element, elements, delayed_instruction_queue): # <Parameters differ from overridden...> pylint: disable = W0221
-        cls._ApplyClass(
-            metadata_item,
-            item,
-            element,
-            elements,
-            delayed_instruction_queue,
-            item.items,
-        )
+        cls._ApplyClass(metadata_item, item, element, elements, delayed_instruction_queue, item.items)
 
     # ----------------------------------------------------------------------
     @classmethod
@@ -891,10 +809,7 @@ class _ApplyTypeInfoVisitor(ItemVisitor):
             referenced_element = elements[reference.Key]
             assert referenced_element
             assert referenced_element.TypeInfo
-            assert isinstance(
-                element.TypeInfo.ElementTypeInfo,
-                cls._PlaceholderTypeInfo,
-            ), element.TypeInfo.ElementTypeInfo
+            assert isinstance(element.TypeInfo.ElementTypeInfo, cls._PlaceholderTypeInfo), element.TypeInfo.ElementTypeInfo
             element.TypeInfo.ElementTypeInfo = referenced_element.TypeInfo
 
         # ----------------------------------------------------------------------
@@ -965,15 +880,7 @@ class _ApplyTypeInfoVisitor(ItemVisitor):
 
     # ----------------------------------------------------------------------
     @classmethod
-    def _ApplyClass(
-        cls,
-        item,
-        resolved_item,
-        element,
-        elements,
-        delayed_instruction_queue,
-        child_items,
-    ):
+    def _ApplyClass(cls, item, resolved_item, element, elements, delayed_instruction_queue, child_items):
         child_type_info_placeholders = OrderedDict()
 
         for child_item in child_items:
@@ -1009,15 +916,9 @@ class _ApplyTypeInfoVisitor(ItemVisitor):
                 child_element = elements[child_item.Key]
                 assert child_element
                 assert child_element.TypeInfo
-                assert not isinstance(
-                    child_element.TypeInfo,
-                    cls._PlaceholderTypeInfo,
-                ), child_element.Name
+                assert not isinstance(child_element.TypeInfo, cls._PlaceholderTypeInfo), child_element.Name
                 assert child_element.Name in element.TypeInfo.Items, child_element.Name
-                assert isinstance(
-                    element.TypeInfo.Items[child_element.Name],
-                    cls._PlaceholderTypeInfo,
-                ), element.TypeInfo.Items[child_element.Name]
+                assert isinstance(element.TypeInfo.Items[child_element.Name], cls._PlaceholderTypeInfo), element.TypeInfo.Items[child_element.Name]
                 element.TypeInfo.Items[child_element.Name] = child_element.TypeInfo
 
             # ----------------------------------------------------------------------

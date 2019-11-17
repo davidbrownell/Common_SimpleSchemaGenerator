@@ -26,9 +26,7 @@ import CommonEnvironment
 from CommonEnvironment.Interface import staticderived, override
 from CommonEnvironment.TypeInfo import Arity, ValidationException
 from CommonEnvironment.TypeInfo.FundamentalTypes.BoolTypeInfo import BoolTypeInfo
-from CommonEnvironment.TypeInfo.FundamentalTypes.Serialization.StringSerialization import (
-    StringSerialization,
-)
+from CommonEnvironment.TypeInfo.FundamentalTypes.Serialization.StringSerialization import StringSerialization
 
 from CommonEnvironmentEx.Package import InitRelativeImports
 
@@ -121,10 +119,7 @@ def _ResolveReference(item):
                 #   <obj>:
                 #       <foo foo> # Foo should not reference itself
                 #
-                query = next(
-                    (qi for qi in query.items if qi.name == name_part and qi != item),
-                    None,
-                )
+                query = next((qi for qi in query.items if qi.name == name_part and qi != item), None)
                 if query is None:
                     break
 
@@ -150,15 +145,7 @@ def _ResolveReference(item):
         if item.multi_reference_type == Item.MultiReferenceType.Variant:
             ref, ref_metadata = ref
 
-            new_item = Item(
-                Item.DeclarationType.Declaration,
-                Item.ItemType.Standard,
-                item,
-                item.Source,
-                item.Line,
-                item.Column,
-                item.IsExternal,
-            )
+            new_item = Item(Item.DeclarationType.Declaration, Item.ItemType.Standard, item, item.Source, item.Line, item.Column, item.IsExternal)
 
             new_item.name = str(ref_index)
             new_item.references = [Impl(ref)]
@@ -251,11 +238,7 @@ def _ResolveElementType(plugin, reference_states, item):
                         continue
 
                     if found_fundamental_element:
-                        raise Exceptions.ResolveMultipleSimpleFundamentalElementsException(
-                            item.Source,
-                            item.Line,
-                            item.Column,
-                        )
+                        raise Exceptions.ResolveMultipleSimpleFundamentalElementsException(item.Source, item.Line, item.Column)
 
                     found_fundamental_element = True
 
@@ -270,10 +253,7 @@ def _ResolveElementType(plugin, reference_states, item):
                         Attributes.COLLECTION_ATTRIBUTE_INFO,
                         Attributes.OPTIONAL_ATTRIBUTE_INFO,
                     ]:
-                        for md in itertools.chain(
-                            attributes.RequiredItems,
-                            attributes.OptionalItems,
-                        ):
+                        for md in itertools.chain(attributes.RequiredItems, attributes.OptionalItems):
                             simple_object_metadata_names.add(md.Name)
 
                     fundamental_metadata = OrderedDict()
@@ -281,30 +261,15 @@ def _ResolveElementType(plugin, reference_states, item):
                     metadata_keys = list(item.metadata.Values.keys())
                     for metadata_key in metadata_keys:
                         if metadata_key not in simple_object_metadata_names:
-                            fundamental_metadata[metadata_key] = item.metadata.Values.pop(
-                                metadata_key,
-                            )
+                            fundamental_metadata[metadata_key] = item.metadata.Values.pop(metadata_key)
 
                     # Create the new item
-                    fundamental_item = Item(
-                        Item.DeclarationType.Declaration,
-                        Item.ItemType.Attribute,
-                        item,
-                        item.Source,
-                        item.Line,
-                        item.Column,
-                        item.IsExternal,
-                    )
+                    fundamental_item = Item(Item.DeclarationType.Declaration, Item.ItemType.Attribute, item, item.Source, item.Line, item.Column, item.IsExternal)
 
                     fundamental_item.name = None
                     fundamental_item.references = [reference]
 
-                    fundamental_item.metadata = Metadata(
-                        fundamental_metadata,
-                        item.Source,
-                        item.Line,
-                        item.Column,
-                    )
+                    fundamental_item.metadata = Metadata(fundamental_metadata, item.Source, item.Line, item.Column)
 
                     # Apply the change
                     del item.references[reference_index]
@@ -344,25 +309,17 @@ def _ResolveElementType(plugin, reference_states, item):
 
                     # 5
                     if Attributes.COLLECTION_REFINES_ARITY_ATTRIBUTE_NAME in item.metadata.Values:
-                        refines_arity = item.metadata.Values[
-                            Attributes.COLLECTION_REFINES_ARITY_ATTRIBUTE_NAME
-                        ].Value
+                        refines_arity = item.metadata.Values[Attributes.COLLECTION_REFINES_ARITY_ATTRIBUTE_NAME].Value
                         del item.metadata.Values[Attributes.COLLECTION_REFINES_ARITY_ATTRIBUTE_NAME]
 
                         try:
-                            refines_arity = StringSerialization.DeserializeItem(
-                                BoolTypeInfo(),
-                                refines_arity,
-                            )
+                            refines_arity = StringSerialization.DeserializeItem(BoolTypeInfo(), refines_arity)
                         except ValidationException as ex:
                             raise Exceptions.InvalidAttributeException(
                                 item.Source,
                                 item.Line,
                                 item.Column,
-                                desc="'{}' is not valid: {}".fromat(
-                                    Attributes.COLLECTION_REFINES_ARITY_ATTRIBUTE_NAME,
-                                    str(ex),
-                                ),
+                                desc="'{}' is not valid: {}".fromat(Attributes.COLLECTION_REFINES_ARITY_ATTRIBUTE_NAME, str(ex)),
                             )
 
                         if refines_arity:
@@ -381,10 +338,7 @@ def _ResolveElementType(plugin, reference_states, item):
                     # another. Unfortunately, we don't have the context here to differentiate
                     # between the two, so capture state information that can be used later
                     # when we do have the necessary context.
-                    reference_states[item] = _ReferenceState(
-                        item.arity is not None,
-                        list(six.iterkeys(item.metadata.Values)),
-                    )
+                    reference_states[item] = _ReferenceState(item.arity is not None, list(six.iterkeys(item.metadata.Values)))
 
             elif isinstance(reference, Attributes.FundamentalAttributeInfo):
                 element_type = Elements.FundamentalElement
@@ -435,12 +389,8 @@ def _ResolveMetadata(plugin, config_values, item):
 
     item.metadata = ResolvedMetadata(
         metadata,
-        Attributes.UNIVERSAL_ATTRIBUTE_INFO.RequiredItems
-        + metadata_info.RequiredItems
-        + plugin.GetRequiredMetadataItems(item),
-        Attributes.UNIVERSAL_ATTRIBUTE_INFO.OptionalItems
-        + metadata_info.OptionalItems
-        + plugin.GetOptionalMetadataItems(item),
+        Attributes.UNIVERSAL_ATTRIBUTE_INFO.RequiredItems + metadata_info.RequiredItems + plugin.GetRequiredMetadataItems(item),
+        Attributes.UNIVERSAL_ATTRIBUTE_INFO.OptionalItems + metadata_info.OptionalItems + plugin.GetOptionalMetadataItems(item),
     )
 
     if item.arity.IsOptional:
@@ -511,22 +461,13 @@ def _ResolveReferenceType(reference_states, item):
 def _ResolveMetadataDefaults(item):
     for item in item.Enumerate():
         for attribute in itertools.chain(item.metadata.RequiredItems, item.metadata.OptionalItems):
-            if (
-                attribute.Name not in item.metadata.Values
-                and attribute.DefaultValue != Attributes.Attribute.DoesNotExist
-            ):
+            if attribute.Name not in item.metadata.Values and attribute.DefaultValue != Attributes.Attribute.DoesNotExist:
                 if callable(attribute.DefaultValue):
                     value = attribute.DefaultValue(item)
                 else:
                     value = attribute.DefaultValue
 
-                item.metadata.Values[attribute.Name] = MetadataValue(
-                    value,
-                    MetadataSource.Default,
-                    item.Source,
-                    item.Line,
-                    item.Column,
-                )
+                item.metadata.Values[attribute.Name] = MetadataValue(value, MetadataSource.Default, item.Source, item.Line, item.Column)
 
 
 # ----------------------------------------------------------------------
@@ -538,10 +479,7 @@ class _MetadataInfoVisitor(ItemVisitor):
     @staticmethod
     @override
     def OnFundamental(item, *args, **kwargs):
-        assert len(item.references) == 1 and isinstance(
-            item.references[0],
-            Attributes.FundamentalAttributeInfo,
-        ), item.references
+        assert len(item.references) == 1 and isinstance(item.references[0], Attributes.FundamentalAttributeInfo), item.references
         return item.references[0]
 
     # ----------------------------------------------------------------------
@@ -560,20 +498,14 @@ class _MetadataInfoVisitor(ItemVisitor):
     @staticmethod
     @override
     def OnAny(item, *args, **kwargs):
-        assert len(item.references) == 1 and isinstance(
-            item.references[0],
-            Attributes.AttributeInfo,
-        ), item.references
+        assert len(item.references) == 1 and isinstance(item.references[0], Attributes.AttributeInfo), item.references
         return item.references[0]
 
     # ----------------------------------------------------------------------
     @staticmethod
     @override
     def OnCustom(item, *args, **kwargs):
-        assert len(item.references) == 1 and isinstance(
-            item.references[0],
-            Attributes.AttributeInfo,
-        ), item.references[0]
+        assert len(item.references) == 1 and isinstance(item.references[0], Attributes.AttributeInfo), item.references[0]
         return item.references[0]
 
     # ----------------------------------------------------------------------

@@ -42,9 +42,7 @@ class Plugin(PluginBase):
     # ----------------------------------------------------------------------
     # |  Public Properties
     Name                                    = DerivedProperty("PyDictionary")
-    Description                             = DerivedProperty(
-        "Generates python source code that contains a dictionary with top-level enum schema elements that have corresponding friendly names",
-    )
+    Description                             = DerivedProperty("Generates python source code that contains a dictionary with top-level enum schema elements that have corresponding friendly names")
     Flags                                   = DerivedProperty(ParseFlag.AllFlags)
 
     # ----------------------------------------------------------------------
@@ -151,16 +149,7 @@ class Plugin(PluginBase):
                             prefix=prefix,
                             assignments=StringHelpers.LeftJustify(
                                 "([ {}\n ])".format(
-                                    "\n   ".join(
-                                        [
-                                            '( "{}", "{}" ),'.format(v, fv)
-                                            for v,
-                                            fv in six.moves.zip(
-                                                element.TypeInfo.Values,
-                                                element.TypeInfo.FriendlyValues,
-                                            )
-                                        ],
-                                    ),
+                                    "\n   ".join(['( "{}", "{}" ),'.format(v, fv) for v, fv in six.moves.zip(element.TypeInfo.Values, element.TypeInfo.FriendlyValues)]),
                                 ),
                                 len(prefix),
                             ),
@@ -168,16 +157,7 @@ class Plugin(PluginBase):
                             reversed_prefix=reversed_prefix,
                             reversed_assignments=StringHelpers.LeftJustify(
                                 "([ {}\n ])".format(
-                                    "\n   ".join(
-                                        [
-                                            '( "{}", "{}" ),'.format(fv, v)
-                                            for v,
-                                            fv in six.moves.zip(
-                                                element.TypeInfo.Values,
-                                                element.TypeInfo.FriendlyValues,
-                                            )
-                                        ],
-                                    ),
+                                    "\n   ".join(['( "{}", "{}" ),'.format(fv, v) for v, fv in six.moves.zip(element.TypeInfo.Values, element.TypeInfo.FriendlyValues)]),
                                 ),
                                 len(reversed_prefix),
                             ),

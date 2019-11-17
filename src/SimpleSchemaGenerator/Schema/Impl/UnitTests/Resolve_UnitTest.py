@@ -46,26 +46,13 @@ class ConfigurationSuite(unittest.TestCase):
     def test_Flattening(self):
         plugin, item = self._CreatePluginAndItem()
 
-        item.config[plugin.Name][0]["foo"] = MetadataValue(
-            10,
-            MetadataSource.Config,
-            "<source>",
-            0,
-            0,
-        )
-        item.config[plugin.Name].append(
-            {"bar": MetadataValue(20, MetadataSource.Config, "<source>", 0, 0)},
-        )
-        item.config["DoesNotExist"] = [
-            {"baz": MetadataValue(30, MetadataSource.Config, "<source>", 0, 0)}
-        ]
+        item.config[plugin.Name][0]["foo"] = MetadataValue(10, MetadataSource.Config, "<source>", 0, 0)
+        item.config[plugin.Name].append({"bar": MetadataValue(20, MetadataSource.Config, "<source>", 0, 0)})
+        item.config["DoesNotExist"] = [{"baz": MetadataValue(30, MetadataSource.Config, "<source>", 0, 0)}]
 
         root = Resolve(item, plugin)
 
-        self.assertEqual(
-            set(six.iterkeys(root.metadata.Values)),
-            set(["foo", "bar", "description"]),
-        )
+        self.assertEqual(set(six.iterkeys(root.metadata.Values)), set(["foo", "bar", "description"]))
         self.assertEqual(root.metadata.Values["foo"].Value, 10)
         self.assertEqual(root.metadata.Values["bar"].Value, 20)
 
@@ -102,10 +89,7 @@ class FundamentalSuite(unittest.TestCase):
         self.assertEqual(len(root.items), 1)
         self.assertEqual(root.items[0].name, "child1")
         self.assertEqual(root.items[0].element_type, Elements.FundamentalElement)
-        self.assertEqual(
-            root.items[0].references,
-            [Attributes.FUNDAMENTAL_ATTRIBUTE_INFO_MAP["string"]],
-        )
+        self.assertEqual(root.items[0].references, [Attributes.FUNDAMENTAL_ATTRIBUTE_INFO_MAP["string"]])
 
     # ----------------------------------------------------------------------
     def test_Any(self):
@@ -158,11 +142,7 @@ class FundamentalSuite(unittest.TestCase):
         )
 
         child1.name = "child1"
-        child1.references = [
-            ("int", Metadata({}, "<source>", 0, 0)),
-            ("bool", Metadata({}, "<source>", 1, 1)),
-            ("string", Metadata({}, "<source>", 2, 2)),
-        ]
+        child1.references = [("int", Metadata({}, "<source>", 0, 0)), ("bool", Metadata({}, "<source>", 1, 1)), ("string", Metadata({}, "<source>", 2, 2))]
         child1.multi_reference_type = Item.MultiReferenceType.Variant
 
         root = Resolve(parent, _CreatePlugin())
@@ -245,10 +225,7 @@ class ReferenceSuite(unittest.TestCase):
         child1.name = "child1"
         child1.references = ["does_not_exist"]
 
-        self.assertRaises(
-            Exceptions.ResolveInvalidReferenceException,
-            lambda: Resolve(parent, _CreatePlugin()),
-        )
+        self.assertRaises(Exceptions.ResolveInvalidReferenceException, lambda: Resolve(parent, _CreatePlugin()))
 
 
 # ----------------------------------------------------------------------
@@ -264,13 +241,7 @@ class MetadataSuite(unittest.TestCase):
         )
         child1.name = "this_should_be_overridden"
         child1.references = ["string"]
-        child1.metadata.Values["name"] = MetadataValue(
-            "new_name",
-            MetadataSource.Explicit,
-            "<source>",
-            1,
-            2,
-        )
+        child1.metadata.Values["name"] = MetadataValue("new_name", MetadataSource.Explicit, "<source>", 1, 2)
 
         root = Resolve(parent, _CreatePlugin())
 
@@ -289,13 +260,7 @@ class MetadataSuite(unittest.TestCase):
         )
         child1.name = "this_should_be_overridden"
         child1.references = ["string"]
-        child1.metadata.Values["name"] = MetadataValue(
-            "new_name",
-            MetadataSource.Explicit,
-            "<source>",
-            1,
-            2,
-        )
+        child1.metadata.Values["name"] = MetadataValue("new_name", MetadataSource.Explicit, "<source>", 1, 2)
 
         child1.arity = Arity(1, None)
 
@@ -316,18 +281,9 @@ class MetadataSuite(unittest.TestCase):
         )
         child1.name = "this_should_be_overridden"
         child1.referneces = ["string"]
-        child1.metadata.Values["name"] = MetadataValue(
-            "",
-            MetadataSource.Explicit,
-            "<source>",
-            1,
-            2,
-        )
+        child1.metadata.Values["name"] = MetadataValue("", MetadataSource.Explicit, "<source>", 1, 2)
 
-        self.assertRaises(
-            Exceptions.ResolveInvalidCustomNameException,
-            lambda: Resolve(parent, _CreatePlugin()),
-        )
+        self.assertRaises(Exceptions.ResolveInvalidCustomNameException, lambda: Resolve(parent, _CreatePlugin()))
 
     # ----------------------------------------------------------------------
     def test_Optional(self):

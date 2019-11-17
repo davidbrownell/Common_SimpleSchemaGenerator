@@ -444,10 +444,7 @@ def __ValidateUniqueKey(plugin, element):   # <Unused argument> pylint: disable 
 
     # Special case when the unique key is the fundamental part of a
     # SimpleElement.
-    if (
-        isinstance(element, Elements.SimpleElement)
-        and getattr(element, SIMPLE_FUNDAMENTAL_NAME_ATTRIBUTE_NAME, None) == unique_key
-    ):
+    if isinstance(element, Elements.SimpleElement) and getattr(element, SIMPLE_FUNDAMENTAL_NAME_ATTRIBUTE_NAME, None) == unique_key:
         return None
 
     # Look for the key in all the children.
@@ -476,9 +473,7 @@ def __ValidateUniqueKey(plugin, element):   # <Unused argument> pylint: disable 
 # ----------------------------------------------------------------------
 def __ValidateRefinesArity(plugin, element):            # <Unused argument> pylint: disable = W0613
     if not isinstance(element, Elements.ReferenceElement):
-        return "'{}' may only be used with reference elements".format(
-            COLLECTION_REFINES_ARITY_ATTRIBUTE_NAME,
-        )
+        return "'{}' may only be used with reference elements".format(COLLECTION_REFINES_ARITY_ATTRIBUTE_NAME)
 
     return None
 
@@ -486,14 +481,10 @@ def __ValidateRefinesArity(plugin, element):            # <Unused argument> pyli
 # ----------------------------------------------------------------------
 def __ValidateCompoundFundamentalName(plugin, element):
     if plugin.Flags & ParseFlag.SupportSimpleObjectElements:
-        return "The attribute '{}' should not be provided with plugins that support simple objects".format(
-            SIMPLE_FUNDAMENTAL_NAME_ATTRIBUTE_NAME,
-        )
+        return "The attribute '{}' should not be provided with plugins that support simple objects".format(SIMPLE_FUNDAMENTAL_NAME_ATTRIBUTE_NAME)
 
     if not hasattr(element, "FundamentalAttributeName"):
-        return "The attribute '{}' should only be used with simple objects".format(
-            SIMPLE_FUNDAMENTAL_NAME_ATTRIBUTE_NAME,
-        )
+        return "The attribute '{}' should only be used with simple objects".format(SIMPLE_FUNDAMENTAL_NAME_ATTRIBUTE_NAME)
 
     return None
 
@@ -501,8 +492,6 @@ def __ValidateCompoundFundamentalName(plugin, element):
 # ----------------------------------------------------------------------
 def __ValidateFundamentalName(plugin, element):         # <Unused argument> pylint: disable = W0613
     if not plugin.Flags & ParseFlag.SupportSimpleObjectElements:
-        return "The attribute '{}' must be provided for plugins that do not support simple objects".format(
-            SIMPLE_FUNDAMENTAL_NAME_ATTRIBUTE_NAME,
-        )
+        return "The attribute '{}' must be provided for plugins that do not support simple objects".format(SIMPLE_FUNDAMENTAL_NAME_ATTRIBUTE_NAME)
 
     return None

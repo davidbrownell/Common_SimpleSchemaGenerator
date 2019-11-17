@@ -42,9 +42,7 @@ class Plugin(PythonSerializationImpl):
     # ----------------------------------------------------------------------
     # |  Properties
     Name                                    = Interface.DerivedProperty("PythonXml")
-    Description                             = Interface.DerivedProperty(
-        "Creates Python code that is able to serialize and deserialize python objects to XML",
-    )
+    Description                             = Interface.DerivedProperty("Creates Python code that is able to serialize and deserialize python objects to XML")
 
     # ----------------------------------------------------------------------
     # |  Methods
@@ -210,34 +208,10 @@ class Plugin(PythonSerializationImpl):
             ).format(
                 source_var_name=source_var_name,
                 item_name=Plugin.COLLECTION_ITEM_NAME,
-                compound_statement=dest_writer.CreateCompoundElement(
-                    temporary_element,
-                    "attributes",
-                ).strip(),
-                simple_element=StringHelpers.LeftJustify(
-                    dest_writer.CreateSimpleElement(
-                        temporary_element,
-                        "attributes",
-                        "{}.text".format(source_var_name),
-                    ),
-                    4,
-                ).strip(),
-                append_children=StringHelpers.LeftJustify(
-                    dest_writer.AppendChild(
-                        cls.CreateTemporaryElement("child_name", "+"),
-                        "result",
-                        "new_items",
-                    ),
-                    12,
-                ).strip(),
-                append_child=StringHelpers.LeftJustify(
-                    dest_writer.AppendChild(
-                        cls.CreateTemporaryElement("child_name", "1"),
-                        "result",
-                        "new_item",
-                    ),
-                    8,
-                ).strip(),
+                compound_statement=dest_writer.CreateCompoundElement(temporary_element, "attributes").strip(),
+                simple_element=StringHelpers.LeftJustify(dest_writer.CreateSimpleElement(temporary_element, "attributes", "{}.text".format(source_var_name)), 4).strip(),
+                append_children=StringHelpers.LeftJustify(dest_writer.AppendChild(cls.CreateTemporaryElement("child_name", "+"), "result", "new_items"), 12).strip(),
+                append_child=StringHelpers.LeftJustify(dest_writer.AppendChild(cls.CreateTemporaryElement("child_name", "1"), "result", "new_item"), 8).strip(),
             )
 
         # ----------------------------------------------------------------------
@@ -382,10 +356,7 @@ class Plugin(PythonSerializationImpl):
         @classmethod
         @Interface.override
         def CreateCollection(cls, element, result_name):
-            return "cls._CreateXmlCollection({}, {})".format(
-                cls.GetElementStatementName(element),
-                result_name,
-            )
+            return "cls._CreateXmlCollection({}, {})".format(cls.GetElementStatementName(element), result_name)
 
         # ----------------------------------------------------------------------
         @classmethod
@@ -399,9 +370,7 @@ class Plugin(PythonSerializationImpl):
                 )
 
             if var_name_or_none is None:
-                var_name_or_none = "_CreateXmlElement({})".format(
-                    cls.GetElementStatementName(child_element),
-                )
+                var_name_or_none = "_CreateXmlElement({})".format(cls.GetElementStatementName(child_element))
 
             return "{parent_var_name}.append({var_name})".format(
                 parent_var_name=parent_var_name,

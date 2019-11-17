@@ -113,10 +113,7 @@ class Plugin(PluginBase):
     def VerifyFlags(self):
         flags = self.Flags
 
-        if (
-            flags & ParseFlag.SupportSimpleObjectElements
-            and not flags & ParseFlag.SupportAttributes
-        ):
+        if flags & ParseFlag.SupportSimpleObjectElements and not flags & ParseFlag.SupportAttributes:
             raise Exception("Attributes are required by SimpleObjects")
 
     # ----------------------------------------------------------------------
@@ -233,10 +230,7 @@ class Plugin(PluginBase):
             dn = element.DottedName
 
             include_map_value = include_map.get(dn, None)
-            if (
-                include_map_value is not None
-                and include_map_value.Type == cls.IncludeMapType.Standard
-            ):
+            if include_map_value is not None and include_map_value.Type == cls.IncludeMapType.Standard:
                 return
 
             include_map[dn] = cls.IncludeMapValue(element, include_map_type)

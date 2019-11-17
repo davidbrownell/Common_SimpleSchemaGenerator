@@ -188,9 +188,7 @@ class ValidateInvalidExtensionException(SimpleSchemaException):
 
 
 class ValidateInvalidVariantArityException(SimpleSchemaException):
-    Display                                 = (
-        "Variant elements may only reference other elements with an arity of 1 (Index: {index})"
-    )
+    Display                                 = "Variant elements may only reference other elements with an arity of 1 (Index: {index})"
 
 
 class ValidateInvalidReferenceException(SimpleSchemaException):

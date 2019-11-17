@@ -123,18 +123,7 @@ class InternalPlugin(Plugin):
     # ----------------------------------------------------------------------
     @staticmethod
     @override
-    def Generate(
-        simple_schema_generator,
-        invoke_reason,
-        input_filenames,
-        output_filenames,
-        name,
-        elements,
-        include_indexes,
-        status_stream,
-        verbose_stream,
-        verbose,
-    ):
+    def Generate(simple_schema_generator, invoke_reason, input_filenames, output_filenames, name, elements, include_indexes, status_stream, verbose_stream, verbose):
         self.elements = elements
 
 
@@ -160,10 +149,7 @@ class TestBase(unittest.TestCase):
         self.assertEqual(self._element.Name, "test_base")
         self.assertEqual([child.Name for child in self._element.Children], ["a"])
         self.assertEqual(self._element.Bases, [])
-        self.assertEqual(
-            set([other.Name for other in self._element.Derived]),
-            set(["test_derived", "test_derived_ref2", "test_derived_ref4"]),
-        )
+        self.assertEqual(set([other.Name for other in self._element.Derived]), set(["test_derived", "test_derived_ref2", "test_derived_ref4"]))
 
         self.assertTrue(isinstance(self._element.Children[0], FundamentalElement))
 
@@ -225,10 +211,7 @@ class TestDerived(unittest.TestCase):
             ],
         )
         self.assertEqual([base.Name for base in self._element.Bases], ["test_base"])
-        self.assertEqual(
-            [derived.Name for derived in self._element.Derived],
-            ["test_multi_compound"],
-        )
+        self.assertEqual([derived.Name for derived in self._element.Derived], ["test_multi_compound"])
 
     # ----------------------------------------------------------------------
     def test_TypeInfo(self):
@@ -582,9 +565,7 @@ class TestDerived(unittest.TestCase):
         self.assertTrue(isinstance(type_info.Items["test_derived_ref3"], ClassTypeInfo))
         self.assertTrue(isinstance(type_info.Items["test_derived_ref4"], ClassTypeInfo))
         self.assertTrue(isinstance(type_info.Items["test_derived_ref5"], ListTypeInfo))
-        self.assertTrue(
-            isinstance(type_info.Items["test_derived_ref5"].ElementTypeInfo, ClassTypeInfo),
-        )
+        self.assertTrue(isinstance(type_info.Items["test_derived_ref5"].ElementTypeInfo, ClassTypeInfo))
 
         if verify_derived_refs:
             self._VerifyTestDerived(
@@ -711,10 +692,7 @@ class TestBase2(unittest.TestCase):
     # ----------------------------------------------------------------------
     def test_Hierarchy(self):
         self.assertEqual(self._element.Bases, [])
-        self.assertEqual(
-            [derived.Name for derived in self._element.Derived],
-            ["test_multi_compound"],
-        )
+        self.assertEqual([derived.Name for derived in self._element.Derived], ["test_multi_compound"])
 
 
 # ----------------------------------------------------------------------
@@ -748,10 +726,7 @@ class TestMultiCompound(unittest.TestCase):
 
     # ----------------------------------------------------------------------
     def test_Hierarchy(self):
-        self.assertEqual(
-            [base.Name for base in self._element.Bases],
-            ["test_derived", "test_base2"],
-        )
+        self.assertEqual([base.Name for base in self._element.Bases], ["test_derived", "test_base2"])
         self.assertEqual(self._element.Derived, [])
 
 

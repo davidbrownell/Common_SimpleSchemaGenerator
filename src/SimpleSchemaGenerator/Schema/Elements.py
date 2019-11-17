@@ -21,13 +21,7 @@ import os
 
 import CommonEnvironment
 from CommonEnvironment.CallOnExit import CallOnExit
-from CommonEnvironment.Interface import (
-    Interface,
-    abstractmethod,
-    extensionmethod,
-    override,
-    staticderived,
-)
+from CommonEnvironment.Interface import Interface, abstractmethod, extensionmethod, override, staticderived
 from CommonEnvironment.Visitor import Visitor as VisitorBase
 
 # ----------------------------------------------------------------------
@@ -44,17 +38,7 @@ class Element(Interface):
     """Data common to all Elements"""
 
     # ----------------------------------------------------------------------
-    def __init__(
-        self,
-        type_info,
-        name,
-        parent,
-        source,
-        line,
-        column,
-        is_definition_only,
-        is_external,
-    ):
+    def __init__(self, type_info, name, parent, source, line, column, is_definition_only, is_external):
         self.TypeInfo                       = type_info
         self.Name                           = name
         self.Parent                         = parent
@@ -402,32 +386,13 @@ class ElementVisitor(VisitorBase):
             SimpleElement: (cls.OnSimple_VisitingChildren, cls.OnSimple_VisitedChildren),
         }
 
-        return cls._AcceptImpl(
-            element_or_elements,
-            traverse,
-            should_visit_func,
-            lookup_map,
-            child_visitation_lookup_map,
-            set(),
-            *args,
-            **kwargs
-        )
+        return cls._AcceptImpl(element_or_elements, traverse, should_visit_func, lookup_map, child_visitation_lookup_map, set(), *args, **kwargs)
 
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
     @classmethod
-    def _AcceptImpl(
-        cls,
-        element_or_elements,
-        traverse,
-        should_visit_func,
-        lookup_map,
-        child_visitation_lookup_map,
-        visited,
-        *args,
-        **kwargs
-    ):
+    def _AcceptImpl(cls, element_or_elements, traverse, should_visit_func, lookup_map, child_visitation_lookup_map, visited, *args, **kwargs):
         if isinstance(element_or_elements, list):
             elements = element_or_elements
         else:
@@ -456,11 +421,7 @@ class ElementVisitor(VisitorBase):
                     result=result,
                 )
 
-                if (
-                    traverse
-                    and isinstance(element, ChildrenMixin)
-                    and not isinstance(element, VariantElement)
-                ):
+                if traverse and isinstance(element, ChildrenMixin) and not isinstance(element, VariantElement):
                     if typ not in child_visitation_lookup_map:
                         raise Exception("'{}' was not expected ({})".format(typ, element))
 
@@ -477,16 +438,7 @@ class ElementVisitor(VisitorBase):
 
                         with CallOnExit(CallVisited):
                             for child in element.Children:
-                                cls._AcceptImpl(
-                                    child,
-                                    traverse,
-                                    should_visit_func,
-                                    lookup_map,
-                                    child_visitation_lookup_map,
-                                    visited,
-                                    *args,
-                                    **kwargs
-                                )
+                                cls._AcceptImpl(child, traverse, should_visit_func, lookup_map, child_visitation_lookup_map, visited, *args, **kwargs)
 
                 if nonlocals.result is not None:
                     return nonlocals.result

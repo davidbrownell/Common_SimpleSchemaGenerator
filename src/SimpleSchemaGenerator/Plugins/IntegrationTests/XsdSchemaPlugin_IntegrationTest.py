@@ -74,12 +74,7 @@ class XsdSchema(unittest.TestCase):
         with open(file_system_filename) as f:
             file_system_content = f.read()
 
-        file_system_filename = os.path.join(
-            _script_dir,
-            "Generated",
-            "FileSystemTest",
-            "FileSystemTest.xsd",
-        )
+        file_system_filename = os.path.join(_script_dir, "Generated", "FileSystemTest", "FileSystemTest.xsd")
         assert os.path.isfile(file_system_filename), file_system_filename
 
         # Test.xml
@@ -113,15 +108,9 @@ class XsdSchema(unittest.TestCase):
 
         schema.assertValid(etree.parse(StringIO(xml_content)))
 
-        xml_content = xml_content.replace(
-            "<bool_><item>true</item>",
-            "<bool_><item>not a bool</item>",
-        )
+        xml_content = xml_content.replace("<bool_><item>true</item>", "<bool_><item>not a bool</item>")
 
-        self.assertRaises(
-            etree.DocumentInvalid,
-            lambda: schema.assertValid(etree.parse(StringIO(xml_content))),
-        )
+        self.assertRaises(etree.DocumentInvalid, lambda: schema.assertValid(etree.parse(StringIO(xml_content))))
 
     # ----------------------------------------------------------------------
     def test_FileSystem(self):

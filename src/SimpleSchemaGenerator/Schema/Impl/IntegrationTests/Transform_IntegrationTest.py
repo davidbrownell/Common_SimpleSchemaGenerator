@@ -64,6 +64,25 @@ SIMPLE_SCHEMA                               = textwrap.dedent(
         <test_derived_ref3 test_derived_ref2>
         <test_derived_ref4 test_derived_ref2 refines_arity=true {30}>
         <test_derived_ref5 test_derived_ref2 {20}>
+
+    <test_simple string>:
+        [a int]
+        [b string]
+
+    <test_simple_derived test_simple>:
+        [c string]
+
+    # Multi inheritance for compound
+    <test_base2>:
+        [d string]
+        [e string]
+
+    <test_multi_compound (test_derived, test_base2)>:
+        pass
+
+    # Multi inheritance for simple
+    <test_multi_simple (test_simple_derived, test_base2)>:
+        pass
     """,
 )
 
@@ -72,15 +91,13 @@ class InternalPlugin(Plugin):
     Name                                    = DerivedProperty("InternalPlugin")
     Description                             = DerivedProperty("")
     Flags                                   = DerivedProperty(
-        # ParseFlag.SupportAttributes |
-        ParseFlag.SupportIncludeStatements |                                                                                                                                                                         # ParseFlag.SupportConfigStatements |
+        ParseFlag.SupportAttributes | ParseFlag.SupportIncludeStatements |                                                                                                                                           # ParseFlag.SupportConfigStatements |
                                                                                                                                                                                                                      # ParseFlag.SupportExtensionsStatements |
                                                                                                                                                                                                                      # ParseFlag.SupportUnnamedDeclarations |
                                                                                                                                                                                                                      # ParseFlag.SupportUnnamedObjects |
         ParseFlag.SupportNamedDeclarations | ParseFlag.SupportNamedObjects | ParseFlag.SupportRootDeclarations | ParseFlag.SupportRootObjects | ParseFlag.SupportChildDeclarations | ParseFlag.SupportChildObjects | # ParseFlag.SupportCustomElements |
                                                                                                                                                                                                                      # ParseFlag.SupportAnyElements |
-        ParseFlag.SupportReferenceElements | ParseFlag.SupportListElements |                                                                                                                                         # ParseFlag.SupportSimpleObjectElements |
-        ParseFlag.SupportVariantElements | ParseFlag.ResolveReferences,
+        ParseFlag.SupportReferenceElements | ParseFlag.SupportListElements | ParseFlag.SupportSimpleObjectElements | ParseFlag.SupportVariantElements | ParseFlag.ResolveReferences,
     )
 
     # ----------------------------------------------------------------------
@@ -106,18 +123,7 @@ class InternalPlugin(Plugin):
     # ----------------------------------------------------------------------
     @staticmethod
     @override
-    def Generate(
-        simple_schema_generator,
-        invoke_reason,
-        input_filenames,
-        output_filenames,
-        name,
-        elements,
-        include_indexes,
-        status_stream,
-        verbose_stream,
-        verbose,
-    ):
+    def Generate(simple_schema_generator, invoke_reason, input_filenames, output_filenames, name, elements, include_indexes, status_stream, verbose_stream, verbose):
         self.elements = elements
 
 
@@ -142,11 +148,8 @@ class TestBase(unittest.TestCase):
         self.assertTrue(isinstance(self._element, CompoundElement))
         self.assertEqual(self._element.Name, "test_base")
         self.assertEqual([child.Name for child in self._element.Children], ["a"])
-        self.assertEqual(self._element.Base, None)
-        self.assertEqual(
-            set([other.Name for other in self._element.Derived]),
-            set(["test_derived", "test_derived_ref2", "test_derived_ref4"]),
-        )
+        self.assertEqual(self._element.Bases, [])
+        self.assertEqual(set([other.Name for other in self._element.Derived]), set(["test_derived", "test_derived_ref2", "test_derived_ref4"]))
 
         self.assertTrue(isinstance(self._element.Children[0], FundamentalElement))
 
@@ -207,8 +210,8 @@ class TestDerived(unittest.TestCase):
                 "test_derived_ref5",
             ],
         )
-        self.assertEqual(self._element.Base.Name, "test_base")
-        self.assertEqual(self._element.Derived, [])
+        self.assertEqual([base.Name for base in self._element.Bases], ["test_base"])
+        self.assertEqual([derived.Name for derived in self._element.Derived], ["test_multi_compound"])
 
     # ----------------------------------------------------------------------
     def test_TypeInfo(self):
@@ -562,9 +565,7 @@ class TestDerived(unittest.TestCase):
         self.assertTrue(isinstance(type_info.Items["test_derived_ref3"], ClassTypeInfo))
         self.assertTrue(isinstance(type_info.Items["test_derived_ref4"], ClassTypeInfo))
         self.assertTrue(isinstance(type_info.Items["test_derived_ref5"], ListTypeInfo))
-        self.assertTrue(
-            isinstance(type_info.Items["test_derived_ref5"].ElementTypeInfo, ClassTypeInfo),
-        )
+        self.assertTrue(isinstance(type_info.Items["test_derived_ref5"].ElementTypeInfo, ClassTypeInfo))
 
         if verify_derived_refs:
             self._VerifyTestDerived(
@@ -587,6 +588,193 @@ class TestDerived(unittest.TestCase):
                 type_info.Items["test_derived_ref5"].ElementTypeInfo,
                 verify_derived_refs=False,
             )
+
+
+# ----------------------------------------------------------------------
+class TestSimple(unittest.TestCase):
+
+    # ----------------------------------------------------------------------
+    def setUp(self):
+        self.maxDiff = None
+        self.assertGreater(len(_elements), 2)
+        self._element = _elements[2]
+
+    # ----------------------------------------------------------------------
+    def test_ElementInfo(self):
+        self.assertTrue(isinstance(self._element, SimpleElement))
+        self.assertEqual(self._element.Name, "test_simple")
+        self.assertEqual([child.Name for child in self._element.Children], [None, "a", "b"])
+
+    # ----------------------------------------------------------------------
+    def test_TypeInfo(self):
+        self.assertTrue(self._element.TypeInfo, ClassTypeInfo)
+        self.assertEqual(self._element.TypeInfo.Arity, Arity(1, 1))
+        self.assertEqual(
+            self._element.TypeInfo,
+            ClassTypeInfo(
+                {"a": IntTypeInfo(), "b": StringTypeInfo(), None: StringTypeInfo()},
+                require_exact_match=True,
+                arity=Arity(1, 1),
+            ),
+        )
+
+
+# ----------------------------------------------------------------------
+class TestSimpleDerived(unittest.TestCase):
+
+    # ----------------------------------------------------------------------
+    def setUp(self):
+        self.maxDiff = None
+        self.assertGreater(len(_elements), 3)
+        self._element = _elements[3]
+
+    # ----------------------------------------------------------------------
+    def test_ElementInfo(self):
+        self.assertTrue(isinstance(self._element, SimpleElement))
+        self.assertEqual(self._element.Name, "test_simple_derived")
+        self.assertEqual(
+            [child.Name for child in self._element.Children],
+            [
+                "c",
+                None,
+                "a",
+                "b",
+            ],
+        )
+
+    # ----------------------------------------------------------------------
+    def test_TypeInfo(self):
+        self.assertTrue(isinstance(self._element.TypeInfo, ClassTypeInfo))
+        self.assertEqual(self._element.TypeInfo.Arity, Arity(1, 1))
+        self.assertEqual(
+            self._element.TypeInfo,
+            ClassTypeInfo(
+                {
+                    "a": IntTypeInfo(),
+                    "b": StringTypeInfo(),
+                    "c": StringTypeInfo(),
+                    None: StringTypeInfo(),
+                },
+                require_exact_match=True,
+                arity=Arity(1, 1),
+            ),
+        )
+
+
+# ----------------------------------------------------------------------
+class TestBase2(unittest.TestCase):
+
+    # ----------------------------------------------------------------------
+    def setUp(self):
+        self.maxDiff = None
+        self.assertGreater(len(_elements), 4)
+        self._element = _elements[4]
+
+    # ----------------------------------------------------------------------
+    def test_ElementInfo(self):
+        self.assertTrue(isinstance(self._element, CompoundElement))
+        self.assertEqual(self._element.Name, "test_base2")
+        self.assertEqual([child.Name for child in self._element.Children], ["d", "e"])
+
+    # ----------------------------------------------------------------------
+    def test_TypeInfo(self):
+        self.assertTrue(isinstance(self._element.TypeInfo, ClassTypeInfo))
+        self.assertEqual(self._element.TypeInfo.Arity, Arity(1, 1))
+        self.assertEqual(
+            self._element.TypeInfo,
+            ClassTypeInfo(
+                {"d": StringTypeInfo(), "e": StringTypeInfo()},
+                require_exact_match=True,
+                arity=Arity(1, 1),
+            ),
+        )
+
+    # ----------------------------------------------------------------------
+    def test_Hierarchy(self):
+        self.assertEqual(self._element.Bases, [])
+        self.assertEqual([derived.Name for derived in self._element.Derived], ["test_multi_compound"])
+
+
+# ----------------------------------------------------------------------
+class TestMultiCompound(unittest.TestCase):
+
+    # ----------------------------------------------------------------------
+    def setUp(self):
+        self.maxDiff = None
+        self.assertGreater(len(_elements), 5)
+        self._element = _elements[5]
+
+    # ----------------------------------------------------------------------
+    def test_ElementInfo(self):
+        self.assertTrue(isinstance(self._element, CompoundElement))
+        self.assertEqual(self._element.Name, "test_multi_compound")
+        self.assertEqual([child.Name for child in self._element.Children], [])
+
+    # ----------------------------------------------------------------------
+    def test_TypeInfo(self):
+        self.assertTrue(isinstance(self._element.TypeInfo, ClassTypeInfo))
+        self.assertEqual(self._element.TypeInfo.Arity, Arity(1, 1))
+
+        self.assertEqual(
+            self._element.TypeInfo,
+            ClassTypeInfo(
+                {},
+                require_exact_match=False,
+                arity=Arity(1, 1),
+            ),
+        )
+
+    # ----------------------------------------------------------------------
+    def test_Hierarchy(self):
+        self.assertEqual([base.Name for base in self._element.Bases], ["test_derived", "test_base2"])
+        self.assertEqual(self._element.Derived, [])
+
+
+# ----------------------------------------------------------------------
+class TestMultiSimple(unittest.TestCase):
+
+    # ----------------------------------------------------------------------
+    def setUp(self):
+        self.maxDiff = None
+        self.assertGreater(len(_elements), 6)
+        self._element = _elements[6]
+
+    # ----------------------------------------------------------------------
+    def test_ElementInfo(self):
+        self.assertTrue(isinstance(self._element, SimpleElement))
+        self.assertEqual(self._element.Name, "test_multi_simple")
+        self.assertEqual(
+            [child.Name for child in self._element.Children],
+            [
+                "c",
+                None,
+                "a",
+                "b",
+                "d",
+                "e",
+            ],
+        )
+
+    # ----------------------------------------------------------------------
+    def test_TypeInfo(self):
+        self.assertTrue(isinstance(self._element.TypeInfo, ClassTypeInfo))
+        self.assertEqual(self._element.TypeInfo.Arity, Arity(1, 1))
+
+        self.assertEqual(
+            self._element.TypeInfo,
+            ClassTypeInfo(
+                {
+                    "a": IntTypeInfo(),
+                    "b": StringTypeInfo(),
+                    "c": StringTypeInfo(),
+                    "d": StringTypeInfo(),
+                    "e": StringTypeInfo(),
+                    None: StringTypeInfo(),
+                },
+                require_exact_match=False,
+                arity=Arity(1, 1),
+            ),
+        )
 
 
 # ----------------------------------------------------------------------

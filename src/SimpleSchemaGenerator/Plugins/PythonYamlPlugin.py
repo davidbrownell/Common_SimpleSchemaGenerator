@@ -31,9 +31,7 @@ _script_dir, _script_name                   = os.path.split(_script_fullpath)
 with InitRelativeImports():
     from .Impl.PythonSerializationImpl import PythonSerializationImpl
 
-    from .Impl.StatementWriters.PythonDestinationStatementWriter import (
-        PythonDestinationStatementWriter,
-    )
+    from .Impl.StatementWriters.PythonDestinationStatementWriter import PythonDestinationStatementWriter
     from .Impl.StatementWriters.PythonSourceStatementWriter import PythonSourceStatementWriter
 
 # ----------------------------------------------------------------------
@@ -43,20 +41,14 @@ class Plugin(PythonSerializationImpl):
     # ----------------------------------------------------------------------
     # |  Properties
     Name                                    = Interface.DerivedProperty("PythonYaml")
-    Description                             = Interface.DerivedProperty(
-        "Creates python code that is able to serialize and deserialize python objects to YAML",
-    )
+    Description                             = Interface.DerivedProperty("Creates python code that is able to serialize and deserialize python objects to YAML")
 
     # ----------------------------------------------------------------------
     # |  Methods
     @classmethod
     @Interface.override
     def GetAdditionalGeneratorItems(cls, context):
-        return [
-            _script_fullpath,
-            PythonDestinationStatementWriter,
-            PythonSourceStatementWriter,
-        ] + super(Plugin, cls).GetAdditionalGeneratorItems(context)
+        return [_script_fullpath, PythonDestinationStatementWriter, PythonSourceStatementWriter] + super(Plugin, cls).GetAdditionalGeneratorItems(context)
 
     # ----------------------------------------------------------------------
     # |  Private Types

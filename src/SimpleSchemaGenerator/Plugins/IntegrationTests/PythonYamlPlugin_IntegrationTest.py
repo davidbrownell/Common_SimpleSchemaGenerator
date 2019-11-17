@@ -97,11 +97,7 @@ class AllTypesSuite(unittest.TestCase, AllTypesUtilsMixin):
         self.assertEqual(obj, ["one", "two", "three"])
 
         # Errors
-        self.assertRaisesRegex(
-            AllTypesYaml.DeserializeException,
-            r"An item was expected",
-            lambda: AllTypesYaml.Deserialize_standard_list(""),
-        )
+        self.assertRaisesRegex(AllTypesYaml.DeserializeException, r"An item was expected", lambda: AllTypesYaml.Deserialize_standard_list(""))
 
     # ----------------------------------------------------------------------
     def test_OptionalList(self):
@@ -177,10 +173,7 @@ class AllTypesSuite(unittest.TestCase, AllTypesUtilsMixin):
 
         os.mkdir(temp_dirname)
         with CallOnExit(lambda: FileSystem.RemoveTree(temp_dirname)):
-            self.assertEqual(
-                AllTypesYaml.Deserialize_directory_(os.path.basename(temp_dirname)).lower(),
-                temp_dirname.lower(),
-            )
+            self.assertEqual(AllTypesYaml.Deserialize_directory_(os.path.basename(temp_dirname)).lower(), temp_dirname.lower())
 
         # ----------------------------------------------------------------------
         def CaseInsensitiveException(ExceptionType, regex, func):
@@ -208,12 +201,7 @@ class AllTypesSuite(unittest.TestCase, AllTypesUtilsMixin):
             f.write("Temp file")
 
         with CallOnExit(lambda: FileSystem.RemoveFile(temp_filename)):
-            self.assertEqual(
-                AllTypesYaml.Deserialize_filename_(
-                    '"{}"'.format(os.path.basename(temp_filename)),
-                ).lower(),
-                temp_filename.lower(),
-            )
+            self.assertEqual(AllTypesYaml.Deserialize_filename_('"{}"'.format(os.path.basename(temp_filename))).lower(), temp_filename.lower())
 
         CaseInsensitiveException(
             AllTypesYaml.DeserializeException,
@@ -227,12 +215,7 @@ class AllTypesSuite(unittest.TestCase, AllTypesUtilsMixin):
 
         os.mkdir(temp_dirname)
         with CallOnExit(lambda: FileSystem.RemoveTree(temp_dirname)):
-            self.assertEqual(
-                AllTypesYaml.Deserialize_filename_any_(
-                    '"{}"'.format(os.path.basename(temp_dirname)),
-                ).lower(),
-                temp_dirname.lower(),
-            )
+            self.assertEqual(AllTypesYaml.Deserialize_filename_any_('"{}"'.format(os.path.basename(temp_dirname))).lower(), temp_dirname.lower())
 
         temp_filename = os.path.join(os.getcwd(), str(uuid.uuid4()).replace("-", ""))
         assert not os.path.exists(temp_filename), temp_filename
@@ -241,44 +224,19 @@ class AllTypesSuite(unittest.TestCase, AllTypesUtilsMixin):
             f.write("Temp file")
 
         with CallOnExit(lambda: FileSystem.RemoveFile(temp_filename)):
-            self.assertEqual(
-                AllTypesYaml.Deserialize_filename_any_(
-                    '"{}"'.format(os.path.basename(temp_filename)),
-                ).lower(),
-                temp_filename.lower(),
-            )
+            self.assertEqual(AllTypesYaml.Deserialize_filename_any_('"{}"'.format(os.path.basename(temp_filename))).lower(), temp_filename.lower())
 
-        self.assertRaisesRegex(
-            AllTypesYaml.DeserializeException,
-            re.escape("is not a valid file or directory"),
-            lambda: AllTypesYaml.Deserialize_filename_any_("Does Not Exist"),
-        )
+        self.assertRaisesRegex(AllTypesYaml.DeserializeException, re.escape("is not a valid file or directory"), lambda: AllTypesYaml.Deserialize_filename_any_("Does Not Exist"))
 
         # number_
         self.assertEqual(AllTypesYaml.Deserialize_number_("2"), 2)
-        self.assertRaisesRegex(
-            AllTypesYaml.DeserializeException,
-            r"-30 is not >= -20.0",
-            lambda: AllTypesYaml.Deserialize_number_("-30"),
-        )
-        self.assertRaisesRegex(
-            AllTypesYaml.DeserializeException,
-            r"40 is not <= 20.0",
-            lambda: AllTypesYaml.Deserialize_number_("40"),
-        )
+        self.assertRaisesRegex(AllTypesYaml.DeserializeException, r"-30 is not >= -20.0", lambda: AllTypesYaml.Deserialize_number_("-30"))
+        self.assertRaisesRegex(AllTypesYaml.DeserializeException, r"40 is not <= 20.0", lambda: AllTypesYaml.Deserialize_number_("40"))
 
         # int_
         self.assertEqual(AllTypesYaml.Deserialize_int_("10"), 10)
-        self.assertRaisesRegex(
-            AllTypesYaml.DeserializeException,
-            r"-30 is not >= -20",
-            lambda: AllTypesYaml.Deserialize_int_("-30"),
-        )
-        self.assertRaisesRegex(
-            AllTypesYaml.DeserializeException,
-            r"40 is not <= 20",
-            lambda: AllTypesYaml.Deserialize_int_("40"),
-        )
+        self.assertRaisesRegex(AllTypesYaml.DeserializeException, r"-30 is not >= -20", lambda: AllTypesYaml.Deserialize_int_("-30"))
+        self.assertRaisesRegex(AllTypesYaml.DeserializeException, r"40 is not <= 20", lambda: AllTypesYaml.Deserialize_int_("40"))
 
         # string_
         self.assertEqual(AllTypesYaml.Deserialize_string_("abc"), "abc")

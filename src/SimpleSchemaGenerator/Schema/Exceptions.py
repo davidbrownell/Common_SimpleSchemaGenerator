@@ -155,6 +155,10 @@ class ResolveInvalidCustomNameException(SimpleSchemaException):
     Display                                 = "The value '{name}' is not a valid name"
 
 
+class ResolveMultipleSimpleFundamentalElementsException(SimpleSchemaException):
+    Display                                 = "A simple element may only be based on 1 fundamental element"
+
+
 class ValidateUnsupportedCustomElementsException(SimpleSchemaException):
     Display                                 = "Custom elements are not supported"
 
@@ -171,10 +175,6 @@ class ValidateUnsupportedListElementsException(SimpleSchemaException):
     Display                                 = "List elements are not supported"
 
 
-class ValidateUnsupportedSimpleObjectElementsException(SimpleSchemaException):
-    Display                                 = "Pure simple object elements are not supported by this plugin; consider adding the attribute 'fundamental_name' to automatically convert this element into a compound element"
-
-
 class ValidateUnsupportedVariantElementsException(SimpleSchemaException):
     Display                                 = "Variant elements are not supported"
 
@@ -188,13 +188,15 @@ class ValidateInvalidExtensionException(SimpleSchemaException):
 
 
 class ValidateInvalidVariantArityException(SimpleSchemaException):
-    Display                                 = (
-        "Variant elements may only reference other elements with an arity of 1 (Index: {index})"
-    )
+    Display                                 = "Variant elements may only reference other elements with an arity of 1 (Index: {index})"
 
 
 class ValidateInvalidReferenceException(SimpleSchemaException):
     Display                                 = "An extension may not be the target of a reference"
+
+
+class ValidateInvalidSimpleReferenceException(SimpleSchemaException):
+    Display                                 = "A simple element may only be based on a single fundamental element"
 
 
 class ValidateInvalidSimpleChildException(SimpleSchemaException):

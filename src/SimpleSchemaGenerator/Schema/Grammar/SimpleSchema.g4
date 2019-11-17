@@ -99,7 +99,7 @@ arityVariable:                              LBRACE intRule COMMA intRule RBRACE;
 statements:                                 headerStatement__* standardStatement__* NEWLINE* EOF;
 
 headerStatement__:                          (includeStatement | configStatement) NEWLINE+;
-standardStatement__:                        (unnamedObj | obj | unnamedDeclaration | declaration | extension) NEWLINE+;
+standardStatement__:                        ( obj | unnamedObj | declaration | unnamedDeclaration | extension) NEWLINE+;
 
 includeStatement:                           INCLUDE LPAREN string RPAREN;
 
@@ -110,30 +110,32 @@ configStatementContent__:                   ( PASS |
                                                              ) DEDENT
                                             );
 
+obj:                                        ( LPAREN idRule objAttributes RPAREN |
+                                              LT idRule objAttributes GT
+                                            ) SCOPE_DELIMITER objContent__;
+
 unnamedObj:                                 ( LPAREN objAttributes RPAREN |
                                               LT objAttributes GT
                                             ) SCOPE_DELIMITER objContent__;
 
-obj:                                        ( LPAREN idRule idRule? objAttributes RPAREN |
-                                              LT idRule idRule? objAttributes GT
-                                            ) SCOPE_DELIMITER objContent__;
+objAttributes:                              ( idRule | objAttributesItems )? metadataList arity__?;
+objAttributesItems:                         LPAREN idRule (COMMA idRule)* RPAREN;
 
-objAttributes:                              metadataList arity__?;
 objContent__:                               ( PASS |
                                               NEWLINE+ INDENT ( PASS NEWLINE+ |
                                                                 standardStatement__+
                                                               ) DEDENT
                                             );
 
+declaration:                                ( LPAREN idRule declarationAttributes RPAREN |
+                                              LT idRule declarationAttributes GT |
+                                              LBRACK idRule declarationAttributes RBRACK
+                                            );
+
 unnamedDeclaration:                         ( LPAREN declarationAttributes RPAREN |
                                               LT declarationAttributes GT |
                                               LBRACK declarationAttributes RBRACK
 
-                                            );
-
-declaration:                                ( LPAREN idRule declarationAttributes RPAREN |
-                                              LT idRule declarationAttributes GT |
-                                              LBRACK idRule declarationAttributes RBRACK
                                             );
 
 declarationAttributes:                      ( idRule | declarationAttributesItems ) metadataList arity__?;

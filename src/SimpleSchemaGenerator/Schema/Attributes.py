@@ -444,7 +444,7 @@ def __ValidateUniqueKey(plugin, element):   # <Unused argument> pylint: disable 
 
     # Special case when the unique key is the fundamental part of a
     # SimpleElement.
-    if isinstance(element, Elements.SimpleElement) and getattr(element, SIMPLE_FUNDAMENTAL_NAME_ATTRIBUTE_NAME, None) == unique_key:
+    if isinstance(element, (Elements.SimpleElement, Elements.CompoundElement)) and getattr(element, SIMPLE_FUNDAMENTAL_NAME_ATTRIBUTE_NAME, None) == unique_key:
         return None
 
     # Look for the key in all the children.

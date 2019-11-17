@@ -165,13 +165,21 @@ class Plugin(PluginBase):
                         if child.TypeInfo.Arity.Min != 0:
                             required.append(child.Name)
 
+                    if isinstance(element, Elements.CompoundElement) and hasattr(element, "FundamentalAttributeName"):
+                        properties[element.FundamentalAttributeName] = {"$ref": "#/definitions/_{}.{}".format(element.DottedName, element.FundamentalAttributeName)}
+                        required.append(element.FundamentalAttributeName)
+
+                        definitions_schema["_{}.{}".format(element.DottedName, element.FundamentalAttributeName)] = _FundamentalTypeInfoVisitor.Accept(
+                            element.TypeInfo.Items[element.FundamentalAttributeName],
+                        )
+
                     schema = {"type": "object", "properties": properties}
 
                     if required:
                         required.sort()
                         schema["required"] = required
 
-                    element_allow_additional_children = element.allow_additional_children
+                    element_allow_additional_children = getattr(element, "allow_additional_children", None)
                     if element_allow_additional_children is None:
                         element_allow_additional_children = allow_additional_children
 

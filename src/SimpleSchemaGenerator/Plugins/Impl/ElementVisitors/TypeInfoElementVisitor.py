@@ -106,7 +106,7 @@ class TypeInfoElementVisitor(ElementVisitor):
 
             while queue:
                 element = queue.pop(0)
-                if not isinstance(element, (Elements.CommonEnvironment, Elements.SimpleElement)):
+                if not isinstance(element, (Elements.CompoundElement, Elements.SimpleElement)):
                     continue
 
                 for k, v in six.iteritems(element.TypeInfo.Items):
@@ -115,7 +115,7 @@ class TypeInfoElementVisitor(ElementVisitor):
 
                     yield k, v
 
-                queue += getattr(element, "Bases", None)
+                queue += getattr(element, "Bases", [])
 
         # ----------------------------------------------------------------------
 

@@ -283,7 +283,7 @@ class Plugin(PluginBase):
                                     ),
                                 )
 
-                        element_allow_additional_children = element.allow_additional_children
+                        element_allow_additional_children = getattr(element, "allow_additional_children", None)
                         if element_allow_additional_children is None:
                             element_allow_additional_children = allow_additional_children
 

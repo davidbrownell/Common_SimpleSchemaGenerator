@@ -603,7 +603,7 @@ class TestSimple(unittest.TestCase):
     def test_ElementInfo(self):
         self.assertTrue(isinstance(self._element, SimpleElement))
         self.assertEqual(self._element.Name, "test_simple")
-        self.assertEqual([child.Name for child in self._element.Children], [None, "a", "b"])
+        self.assertEqual([child.Name for child in self._element.Children], ["a", "b"])
 
     # ----------------------------------------------------------------------
     def test_TypeInfo(self):
@@ -632,15 +632,7 @@ class TestSimpleDerived(unittest.TestCase):
     def test_ElementInfo(self):
         self.assertTrue(isinstance(self._element, SimpleElement))
         self.assertEqual(self._element.Name, "test_simple_derived")
-        self.assertEqual(
-            [child.Name for child in self._element.Children],
-            [
-                "c",
-                None,
-                "a",
-                "b",
-            ],
-        )
+        self.assertEqual([child.Name for child in self._element.Children], ["c", "a", "b"])
 
     # ----------------------------------------------------------------------
     def test_TypeInfo(self):
@@ -747,7 +739,6 @@ class TestMultiSimple(unittest.TestCase):
             [child.Name for child in self._element.Children],
             [
                 "c",
-                None,
                 "a",
                 "b",
                 "d",

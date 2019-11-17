@@ -73,7 +73,7 @@ class Element(Interface):
 
             element = self
             while element:
-                names.append(element.Name)
+                names.append(element.Name or "<None>")
                 element = element.Parent
 
             names.reverse()
@@ -160,9 +160,6 @@ class SimpleElement(ChildrenMixin, Element):
     def __init__(self, fundamental_attribute_name, attributes, *args, **kwargs):
         Element.__init__(self, *args, **kwargs)
         ChildrenMixin.__init__(self, attributes)
-
-        # The referenced fundamental type's TypeInfo is available as
-        # self.TypeInfo.Items[None].
 
         self.FundamentalAttributeName       = fundamental_attribute_name
         self.Attributes                     = self.Children

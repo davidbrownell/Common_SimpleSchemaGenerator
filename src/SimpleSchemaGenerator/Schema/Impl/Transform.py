@@ -172,7 +172,10 @@ def Transform(root, plugin):
             assert ref_element
 
             for k, v in six.iteritems(ref_element.TypeInfo.Items):
-                assert k not in element.TypeInfo.Items, k
+                if k in element.TypeInfo.Items:
+                    assert id(element.TypeInfo.Items[k]) == id(v), k
+                    continue
+
                 element.TypeInfo.Items[k] = v
 
     # ----------------------------------------------------------------------
@@ -180,25 +183,28 @@ def Transform(root, plugin):
         if not isinstance(element, (Elements.SimpleElement, Elements.CompoundElement)):
             return
 
-        if isinstance(element, Elements.CompoundElement) and not hasattr(element, "FundamentalAttrbuteName"):
+        if isinstance(element, Elements.CompoundElement) and not hasattr(element, "FundamentalAttributeName"):
             return
+
+        # Remove the None child
+        child_index = 0
+        while child_index < len(element.Children):
+            child = element.Children[child_index]
+
+            if child.Name is None:
+                del element.Children[child_index]
+                continue
+
+            child_index += 1
 
         # Update the element to reflect the fundamental attribute name. Note that
         # this needs to be done after all of the elements have been created so that
-        # each SimpleElement sees the value to be set as None.
+        # each SimpleElement sees the value to be set as None (rather than the resolved
+        # value).
 
         if element.FundamentalAttributeName:
-            # Update the Element's Children
-            found = False
-
-            for child in element.Children:
-                if child.Name is None:
-                    child.Name = element.FundamentalAttributeName
-
-                    found = True
-                    break
-
-            assert found, element.Children
+            if None in element.TypeInfo.Items:
+                element.TypeInfo.Items[element.FundamentalAttributeName] = element.TypeInfo.Items.pop(None)
 
     # ----------------------------------------------------------------------
     def CreateVariantTypeInfoList(element):

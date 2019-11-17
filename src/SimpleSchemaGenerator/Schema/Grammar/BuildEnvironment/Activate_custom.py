@@ -34,17 +34,7 @@ del sys.path[0]
 # <Unused argument> pylint: disable = W0613
 
 # ----------------------------------------------------------------------
-def GetCustomActions(
-    output_stream,
-    configuration,
-    version_specs,
-    generated_dir,
-    debug,
-    verbose,
-    fast,
-    repositories,
-    is_mixin_repo,
-):
+def GetCustomActions(output_stream, configuration, version_specs, generated_dir, debug, verbose, fast, repositories, is_mixin_repo):
     """
     Returns an action or list of actions that should be invoked as part of the activaation process.
 

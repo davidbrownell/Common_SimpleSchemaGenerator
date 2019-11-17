@@ -43,12 +43,7 @@ def ParseFiles(filenames, plugin, filter_unsupported_extensions, filter_unsuppor
 
 
 # ----------------------------------------------------------------------
-def ParseStrings(
-    named_strings,
-    plugin,
-    filter_unsupported_extensions,
-    filter_unsupported_attributes,
-):                                          # { "<name>" : "<content>", ... }
+def ParseStrings(named_strings, plugin, filter_unsupported_extensions, filter_unsupported_attributes): # { "<name>" : "<content>", ... }
     string_map = OrderedDict()
 
     for k, v in six.iteritems(named_strings):
@@ -58,12 +53,7 @@ def ParseStrings(
 
 
 # ----------------------------------------------------------------------
-def ParseEx(
-    source_name_content_generators,
-    plugin,
-    filter_unsupported_extensions,
-    filter_unsupported_attributes,
-):                                          # { "<name>" : def Func() -> content }
+def ParseEx(source_name_content_generators, plugin, filter_unsupported_extensions, filter_unsupported_attributes): # { "<name>" : def Func() -> content }
     plugin.VerifyFlags()
 
     root = Populate(source_name_content_generators, plugin.Flags)

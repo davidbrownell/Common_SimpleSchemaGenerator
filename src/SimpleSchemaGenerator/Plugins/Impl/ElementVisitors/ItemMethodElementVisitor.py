@@ -37,16 +37,7 @@ with InitRelativeImports():
 # ----------------------------------------------------------------------
 class ItemMethodElementVisitor(ElementVisitor):
     # ----------------------------------------------------------------------
-    def __init__(
-        self,
-        type_info_serialization_name,
-        custom_serialize_item_args,
-        source_writer,
-        dest_writer,
-        output_stream,
-        enumerate_children_func,
-        is_serializer,
-    ):
+    def __init__(self, type_info_serialization_name, custom_serialize_item_args, source_writer, dest_writer, output_stream, enumerate_children_func, is_serializer):
         self._type_info_serialization_name  = type_info_serialization_name
         self._custom_serialize_item_args    = custom_serialize_item_args
         self._source_writer                 = source_writer
@@ -126,17 +117,11 @@ class ItemMethodElementVisitor(ElementVisitor):
                 resolved_element = variation.Reference.Resolve()
 
                 if isinstance(resolved_element, (Elements.CompoundElement, Elements.SimpleElement)):
-                    statement = '((lambda item: {}(item, process_additional_data=False, always_include_optional=False)), "{}")'.format(
-                        statement,
-                        resolved_element.DottedName,
-                    )
+                    statement = '((lambda item: {}(item, process_additional_data=False, always_include_optional=False)), "{}")'.format(statement, resolved_element.DottedName)
 
                 statements.append(statement)
             else:
-                assert not isinstance(
-                    variation,
-                    (Elements.CompoundElement, Elements.SimpleElement),
-                ), variation
+                assert not isinstance(variation, (Elements.CompoundElement, Elements.SimpleElement)), variation
 
                 new_types.append(variation)
                 statements.append("cls._{}_Item".format(ToPythonName(variation)))
@@ -173,16 +158,10 @@ class ItemMethodElementVisitor(ElementVisitor):
                 """,
             ).format(
                 python_name=python_name,
-                statements=StringHelpers.LeftJustify(
-                    "\n".join(["{},".format(statement) for statement in statements]),
-                    8,
-                ).rstrip(),
+                statements=StringHelpers.LeftJustify("\n".join(["{},".format(statement) for statement in statements]), 8).rstrip(),
                 apply_class_name_statement=StringHelpers.LeftJustify(
                     self._dest_writer.AppendChild(
-                        self._dest_writer.CreateTemporaryElement(
-                            '"{}"'.format(self._dest_writer.VARIANT_CLASS_TYPE_ATTRIBUTE_NAME),
-                            "1",
-                        ),
+                        self._dest_writer.CreateTemporaryElement('"{}"'.format(self._dest_writer.VARIANT_CLASS_TYPE_ATTRIBUTE_NAME), "1"),
                         "result",
                         "class_name",
                     ),
@@ -257,10 +236,7 @@ class ItemMethodElementVisitor(ElementVisitor):
 
             attribute_names.append(child.Name)
 
-            is_compound_like = isinstance(
-                child.Resolve(),
-                (Elements.CompoundElement, Elements.SimpleElement),
-            )
+            is_compound_like = isinstance(child.Resolve(), (Elements.CompoundElement, Elements.SimpleElement))
 
             # Note that we have to use getattr here, as Compound- and SimpleElements don't support IsAttribute
             if getattr(child, "IsAttribute", False):
@@ -271,17 +247,12 @@ class ItemMethodElementVisitor(ElementVisitor):
 
                 if child.TypeInfo.Arity.IsOptional:
                     if hasattr(child, "default"):
-                        default_value = ', default_value_func=lambda: StringSerialization.DeserializeItem(_{}_TypeInfo, "{}")'.format(
-                            child_python_name,
-                            child.default,
-                        )
+                        default_value = ', default_value_func=lambda: StringSerialization.DeserializeItem(_{}_TypeInfo, "{}")'.format(child_python_name, child.default)
                     else:
                         default_value = ""
 
                     self.IncludeApplyOptionalAttribute = True
-                    statement_template = 'cls._ApplyOptionalAttribute(item, "{{name}}", attributes, cls.{{python_name}}, always_include_optional{})'.format(
-                        default_value,
-                    )
+                    statement_template = 'cls._ApplyOptionalAttribute(item, "{{name}}", attributes, cls.{{python_name}}, always_include_optional{})'.format(default_value)
                 else:
                     statement_template = textwrap.dedent(
                         """\
@@ -294,10 +265,7 @@ class ItemMethodElementVisitor(ElementVisitor):
                 statement = statement_template.format(
                     name=child.Name,
                     python_name=child_python_name,
-                    get_child_statement=StringHelpers.LeftJustify(
-                        self._source_writer.GetChild("item", child),
-                        4,
-                    ).strip(),
+                    get_child_statement=StringHelpers.LeftJustify(self._source_writer.GetChild("item", child), 4).strip(),
                 )
 
             else:
@@ -305,9 +273,7 @@ class ItemMethodElementVisitor(ElementVisitor):
 
                 if child.TypeInfo.Arity.Min == 0:
                     if is_compound_like:
-                        statement = "lambda value: cls.{}(value, always_include_optional, process_additional_data)".format(
-                            child_python_name,
-                        )
+                        statement = "lambda value: cls.{}(value, always_include_optional, process_additional_data)".format(child_python_name)
                     else:
                         statement = "cls.{}".format(child_python_name)
 
@@ -316,10 +282,7 @@ class ItemMethodElementVisitor(ElementVisitor):
                         function_name = "_ApplyOptionalChild"
 
                         if hasattr(child, "default"):
-                            default_value = ', default_value_func=lambda: StringSerialization.DeserializeItem(_{}_TypeInfo, "{}")'.format(
-                                child_python_name,
-                                child.default,
-                            )
+                            default_value = ', default_value_func=lambda: StringSerialization.DeserializeItem(_{}_TypeInfo, "{}")'.format(child_python_name, child.default)
                         else:
                             default_value = ""
                     else:
@@ -361,10 +324,7 @@ class ItemMethodElementVisitor(ElementVisitor):
                             """,
                         ).format(
                             python_name=ToPythonName(child),
-                            get_child=StringHelpers.LeftJustify(
-                                self._source_writer.GetChild("item", child),
-                                4,
-                            ).strip(),
+                            get_child=StringHelpers.LeftJustify(self._source_writer.GetChild("item", child), 4).strip(),
                             name=child.Name,
                             extra_params=extra_params,
                         ),
@@ -409,21 +369,14 @@ class ItemMethodElementVisitor(ElementVisitor):
                         python_name=ToPythonName(element),
                         value=self._source_writer.GetChild(
                             "item",
-                            self._source_writer.CreateTemporaryElement(
-                                '"{}"'.format(element.FundamentalAttributeName),
-                                "1",
-                            ),
+                            self._source_writer.CreateTemporaryElement('"{}"'.format(element.FundamentalAttributeName), "1"),
                             is_simple_schema_fundamental=True,
                         ),
                         serialize_args=self._custom_serialize_item_args,
                     ),
                     4,
                 ),
-                self._dest_writer.CreateSimpleElement(
-                    element,
-                    "attributes" if attributes else None,
-                    "fundamental_value",
-                ),
+                self._dest_writer.CreateSimpleElement(element, "attributes" if attributes else None, "fundamental_value"),
             )
 
         else:
@@ -475,22 +428,12 @@ class ItemMethodElementVisitor(ElementVisitor):
                 """,
             ).format(
                 python_name=python_name,
-                prefix=StringHelpers.LeftJustify(
-                    "{}\n\n".format(prefix.strip()) if prefix else prefix,
-                    4,
-                ),
+                prefix=StringHelpers.LeftJustify("{}\n\n".format(prefix.strip()) if prefix else prefix, 4),
                 prefix_whitespace="    " if prefix else "",
-                suffix=StringHelpers.LeftJustify(
-                    "\n{}\n".format(suffix.strip()) if suffix else suffix,
-                    4,
-                ),
+                suffix=StringHelpers.LeftJustify("\n{}\n".format(suffix.strip()) if suffix else suffix, 4),
                 attributes_decl="" if not attributes else "attributes = OrderedDict()\n\n    ",
-                attributes="" if not attributes else "{}\n\n    ".format(
-                    StringHelpers.LeftJustify("".join(attributes), 4).strip(),
-                ),
+                attributes="" if not attributes else "{}\n\n    ".format(StringHelpers.LeftJustify("".join(attributes), 4).strip()),
                 statement=StringHelpers.LeftJustify(statement, 4).strip(),
-                attribute_names=", ".join(
-                    ['"{}"'.format(attribute_name) for attribute_name in attribute_names],
-                ),
+                attribute_names=", ".join(['"{}"'.format(attribute_name) for attribute_name in attribute_names]),
             ),
         )

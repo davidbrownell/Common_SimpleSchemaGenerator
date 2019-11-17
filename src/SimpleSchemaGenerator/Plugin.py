@@ -113,10 +113,7 @@ class Plugin(PluginBase):
     def VerifyFlags(self):
         flags = self.Flags
 
-        if (
-            flags & ParseFlag.SupportSimpleObjectElements
-            and not flags & ParseFlag.SupportAttributes
-        ):
+        if flags & ParseFlag.SupportSimpleObjectElements and not flags & ParseFlag.SupportAttributes:
             raise Exception("Attributes are required by SimpleObjects")
 
     # ----------------------------------------------------------------------
@@ -179,15 +176,18 @@ class Plugin(PluginBase):
         else:
             filter_func = lambda element: False
 
-        while element:
+        queue = [element]
+        while queue:
+            element = queue.pop(0)
+
             for child in element.Children:
                 if filter_func(child):
                     yield child
 
             if not recurse:
-                break
+                continue
 
-            element = getattr(element, "Base", None)
+            queue += getattr(element, "Bases", [])
 
     # ----------------------------------------------------------------------
     class IncludeMapType(Enum):
@@ -230,10 +230,7 @@ class Plugin(PluginBase):
             dn = element.DottedName
 
             include_map_value = include_map.get(dn, None)
-            if (
-                include_map_value is not None
-                and include_map_value.Type == cls.IncludeMapType.Standard
-            ):
+            if include_map_value is not None and include_map_value.Type == cls.IncludeMapType.Standard:
                 return
 
             include_map[dn] = cls.IncludeMapValue(element, include_map_type)
@@ -253,7 +250,7 @@ class Plugin(PluginBase):
             with CallOnExit(lambda: stack.pop()):
                 for potential_item_name in [
                     "Children",
-                    "Base",
+                    "Bases",
                     "Derived",
                     "Reference",
                 ]:

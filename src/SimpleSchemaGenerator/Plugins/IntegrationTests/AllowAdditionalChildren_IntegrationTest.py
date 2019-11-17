@@ -43,30 +43,13 @@ with CallOnExit(lambda: sys.path.pop(0)):
 class AllowAdditionalChildren(unittest.TestCase):
     # ----------------------------------------------------------------------
     def setUp(self):
-        allow_additional_children_filename = os.path.join(
-            _script_dir,
-            "..",
-            "Impl",
-            "AllowAdditionalChildren.json",
-        )
-        assert os.path.isfile(
-            allow_additional_children_filename,
-        ), allow_additional_children_filename
+        allow_additional_children_filename = os.path.join(_script_dir, "..", "Impl", "AllowAdditionalChildren.json")
+        assert os.path.isfile(allow_additional_children_filename), allow_additional_children_filename
 
-        json_schema = os.path.join(
-            _script_dir,
-            "Generated",
-            "AllowAdditionalChildren",
-            "AllowAdditionalChildren.schema.json",
-        )
+        json_schema = os.path.join(_script_dir, "Generated", "AllowAdditionalChildren", "AllowAdditionalChildren.schema.json")
         assert os.path.isfile(json_schema), json_schema
 
-        xsd_schema = os.path.join(
-            _script_dir,
-            "Generated",
-            "AllowAdditionalChildren",
-            "AllowAdditionalChildren.xsd",
-        )
+        xsd_schema = os.path.join(_script_dir, "Generated", "AllowAdditionalChildren", "AllowAdditionalChildren.xsd")
         assert os.path.isfile(xsd_schema), xsd_schema
 
         self._allow_additional_children_filename = allow_additional_children_filename
@@ -135,10 +118,7 @@ class AllowAdditionalChildren(unittest.TestCase):
 
         xml_content = xml_content.replace("</a></two>", "</a><extra>2</extra></two>")
 
-        self.assertRaises(
-            etree.DocumentInvalid,
-            lambda: schema.assertValid(etree.parse(StringIO(xml_content))),
-        )
+        self.assertRaises(etree.DocumentInvalid, lambda: schema.assertValid(etree.parse(StringIO(xml_content))))
 
 
 # ----------------------------------------------------------------------

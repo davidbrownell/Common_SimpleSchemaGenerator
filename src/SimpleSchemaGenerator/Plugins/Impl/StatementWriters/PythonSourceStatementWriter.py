@@ -166,30 +166,16 @@ class PythonSourceStatementWriter(SourceStatementWriter):
                 dest_writer.CreateSimpleElement(
                     temporary_element,
                     "attributes",
-                    '{}[{}["{}"]]'.format(
-                        source_var_name,
-                        source_var_name,
-                        cls.SIMPLE_ELEMENT_FUNDAMENTAL_ATTRIBUTE_NAME,
-                    ),
+                    '{}[{}["{}"]]'.format(source_var_name, source_var_name, cls.SIMPLE_ELEMENT_FUNDAMENTAL_ATTRIBUTE_NAME),
                 ),
                 4,
             ).strip(),
-            compound_statement=dest_writer.CreateCompoundElement(
-                temporary_element,
-                "attributes",
-            ).strip(),
+            compound_statement=dest_writer.CreateCompoundElement(temporary_element, "attributes").strip(),
             append_children=StringHelpers.LeftJustify(
-                dest_writer.AppendChild(
-                    temporary_children_element,
-                    "result",
-                    dest_writer.CreateCollection(temporary_children_element, "new_items"),
-                ),
+                dest_writer.AppendChild(temporary_children_element, "result", dest_writer.CreateCollection(temporary_children_element, "new_items")),
                 12,
             ).strip(),
-            append_child=StringHelpers.LeftJustify(
-                dest_writer.AppendChild(cls.CreateTemporaryElement("k", "1"), "result", "new_item"),
-                8,
-            ).strip(),
+            append_child=StringHelpers.LeftJustify(dest_writer.AppendChild(cls.CreateTemporaryElement("k", "1"), "result", "new_item"), 8).strip(),
         )
 
     # ----------------------------------------------------------------------

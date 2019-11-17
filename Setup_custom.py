@@ -99,9 +99,7 @@ def GetDependencies():
                 "3C72E8CD41EB483A891F01DDA606B780",
                 "Common_EnvironmentEx",
                 "python36",
-                lambda scm_or_none: "https://github.com/davidbrownell/Common_EnvironmentEx.git"
-                if scm_or_none is None or scm_or_none.Name != "Mercurial"
-                else "ssh://{mercurial_ssh_config_name}/d:/Mercurial/Code/v3/Common/Common_EnvironmentEx",
+                "https://github.com/davidbrownell/Common_EnvironmentEx.git"
             )
         ],
     )
@@ -112,7 +110,7 @@ def GetCustomActions(debug, verbose, explicit_configurations):
     """
     Returns an action or list of actions that should be invoked as part of the setup process.
 
-    Actions are generic command line statements defined in 
+    Actions are generic command line statements defined in
     <Common_Environment>/Libraries/Python/CommonEnvironment/v1.0/CommonEnvironment/Shell/Commands/__init__.py
     that are converted into statements appropriate for the current scripting language (in most
     cases, this is Bash on Linux systems and Batch or Powershell on Windows systems.

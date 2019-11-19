@@ -183,7 +183,9 @@ OPTIONAL_ATTRIBUTE_INFO                     = AttributeInfo(
     optional_items=[
         Attribute(
             OPTIONAL_DEFAULT_ATTRIBUTE_NAME,
-            StringTypeInfo(),
+            StringTypeInfo(
+                min_length=0,
+            ),
             is_metadata=True,
         ),
     ],

@@ -233,6 +233,7 @@ class ItemMethodElementVisitor(ElementVisitor):
             include_definitions=False,
         ):
             child_python_name = ToPythonName(child)
+            resolved_child_python_name = ToPythonName(child.Resolve())
 
             attribute_names.append(child.Name)
 
@@ -247,7 +248,7 @@ class ItemMethodElementVisitor(ElementVisitor):
 
                 if child.TypeInfo.Arity.IsOptional:
                     if hasattr(child, "default"):
-                        default_value = ', default_value_func=lambda: StringSerialization.DeserializeItem(_{}_TypeInfo, "{}")'.format(child_python_name, child.default)
+                        default_value = ', default_value_func=lambda: StringSerialization.DeserializeItem(_{}_TypeInfo, "{}")'.format(resolved_child_python_name, child.default)
                     else:
                         default_value = ""
 
@@ -282,7 +283,7 @@ class ItemMethodElementVisitor(ElementVisitor):
                         function_name = "_ApplyOptionalChild"
 
                         if hasattr(child, "default"):
-                            default_value = ', default_value_func=lambda: StringSerialization.DeserializeItem(_{}_TypeInfo, "{}")'.format(child_python_name, child.default)
+                            default_value = ', default_value_func=lambda: StringSerialization.DeserializeItem(_{}_TypeInfo, "{}")'.format(resolved_child_python_name, child.default)
                         else:
                             default_value = ""
                     else:

@@ -215,6 +215,10 @@ class ValidateInvalidAttributeException(SimpleSchemaException):
     Display                                 = "The attribute value for '{name}' is not valid: {reason}"
 
 
+class ValidateInvalidAttributeCollectionException(SimpleSchemaException):
+    Display                                 = "An attribute may not be a collection"
+
+
 class InvalidAttributeNameException(SimpleSchemaException):
     Display                                 = "The metadata name '{name}' is reserved and cannot be used"
 

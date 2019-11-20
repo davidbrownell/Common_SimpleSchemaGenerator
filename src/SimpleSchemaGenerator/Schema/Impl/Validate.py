@@ -56,6 +56,7 @@ def Validate(root, plugin, filter_unsupported_extensions, filter_unsupported_met
 
     Impl(root, lambda item: _ValidateSupported(plugin.Flags, item))
     Impl(root, lambda item: _ValidateUniqueNames(extensions_allowing_duplicate_names, item))
+    Impl(root, _ValidateAttributeArity)
     Impl(root, _ValidateVariantArity)
     Impl(root, lambda item: _ValidateMetadata(filter_unsupported_metadata, item))
     Impl(root, _ValidateSimpleElements)
@@ -117,6 +118,15 @@ def _ValidateUniqueNames(
     for ref in item.references:
         if isinstance(ref, Item):
             _ValidateUniqueNames(extensions_allowing_duplicate_names, ref, names)
+
+
+# ----------------------------------------------------------------------
+def _ValidateAttributeArity(item):
+    if item.ItemType != Item.ItemType.Attribute:
+        return
+
+    if item.arity.IsCollection:
+        raise Exceptions.ValidateInvalidAttributeCollectionException(item.Source, item.Line, item.Column)
 
 
 # ----------------------------------------------------------------------

@@ -26,8 +26,8 @@ def nextToken(self):
 // |  Lexer Rules
 // |
 // ---------------------------------------------------------------------------
-MULTI_LINE_NEWLINE:                         { SimpleSchemaLexer.multiline_statement_ctr != 0 }? '\r'? '\n' -> skip;
-NEWLINE:                                    { SimpleSchemaLexer.multiline_statement_ctr == 0 }? '\r'? '\n' [ \t]*;
+MULTI_LINE_NEWLINE:                         '\r'? '\n' { SimpleSchemaLexer.multiline_statement_ctr != 0 }? -> skip;
+NEWLINE:                                    '\r'? '\n' [ \t]* { SimpleSchemaLexer.multiline_statement_ctr == 0 }?;
 MULTI_LINE_ESCAPE:                          '\\' '\r'? '\n' -> skip;
 HORIZONTAL_WHITESPACE:                      [ \t]+ -> skip;
 

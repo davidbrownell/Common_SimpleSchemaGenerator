@@ -47,6 +47,14 @@ class StringSuite(unittest.TestCase):
     def test_SingleQuote(self):
         Populate({_script_fullpath: lambda: "simple_schema_include('{}')".format(_script_name)}, ParseFlag.AllFlags)
 
+    # ----------------------------------------------------------------------
+    def test_UnterminatedQuote(self):
+        self.assertRaisesRegex(Exception, r"expecting '\)'", lambda: Populate({_script_fullpath: lambda: 'simple_schema_include("{})'.format(_script_name)}, ParseFlag.AllFlags))
+
+    # ----------------------------------------------------------------------
+    def test_UnterminatedSingleQuote(self):
+        self.assertRaisesRegex(Exception, r"expecting '\)'", lambda: Populate({_script_fullpath: lambda: "simple_schema_include('{})".format(_script_name)}, ParseFlag.AllFlags))
+
 
 # ----------------------------------------------------------------------
 class EnhancedStringSuite(unittest.TestCase):

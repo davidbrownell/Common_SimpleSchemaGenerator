@@ -62,11 +62,17 @@ ARITY_ONE_OR_MORE:                          '+';
 
 fragment HWS:                               [ \t];
 
-DOUBLE_QUOTE_STRING:                        '"' (('\\"' | '\\\\') | .)*? '"';
-SINGLE_QUOTE_STRING:                        '\'' (('\\\'' | '\\\\') | .)*? '\'';
+DOUBLE_QUOTE_STRING:                        UNTERMINATED_DOUBLE_QUOTE_STRING '"';
+UNTERMINATED_DOUBLE_QUOTE_STRING:           '"' ('\\"' | '\\\\' | ~'"')*?;
 
-TRIPLE_DOUBLE_QUOTE_STRING:                 '"""' .*? '"""';
-TRIPLE_SINGLE_QUOTE_STRING:                 '\'\'\'' .*? '\'\'\'';
+SINGLE_QUOTE_STRING:                        UNTERMINATED_SINGLE_QUOTE_STRING '\'';
+UNTERMINATED_SINGLE_QUOTE_STRING:           '\'' ('\\\'' | '\\\\' | ~'\'')*?;
+
+TRIPLE_DOUBLE_QUOTE_STRING:                 UNTERMINATED_TRIPLE_QUOTE_STRING '"""';
+UNTERMINATED_TRIPLE_QUOTE_STRING:           '"""' .*?;
+
+TRIPLE_SINGLE_QUOTE_STRING:                 UNTERMINATED_TRIPE_SINGLE_QUOTE_STRING '\'\'\'';
+UNTERMINATED_TRIPE_SINGLE_QUOTE_STRING:     '\'\'\'' .*?;
 
 // ---------------------------------------------------------------------------
 // |
@@ -79,7 +85,7 @@ idRule:                                     ID;
 intRule:                                    INT;
 number:                                     NUMBER;
 
-string:                                     DOUBLE_QUOTE_STRING | SINGLE_QUOTE_STRING;
+string:                                     DOUBLE_QUOTE_STRING | SINGLE_QUOTE_STRING | UNTERMINATED_DOUBLE_QUOTE_STRING | UNTERMINATED_SINGLE_QUOTE_STRING;
 enhancedString:                             string | TRIPLE_DOUBLE_QUOTE_STRING | TRIPLE_SINGLE_QUOTE_STRING;
 
 arg__:                                      idRule | intRule | number | enhancedString | argList;

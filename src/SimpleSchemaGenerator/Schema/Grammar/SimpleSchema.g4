@@ -27,7 +27,7 @@ def nextToken(self):
 // |
 // ---------------------------------------------------------------------------
 MULTI_LINE_NEWLINE:                         '\r'? '\n' { SimpleSchemaLexer.multiline_statement_ctr != 0 }? -> skip;
-NEWLINE:                                    '\r'? '\n' [ \t]* { SimpleSchemaLexer.multiline_statement_ctr == 0 }?;
+NEWLINE:                                    '\r'? '\n' { SimpleSchemaLexer.multiline_statement_ctr == 0 }? [ \t]*;
 MULTI_LINE_ESCAPE:                          '\\' '\r'? '\n' -> skip;
 HORIZONTAL_WHITESPACE:                      [ \t]+ -> skip;
 

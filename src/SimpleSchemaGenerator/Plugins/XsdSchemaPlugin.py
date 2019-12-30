@@ -37,7 +37,7 @@ from CommonEnvironmentEx.Package import InitRelativeImports
 # ----------------------------------------------------------------------
 _script_fullpath                            = CommonEnvironment.ThisFullpath()
 _script_dir, _script_name                   = os.path.split(_script_fullpath)
-#  ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 with InitRelativeImports():
     from ..Plugin import Plugin as PluginBase, ParseFlag

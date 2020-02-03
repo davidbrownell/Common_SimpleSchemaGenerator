@@ -97,7 +97,7 @@ class PythonSourceStatementWriter(SourceStatementWriter):
     @staticmethod
     @Interface.override
     def GetAdditionalDataChildren():
-        return '[(k, v) for k, v in six.iteritems(source if isinstance(source, dict) else source.__dict__) if not k.startswith("_") and k not in exclude_names]'
+        return '[(k, v) for k, v in six.iteritems(source if isinstance(source, dict) else getattr(source, "__dict__", {})) if not k.startswith("_") and k not in exclude_names]'
 
     # ----------------------------------------------------------------------
     @classmethod
@@ -192,7 +192,10 @@ class PythonSourceStatementWriter(SourceStatementWriter):
                 is_optional=False,
             ):
                 if not isinstance(item, dict):
-                    item = item.__dict__
+                    if hasattr(item, "__dict__"):
+                        item = item.__dict__
+                    else:
+                        item = {}
 
                 value = item.get(attribute_name, DoesNotExist)
                 if value is DoesNotExist and not is_optional:

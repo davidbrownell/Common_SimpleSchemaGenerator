@@ -61,7 +61,10 @@ class FileSystemSuite(unittest.TestCase, FileSystemUtilsMixin):
         xml_filename = os.path.join(_script_dir, "..", "Impl", "FileSystemTest.xml")
         assert os.path.isfile(xml_filename), xml_filename
 
-        xml_obj = FileSystemXmlSerialization.Deserialize(xml_filename)
+        xml_obj = FileSystemXmlSerialization.Deserialize(
+          xml_filename,
+          process_additional_data=True,
+        )
 
         xml_obj_additional_data = FileSystemXmlSerialization.Deserialize(
             xml_filename,
@@ -73,12 +76,18 @@ class FileSystemSuite(unittest.TestCase, FileSystemUtilsMixin):
 
     # ----------------------------------------------------------------------
     def test_All(self):
-        serialized_obj = FileSystemJsonSerialization.Serialize(self._xml_obj)
+        serialized_obj = FileSystemJsonSerialization.Serialize(
+          self._xml_obj,
+          process_additional_data=True,
+        )
 
         self.ValidateRoot(serialized_obj.root)
         self.ValidateRoots(serialized_obj.roots)
 
-        obj = FileSystemJsonSerialization.Deserialize(serialized_obj)
+        obj = FileSystemJsonSerialization.Deserialize(
+          serialized_obj,
+          process_additional_data=True,
+        )
 
         self.ValidateRoot(obj.root)
         self.ValidateRoots(obj.roots)
@@ -149,11 +158,17 @@ class FileSystemSuite(unittest.TestCase, FileSystemUtilsMixin):
 
     # ----------------------------------------------------------------------
     def test_Roots(self):
-        serialized_obj = FileSystemJsonSerialization.Serialize_roots(self._xml_obj.roots)
+        serialized_obj = FileSystemJsonSerialization.Serialize_roots(
+            self._xml_obj.roots,
+            process_additional_data=True,
+        )
 
         self.ValidateRoots(serialized_obj)
 
-        obj = FileSystemJsonSerialization.Deserialize_roots(serialized_obj)
+        obj = FileSystemJsonSerialization.Deserialize_roots(
+            serialized_obj,
+            process_additional_data=True,
+        )
 
         self.ValidateRoots(obj)
 
@@ -181,12 +196,16 @@ class FileSystemSuite(unittest.TestCase, FileSystemUtilsMixin):
 
     # ----------------------------------------------------------------------
     def test_AllToString(self):
-        python_obj = FileSystemJsonSerialization.Deserialize(self._xml_obj)
+        python_obj = FileSystemJsonSerialization.Deserialize(
+          self._xml_obj,
+          process_additional_data=True,
+        )
 
         s = FileSystemJsonSerialization.Serialize(
             python_obj,
             to_string=True,
             pretty_print=True,
+            process_additional_data=True,
         )
 
         self.assertEqual(
@@ -228,7 +247,26 @@ class FileSystemSuite(unittest.TestCase, FileSystemUtilsMixin):
                       "name" : "dir1"
                     },
                     {
-                      "name" : "dir2"
+                      "name" : "dir2",
+                      "extra" : [
+                        {
+                          "two" : "2",
+                          "simple_value" : "value"
+                        },
+                        {
+                          "a" : "a",
+                          "b" : "b",
+                          "value" : [
+                            {
+                              "one" : "1",
+                              "simple_value" : "text value"
+                            },
+                            {
+                              "simple_value" : "another text value"
+                            }
+                          ]
+                        }
+                      ]
                     }
                   ]
                 }""",
@@ -237,16 +275,20 @@ class FileSystemSuite(unittest.TestCase, FileSystemUtilsMixin):
 
     # ----------------------------------------------------------------------
     def test_AllToStringNoPrettyPrint(self):
-        python_obj = FileSystemJsonSerialization.Deserialize(self._xml_obj)
+        python_obj = FileSystemJsonSerialization.Deserialize(
+            self._xml_obj,
+            process_additional_data=True,
+        )
 
         s = FileSystemJsonSerialization.Serialize(
             python_obj,
             to_string=True,
+            process_additional_data=True,
         )
 
         self.assertEqual(
             s,
-            """{"root": {"name": "one", "directories": [{"name": "two", "directories": [{"name": "three", "files": [{"size": 10, "name": "file1"}, {"size": 200, "name": "file2"}]}]}], "files": [{"size": 20, "name": "file10"}]}, "roots": [{"name": "dir1"}, {"name": "dir2"}]}""",
+            """{"root": {"name": "one", "directories": [{"name": "two", "directories": [{"name": "three", "files": [{"size": 10, "name": "file1"}, {"size": 200, "name": "file2"}]}]}], "files": [{"size": 20, "name": "file10"}]}, "roots": [{"name": "dir1"}, {"name": "dir2", "extra": [{"two": "2", "simple_value": "value"}, {"a": "a", "b": "b", "value": [{"one": "1", "simple_value": "text value"}, {"simple_value": "another text value"}]}]}]}""",
         )
 
     # ----------------------------------------------------------------------
@@ -426,12 +468,16 @@ class FileSystemSuite(unittest.TestCase, FileSystemUtilsMixin):
 
     # ----------------------------------------------------------------------
     def test_RootsToString(self):
-        python_obj = FileSystemJsonSerialization.Deserialize_roots(self._xml_obj)
+        python_obj = FileSystemJsonSerialization.Deserialize_roots(
+            self._xml_obj,
+            process_additional_data=True,
+        )
 
         s = FileSystemJsonSerialization.Serialize_roots(
             python_obj,
             to_string=True,
             pretty_print=True,
+            process_additional_data=True,
         )
 
         self.assertEqual(
@@ -443,7 +489,26 @@ class FileSystemSuite(unittest.TestCase, FileSystemUtilsMixin):
                     "name" : "dir1"
                   },
                   {
-                    "name" : "dir2"
+                    "name" : "dir2",
+                    "extra" : [
+                      {
+                        "two" : "2",
+                        "simple_value" : "value"
+                      },
+                      {
+                        "a" : "a",
+                        "b" : "b",
+                        "value" : [
+                          {
+                            "one" : "1",
+                            "simple_value" : "text value"
+                          },
+                          {
+                            "simple_value" : "another text value"
+                          }
+                        ]
+                      }
+                    ]
                   }
                 ]""",
             ),

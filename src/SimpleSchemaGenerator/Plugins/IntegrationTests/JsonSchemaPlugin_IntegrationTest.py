@@ -69,10 +69,14 @@ class JsonSchema(unittest.TestCase):
         file_system_filename = os.path.join(_script_dir, "..", "Impl", "FileSystemTest.xml")
         assert os.path.isfile(file_system_filename), file_system_filename
 
-        file_system_original_content = FileSystemXml.Deserialize(file_system_filename)
+        file_system_original_content = FileSystemXml.Deserialize(
+            file_system_filename,
+            process_additional_data=True,
+        )
         file_system_content = FileSystemJson.Serialize(
             file_system_original_content,
             to_string=True,
+            process_additional_data=True,
         )
 
         file_system_filename = os.path.join(_script_dir, "Generated", "FileSystemTest", "FileSystemTest.schema.json")
@@ -135,17 +139,6 @@ class JsonSchema(unittest.TestCase):
             instance=instance_content,
             schema=schema_content,
             format_checker=jsonschema.FormatChecker(),
-        )
-
-        instance_content["root"]["new_attribute"] = True
-
-        self.assertRaises(
-            jsonschema.exceptions.ValidationError,
-            lambda: jsonschema.validate(
-                instance=instance_content,
-                schema=schema_content,
-                format_checker=jsonschema.FormatChecker(),
-            ),
         )
 
     # ----------------------------------------------------------------------

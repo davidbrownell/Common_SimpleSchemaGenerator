@@ -406,7 +406,20 @@ class ItemMethodElementVisitor(ElementVisitor):
             suffix = ""
         else:
             prefix = ""
-            suffix = validation_statement_template.format("result")
+            suffix = textwrap.dedent(
+                """\
+                else:
+                    cls._RejectAdditionalData(
+                        item,
+                        exclude_names=[{attribute_names}],
+                    )
+
+                {validation_statement}
+                """,
+            ).format(
+                attribute_names=", ".join(['"{}"'.format(attribute_name) for attribute_name in attribute_names]),
+                validation_statement=validation_statement_template.format("result"),
+            )
 
         self._output_stream.write(
             textwrap.dedent(

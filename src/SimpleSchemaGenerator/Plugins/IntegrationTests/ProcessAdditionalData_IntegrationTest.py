@@ -1,6 +1,6 @@
 # ----------------------------------------------------------------------
 # |
-# |  AllowAdditionalChildren_IntegrationTest.py
+# |  ProcessAdditionalData_IntegrationTest.py
 # |
 # |  David Brownell <db@DavidBrownell.com>
 # |      2019-02-26 19:03:41
@@ -13,7 +13,7 @@
 # |  http://www.boost.org/LICENSE_1_0.txt.
 # |
 # ----------------------------------------------------------------------
-"""Integration test for AllowAdditionalChildren"""
+"""Integration test for ProcessAdditionalData"""
 
 import json
 import os
@@ -34,25 +34,25 @@ _script_fullpath                            = CommonEnvironment.ThisFullpath()
 _script_dir, _script_name                   = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
-sys.path.insert(0, os.path.join(_script_dir, "Generated", "AllowAdditionalChildren"))
+sys.path.insert(0, os.path.join(_script_dir, "Generated", "ProcessAdditionalData"))
 with CallOnExit(lambda: sys.path.pop(0)):
-    import AllowAdditionalChildren_PythonJsonSerialization as JsonSerialization
-    import AllowAdditionalChildren_PythonXmlSerialization as XmlSerialization
+    import ProcessAdditionalData_PythonJsonSerialization as JsonSerialization
+    import ProcessAdditionalData_PythonXmlSerialization as XmlSerialization
 
 # ----------------------------------------------------------------------
-class AllowAdditionalChildren(unittest.TestCase):
+class ProcessAdditionalData(unittest.TestCase):
     # ----------------------------------------------------------------------
     def setUp(self):
-        allow_additional_children_filename = os.path.join(_script_dir, "..", "Impl", "AllowAdditionalChildren.json")
-        assert os.path.isfile(allow_additional_children_filename), allow_additional_children_filename
+        process_additional_data_filename = os.path.join(_script_dir, "..", "Impl", "ProcessAdditionalData.json")
+        assert os.path.isfile(process_additional_data_filename), process_additional_data_filename
 
-        json_schema = os.path.join(_script_dir, "Generated", "AllowAdditionalChildren", "AllowAdditionalChildren.schema.json")
+        json_schema = os.path.join(_script_dir, "Generated", "ProcessAdditionalData", "ProcessAdditionalData.schema.json")
         assert os.path.isfile(json_schema), json_schema
 
-        xsd_schema = os.path.join(_script_dir, "Generated", "AllowAdditionalChildren", "AllowAdditionalChildren.xsd")
+        xsd_schema = os.path.join(_script_dir, "Generated", "ProcessAdditionalData", "ProcessAdditionalData.xsd")
         assert os.path.isfile(xsd_schema), xsd_schema
 
-        self._allow_additional_children_filename = allow_additional_children_filename
+        self._process_additional_data_filename = process_additional_data_filename
         self._json_schema = json_schema
         self._xsd_schema = xsd_schema
 
@@ -61,7 +61,7 @@ class AllowAdditionalChildren(unittest.TestCase):
         with open(self._json_schema) as f:
             schema_content = json.load(f)
 
-        content = JsonSerialization.Deserialize(self._allow_additional_children_filename)
+        content = JsonSerialization.Deserialize(self._process_additional_data_filename)
 
         json_content = json.loads(
             JsonSerialization.Serialize(
@@ -103,7 +103,7 @@ class AllowAdditionalChildren(unittest.TestCase):
 
         schema = etree.XMLSchema(schema_doc)
 
-        content = JsonSerialization.Deserialize(self._allow_additional_children_filename)
+        content = JsonSerialization.Deserialize(self._process_additional_data_filename)
 
         xml_content = XmlSerialization.Serialize(
             content,
@@ -119,6 +119,80 @@ class AllowAdditionalChildren(unittest.TestCase):
         xml_content = xml_content.replace("</a></two>", "</a><extra>2</extra></two>")
 
         self.assertRaises(etree.DocumentInvalid, lambda: schema.assertValid(etree.parse(StringIO(xml_content))))
+
+
+    # ----------------------------------------------------------------------
+    def test_JsonSerialization(self):
+        self.assertRaises(
+            JsonSerialization.SerializeException,
+            lambda: JsonSerialization.Serialize(
+                {
+                    "root" : {
+                        "one" : {
+                            "a": "string one",
+                            "additional_child": "another string one",
+                        },
+                        "two": {
+                            "a": "string two",
+                            "additional_child" : "another string two",
+                        },
+                    },
+                },
+            ),
+        )
+
+        # No exception if processing additional data
+        JsonSerialization.Serialize(
+            {
+                "root" : {
+                    "one" : {
+                        "a": "string one",
+                        "additional_child": "another string one",
+                    },
+                    "two": {
+                        "a": "string two",
+                        "additional_child" : "another string two",
+                    },
+                },
+            },
+            process_additional_data=True,
+        )
+
+    # ----------------------------------------------------------------------
+    def test_JsonDeserialize(self):
+        self.assertRaises(
+            JsonSerialization.DeserializeException,
+            lambda: JsonSerialization.Deserialize(
+                {
+                    "root" : {
+                        "one" : {
+                            "a": "string one",
+                            "additional_child": "another string one",
+                        },
+                        "two": {
+                            "a": "string two",
+                            "additional_child" : "another string two",
+                        },
+                    },
+                },
+            ),
+        )
+
+        JsonSerialization.Deserialize(
+            {
+                "root" : {
+                    "one" : {
+                        "a": "string one",
+                        "additional_child": "another string one",
+                    },
+                    "two": {
+                        "a": "string two",
+                        "additional_child" : "another string two",
+                    },
+                },
+            },
+            process_additional_data=True,
+        )
 
 
 # ----------------------------------------------------------------------

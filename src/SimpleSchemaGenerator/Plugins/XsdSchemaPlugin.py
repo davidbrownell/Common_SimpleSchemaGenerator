@@ -74,7 +74,7 @@ class Plugin(PluginBase):
     @Interface.override
     def GenerateCustomSettingsAndDefaults():
         yield "root_name", ""
-        yield "allow_additional_children", False
+        yield "process_additional_data", False
 
     # ----------------------------------------------------------------------
     @classmethod
@@ -91,7 +91,7 @@ class Plugin(PluginBase):
         if item.element_type == Elements.CompoundElement:
             results.append(
                 Attributes.Attribute(
-                    "allow_additional_children",
+                    "process_additional_data",
                     BoolTypeInfo(
                         arity="?",
                     ),
@@ -117,7 +117,7 @@ class Plugin(PluginBase):
         verbose_stream,
         verbose,
         root_name,
-        allow_additional_children,
+        process_additional_data,
     ):
         assert len(output_filenames) == 1
         output_filename = output_filenames[0]
@@ -283,11 +283,11 @@ class Plugin(PluginBase):
                                     ),
                                 )
 
-                        element_allow_additional_children = getattr(element, "allow_additional_children", None)
-                        if element_allow_additional_children is None:
-                            element_allow_additional_children = allow_additional_children
+                        element_process_additional_data = getattr(element, "process_additional_data", None)
+                        if element_process_additional_data is None:
+                            element_process_additional_data = process_additional_data
 
-                        if element_allow_additional_children:
+                        if element_process_additional_data:
                             elements.append('<xsd:any minOccurs="0" maxOccurs="unbounded" processContents="skip" />\n')
 
                         content = textwrap.dedent(
@@ -313,7 +313,7 @@ class Plugin(PluginBase):
                             ).format(
                                 name=element.DottedName,
                                 content=StringHelpers.LeftJustify(content, 2).strip(),
-                                mixed=' mixed="true"' if element_allow_additional_children else "",
+                                mixed=' mixed="true"' if element_process_additional_data else "",
                             ),
                         )
 

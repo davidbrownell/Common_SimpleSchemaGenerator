@@ -16,7 +16,7 @@
       <item size="20">file10</item>
     </files>
   </root>
-  
+
   <roots>
     <item name="dir1" />
     <item name="dir2">

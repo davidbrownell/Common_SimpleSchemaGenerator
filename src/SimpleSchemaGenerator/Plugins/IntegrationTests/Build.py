@@ -55,9 +55,9 @@ def Build(
         )
 
         schema_names = [
-            "AllowAdditionalChildren.SimpleSchema",
             ("AllTypes.SimpleSchema", " /include=types"),
             "FileSystemTest.SimpleSchema",
+            "ProcessAdditionalData.SimpleSchema",
             "Test.SimpleSchema",
             "DefaultValues.SimpleSchema",
         ]

@@ -1,7 +1,7 @@
 (File string fundamental_name="name"):
     [size int min=0]
 
-(Directory):
+(Directory process_additional_data=true):
     [name string]
     <directories Directory unique_key="name" *>
     <files File unique_key="name" *>

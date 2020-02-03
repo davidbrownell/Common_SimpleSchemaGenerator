@@ -104,6 +104,8 @@ class TestSuiteImpl(unittest.TestCase, TestUtilsMixin):
 class FileSystemSuite(FileSystemSuiteImpl):
     # ----------------------------------------------------------------------
     def setUp(self):
+        self.maxDiff = None
+
         xml_filename = os.path.join(_script_dir, "..", "Impl", "FileSystemTest.xml")
         assert os.path.isfile(xml_filename), xml_filename
 
@@ -115,7 +117,10 @@ class FileSystemSuite(FileSystemSuiteImpl):
 
     # ----------------------------------------------------------------------
     def test_Standard(self):
-        obj = FileSystemXmlSerialization.Deserialize(self._xml_filename)
+        obj = FileSystemXmlSerialization.Deserialize(
+            self._xml_filename,
+            process_additional_data=True,
+        )
 
         self.ValidateRoot(obj.root)
         self.ValidateRoots(obj.roots)
@@ -139,9 +144,15 @@ class FileSystemSuite(FileSystemSuiteImpl):
 
     # ----------------------------------------------------------------------
     def test_All(self):
-        python_object = FileSystemXmlSerialization.Deserialize(self._xml_filename)
+        python_object = FileSystemXmlSerialization.Deserialize(
+            self._xml_filename,
+            process_additional_data=True,
+        )
 
-        xml_object = FileSystemXmlSerialization.Serialize(python_object)
+        xml_object = FileSystemXmlSerialization.Serialize(
+            python_object,
+            process_additional_data=True,
+        )
 
         self.Match(
             xml_object,
@@ -198,8 +209,14 @@ class FileSystemSuite(FileSystemSuiteImpl):
 
     # ----------------------------------------------------------------------
     def test_Roots(self):
-        python_object = FileSystemXmlSerialization.Deserialize_roots(self._xml_filename)
-        xml_object = FileSystemXmlSerialization.Serialize_roots(python_object)
+        python_object = FileSystemXmlSerialization.Deserialize_roots(
+            self._xml_filename,
+            process_additional_data=True,
+        )
+        xml_object = FileSystemXmlSerialization.Serialize_roots(
+            python_object,
+            process_additional_data=True,
+        )
 
         self.Match(
             xml_object,
@@ -227,12 +244,16 @@ class FileSystemSuite(FileSystemSuiteImpl):
 
     # ----------------------------------------------------------------------
     def test_AllToString(self):
-        python_obj = FileSystemXmlSerialization.Deserialize(self._xml_filename)
+        python_obj = FileSystemXmlSerialization.Deserialize(
+            self._xml_filename,
+            process_additional_data=True,
+        )
 
         s = FileSystemXmlSerialization.Serialize(
             python_obj,
             to_string=True,
             pretty_print=True,
+            process_additional_data=True,
         )
 
         self.assertEqual(
@@ -259,7 +280,17 @@ class FileSystemSuite(FileSystemSuiteImpl):
                   </root>
                   <roots>
                     <item name="dir1" />
-                    <item name="dir2" />
+                    <item name="dir2">
+                      <extra>
+                        <item two="2">value</item>
+                        <item a="a" b="b">
+                          <value>
+                            <item one="1">text value</item>
+                            <item>another text value</item>
+                          </value>
+                        </item>
+                      </extra>
+                    </item>
                   </roots>
                 </_>
                 """,
@@ -268,16 +299,20 @@ class FileSystemSuite(FileSystemSuiteImpl):
 
     # ----------------------------------------------------------------------
     def test_AllToStringNoPrettyPrint(self):
-        python_obj = FileSystemXmlSerialization.Deserialize(self._xml_filename)
+        python_obj = FileSystemXmlSerialization.Deserialize(
+            self._xml_filename,
+            process_additional_data=True,
+        )
 
         s = FileSystemXmlSerialization.Serialize(
             python_obj,
             to_string=True,
+            process_additional_data=True,
         )
 
         self.assertEqual(
             s,
-            """<_><root name="one"><directories><item name="two"><directories><item name="three"><files><item size="10">file1</item><item size="200">file2</item></files></item></directories></item></directories><files><item size="20">file10</item></files></root><roots><item name="dir1" /><item name="dir2" /></roots></_>""",
+            """<_><root name="one"><directories><item name="two"><directories><item name="three"><files><item size="10">file1</item><item size="200">file2</item></files></item></directories></item></directories><files><item size="20">file10</item></files></root><roots><item name="dir1" /><item name="dir2"><extra><item two="2">value</item><item a="a" b="b"><value><item one="1">text value</item><item>another text value</item></value></item></extra></item></roots></_>""",
         )
 
     # ----------------------------------------------------------------------
@@ -411,12 +446,16 @@ class FileSystemSuite(FileSystemSuiteImpl):
 
     # ----------------------------------------------------------------------
     def test_RootsToString(self):
-        python_obj = FileSystemXmlSerialization.Deserialize_roots(self._xml_filename)
+        python_obj = FileSystemXmlSerialization.Deserialize_roots(
+            self._xml_filename,
+            process_additional_data=True,
+        )
 
         s = FileSystemXmlSerialization.Serialize_roots(
             python_obj,
             to_string=True,
             pretty_print=True,
+            process_additional_data=True,
         )
 
         self.assertEqual(
@@ -425,7 +464,17 @@ class FileSystemSuite(FileSystemSuiteImpl):
                 """\
                 <roots>
                   <item name="dir1" />
-                  <item name="dir2" />
+                  <item name="dir2">
+                    <extra>
+                      <item two="2">value</item>
+                      <item a="a" b="b">
+                        <value>
+                          <item one="1">text value</item>
+                          <item>another text value</item>
+                        </value>
+                      </item>
+                    </extra>
+                  </item>
                 </roots>
                 """,
             ),

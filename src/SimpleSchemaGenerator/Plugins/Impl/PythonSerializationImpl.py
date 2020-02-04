@@ -1238,6 +1238,27 @@ class PythonSerializationImpl(PluginBase):
             ),
         )
 
+        # _RejectAdditionalData
+        indented_stream.write(
+            textwrap.dedent(
+                """\
+                # ----------------------------------------------------------------------
+                @classmethod
+                def _RejectAdditionalData(cls, source, exclude_names):
+                    errors = []
+
+                    for name, child in {get_additional_children}:
+                        errors.append(name)
+
+                    if errors:
+                        raise Exception("The item contains unexpected children: {{}}".format(", ".join(['"{{}}"'.format(error) for error in errors])))
+
+                """,
+            ).format(
+                get_additional_children=StringHelpers.LeftJustify(source_writer.GetAdditionalDataChildren(), 4).strip(),
+            ),
+        )
+
         # _CreateAdditionalDataItem
         indented_stream.write(
             textwrap.dedent(

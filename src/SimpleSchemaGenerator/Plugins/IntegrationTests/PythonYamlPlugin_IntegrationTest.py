@@ -272,7 +272,10 @@ class FileSystemSuite(unittest.TestCase, FileSystemUtilsMixin):
         xml_filename = os.path.join(_script_dir, "..", "Impl", "FileSystemTest.xml")
         assert os.path.isfile(xml_filename), xml_filename
 
-        xml_obj = FileSystemXml.Deserialize(xml_filename)
+        xml_obj = FileSystemXml.Deserialize(
+            xml_filename,
+            process_additional_data=True,
+        )
 
         xml_obj_additional_data = FileSystemXml.Deserialize(
             xml_filename,
@@ -284,12 +287,18 @@ class FileSystemSuite(unittest.TestCase, FileSystemUtilsMixin):
 
     # ----------------------------------------------------------------------
     def test_All(self):
-        serialized_obj = FileSystemYaml.Serialize(self._xml_obj)
+        serialized_obj = FileSystemYaml.Serialize(
+            self._xml_obj,
+            process_additional_data=True,
+        )
 
         self.ValidateRoot(serialized_obj.root)
         self.ValidateRoots(serialized_obj.roots)
 
-        obj = FileSystemYaml.Deserialize(serialized_obj)
+        obj = FileSystemYaml.Deserialize(
+            serialized_obj,
+            process_additional_data=True,
+        )
 
         self.ValidateRoot(obj.root)
         self.ValidateRoots(obj.roots)
@@ -360,11 +369,17 @@ class FileSystemSuite(unittest.TestCase, FileSystemUtilsMixin):
 
     # ----------------------------------------------------------------------
     def test_Roots(self):
-        serialized_obj = FileSystemYaml.Serialize_roots(self._xml_obj.roots)
+        serialized_obj = FileSystemYaml.Serialize_roots(
+            self._xml_obj.roots,
+            process_additional_data=True,
+        )
 
         self.ValidateRoots(serialized_obj)
 
-        obj = FileSystemYaml.Deserialize_roots(serialized_obj)
+        obj = FileSystemYaml.Deserialize_roots(
+            serialized_obj,
+            process_additional_data=True,
+        )
 
         self.ValidateRoots(obj)
 
@@ -392,11 +407,15 @@ class FileSystemSuite(unittest.TestCase, FileSystemUtilsMixin):
 
     # ----------------------------------------------------------------------
     def test_AllToString(self):
-        python_obj = FileSystemYaml.Deserialize(self._xml_obj)
+        python_obj = FileSystemYaml.Deserialize(
+            self._xml_obj,
+            process_additional_data=True,
+        )
 
         s = FileSystemYaml.Serialize(
             python_obj,
             to_string=True,
+            process_additional_data=True,
         )
 
         self.assertEqual(
@@ -419,7 +438,16 @@ class FileSystemSuite(unittest.TestCase, FileSystemUtilsMixin):
                   name: one
                 roots:
                 - name: dir1
-                - name: dir2
+                - extra:
+                  - simple_value: value
+                    two: '2'
+                  - a: a
+                    b: b
+                    value:
+                    - one: '1'
+                      simple_value: text value
+                    - simple_value: another text value
+                  name: dir2
                 """,
             ),
         )
@@ -537,11 +565,15 @@ class FileSystemSuite(unittest.TestCase, FileSystemUtilsMixin):
 
     # ----------------------------------------------------------------------
     def test_RootsToString(self):
-        python_obj = FileSystemYaml.Deserialize_roots(self._xml_obj)
+        python_obj = FileSystemYaml.Deserialize_roots(
+            self._xml_obj,
+            process_additional_data=True,
+        )
 
         s = FileSystemYaml.Serialize_roots(
             python_obj,
             to_string=True,
+            process_additional_data=True,
         )
 
         self.assertEqual(
@@ -549,7 +581,16 @@ class FileSystemSuite(unittest.TestCase, FileSystemUtilsMixin):
             textwrap.dedent(
                 """\
                 - name: dir1
-                - name: dir2
+                - extra:
+                  - simple_value: value
+                    two: '2'
+                  - a: a
+                    b: b
+                    value:
+                    - one: '1'
+                      simple_value: text value
+                    - simple_value: another text value
+                  name: dir2
                 """,
             ),
         )
@@ -634,10 +675,10 @@ class DefaultValuesSuite(unittest.TestCase, DefaultValuesMixin):
 
     # ----------------------------------------------------------------------
     def test_All(self):
-        yaml_filanem = os.path.join(_script_dir, "..", "Impl", "DefaultValues.yaml")
-        assert os.path.isfile(yaml_filanem), yaml_filanem
+        yaml_filename = os.path.join(_script_dir, "..", "Impl", "DefaultValues.yaml")
+        assert os.path.isfile(yaml_filename), yaml_filename
 
-        obj = DefaultValuesYamlSerialization.Deserialize(yaml_filanem)
+        obj = DefaultValuesYamlSerialization.Deserialize(yaml_filename)
 
         self.ValidateObject1(obj[0])
         self.ValidateObject2(obj[1])

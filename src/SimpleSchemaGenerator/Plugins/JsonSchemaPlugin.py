@@ -75,7 +75,7 @@ class Plugin(PluginBase):
         yield "id", None
         yield "description", None
         yield "schema_version", "http://json-schema.org/draft-07/schema#"
-        yield "allow_additional_children", False
+        yield "process_additional_data", False
 
     # ----------------------------------------------------------------------
     @classmethod
@@ -92,7 +92,7 @@ class Plugin(PluginBase):
         if item.element_type == Elements.CompoundElement:
             results.append(
                 Attributes.Attribute(
-                    "allow_additional_children",
+                    "process_additional_data",
                     BoolTypeInfo(
                         arity="?",
                     ),
@@ -120,7 +120,7 @@ class Plugin(PluginBase):
         id,
         description,
         schema_version,
-        allow_additional_children,
+        process_additional_data,
     ):
         assert len(output_filenames) == 1
         output_filename = output_filenames[0]
@@ -179,11 +179,11 @@ class Plugin(PluginBase):
                         required.sort()
                         schema["required"] = required
 
-                    element_allow_additional_children = getattr(element, "allow_additional_children", None)
-                    if element_allow_additional_children is None:
-                        element_allow_additional_children = allow_additional_children
+                    element_process_additional_data = getattr(element, "process_additional_data", None)
+                    if element_process_additional_data is None:
+                        element_process_additional_data = process_additional_data
 
-                    if not element_allow_additional_children:
+                    if not element_process_additional_data:
                         schema["additionalProperties"] = False
 
                     definitions_schema["_{}_Item".format(element.DottedName)] = schema
@@ -279,7 +279,7 @@ class Plugin(PluginBase):
                     required.sort()
                     schema["required"] = required
 
-                if not allow_additional_children:
+                if not process_additional_data:
                     schema["additionalProperties"] = False
 
             else:

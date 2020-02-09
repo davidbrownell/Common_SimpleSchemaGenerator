@@ -75,7 +75,7 @@ class PythonSerializationImpl(PluginBase):
             | ParseFlag.SupportNamedDeclarations | ParseFlag.SupportNamedObjects | ParseFlag.SupportRootDeclarations | ParseFlag.SupportRootObjects | ParseFlag.SupportChildDeclarations | ParseFlag.SupportChildObjects # | ParseFlag.SupportCustomElements
             | (ParseFlag.SupportAnyElements if cls._SupportAnyElements else 0) | ParseFlag.SupportReferenceElements | ParseFlag.SupportListElements | (
                 ParseFlag.SupportSimpleObjectElements if cls._SupportAttributes else 0
-            ) | ParseFlag.SupportVariantElements | ParseFlag.ResolveReferences,
+            ) | ParseFlag.SupportVariantElements,
         )
 
         cls._include_validate_unique_keys = False

@@ -369,7 +369,7 @@ def _ResolveArity(plugin, item):
         ):
             assert len(sub_item.references) == 1, sub_item.references
 
-            _ResolveArity(sub_item.references[0])
+            _ResolveArity(plugin, sub_item.references[0])
             sub_item.arity = sub_item.references[0].arity
         else:
             sub_item.arity = Arity(1, 1)

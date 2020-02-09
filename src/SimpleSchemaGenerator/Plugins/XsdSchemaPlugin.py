@@ -59,7 +59,7 @@ class Plugin(PluginBase):
                                                                                                                                                                                                                       # | ParseFlag.SupportUnnamedDeclarations
         # | ParseFlag.SupportUnnamedObjects
         | ParseFlag.SupportNamedDeclarations | ParseFlag.SupportNamedObjects | ParseFlag.SupportRootDeclarations | ParseFlag.SupportRootObjects | ParseFlag.SupportChildDeclarations | ParseFlag.SupportChildObjects  # | ParseFlag.SupportCustomElements
-        | ParseFlag.SupportAnyElements | ParseFlag.SupportReferenceElements | ParseFlag.SupportListElements | ParseFlag.SupportSimpleObjectElements | ParseFlag.SupportVariantElements | ParseFlag.ResolveReferences,
+        | ParseFlag.SupportAnyElements | ParseFlag.SupportReferenceElements | ParseFlag.SupportListElements | ParseFlag.SupportSimpleObjectElements | ParseFlag.SupportVariantElements,
     )
 
     # ----------------------------------------------------------------------

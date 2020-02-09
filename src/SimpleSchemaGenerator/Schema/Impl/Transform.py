@@ -496,7 +496,10 @@ class _CreateElementVisitor(ItemVisitor):
         create_element_func,
         is_definition_only,
     ):                                      # <Parameters differ from overridden...> pylint: disable = W0221
-        if metadata_item.is_augmenting_reference:
+        if (
+            metadata_item.is_augmenting_reference
+            and not (plugin.Flags & ParseFlag.MaintainAugmentingReferences)
+        ):
             assert len(item.references) == 1, item.references
 
             return cls.Accept(item.references[0], metadata_item, plugin, elements, delayed_instruction_queue, apply_type_info_func, create_element_func, is_definition_only)

@@ -1,0 +1,61 @@
+(mutable_string string min_length=5 mutable="true")
+(immutable_string string min_length=5)
+
+(name):
+    <first string mutable="true">
+    <middle string mutable="true" ?>
+    <last string mutable="true">
+
+<ConstrainedObject identity=Integer *>:
+    <a int min=0 max=100>
+    <b int min=0 max=100>
+    <c string min_length=1 max_length=10>
+
+    constraint("a <= b")
+
+<Integer name identity=Integer *>:
+    <arg int min=0>
+
+<Basic name identity=Basic *>:
+    <age int min=0>
+
+<Simple name identity=Simple *>:
+    <age int min=0>
+
+<Deletable name identity=Deletable *>:
+    <arg int min=0>
+
+<Parent identity=Deletable *>:
+    <a int>
+    <b string>
+    <c datetime>
+
+    <Child identity=Deletable *>:
+        <a int>
+        <b string>
+        <c datetime>
+
+        <Grandchild identity=Deletable *>:
+            <a int>
+            <b string>
+            <c datetime>
+
+<Override identity=Integer *>:
+    <mutable_string_ mutable_string>
+    <optional_mutable_string mutable_string ?>
+    <mutable_string_override mutable_string mutable="false">
+    <immutable_string_ immutable_string>
+    <optional_immutable_string immutable_string ?>
+    <immutable_string_override immutable_string mutable="true">
+
+<OneToOne identity=Deletable *>:
+    <Child Parent.Child backref="true" backref_is_one_to_one="true" mutable="true">
+    <OptionalChild Parent.Child backref="true" backref_is_one_to_one="true" backref_name="optional_one_to_one" mutable="true" ?>
+
+<OneToMany identity=Deletable *>:
+    <Child Parent.Child backref="true" mutable="true">
+    <OptionalChild Parent.Child backref="true" backref_name="optional_one_to_manys" mutable="true" ?>
+
+<ManyToMany identity=Deletable *>:
+    <Children Parent.Child backref="true" mutable="true" +>
+    <OptionalChildren Parent.Child backref="true" backref_name="optional_many_to_manys" *>

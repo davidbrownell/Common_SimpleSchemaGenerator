@@ -59,7 +59,17 @@ class ParseFlag(BitFlagEnum):
     SupportVariantElements                  = auto()
 
     # Parse behavior
-    ResolveReferences                       = auto()
+
+    # Normally, augmenting references (references that change arity
+    # or apply new metadata) are converted into elements separate
+    # from the referenced element. Setting this flag will prevent this
+    # from happening, maintaining the reference instead.
+    MaintainAugmentingReferences            = auto()
+
+    # By default, a reference will inherit the arity of a referenced item
+    # if it isn't specified. This flag will disable that behavior and maintain
+    # the explicit arity of Arity(1, 1).
+    MaintainReferenceArity                  = auto()
 
     LastFlagValue                           = auto()
     AllFlags                                = LastFlagValue - 1

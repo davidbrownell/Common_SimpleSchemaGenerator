@@ -26,6 +26,7 @@ _script_dir, _script_name                   = os.path.split(_script_fullpath)
 
 sys.path.insert(0, os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"))
 from RepositoryBootstrap.SetupAndActivate import CurrentShell
+from RepositoryBootstrap.SetupAndActivate import DynamicPluginArchitecture
 
 del sys.path[0]
 
@@ -48,13 +49,28 @@ def GetCustomActions(
     """
     Returns an action or list of actions that should be invoked as part of the activation process.
 
-    Actions are generic command line statements defined in 
+    Actions are generic command line statements defined in
     <Common_Environment>/Libraries/Python/CommonEnvironment/v1.0/CommonEnvironment/Shell/Commands/__init__.py
     that are converted into statements appropriate for the current scripting language (in most
     cases, this is Bash on Linux systems and Batch or PowerShell on Windows systems.
     """
 
-    return []
+    actions = []
+
+    # Reset any existing values
+    os.environ["DEVELOPMENT_ENVIRONMENT_SIMPLE_SCHEMA_PLUGINS"] = ""
+
+    actions += [
+        CurrentShell.Commands.Set("DEVELOPMENT_ENVIRONMENT_SIMPLE_SCHEMA_PLUGINS", None),
+    ]
+
+    actions += DynamicPluginArchitecture.CreateRegistrationStatements(
+        "DEVELOPMENT_ENVIRONMENT_SIMPLE_SCHEMA_PLUGINS",
+        os.path.join(_script_dir, "src", "SimpleSchemaGenerator", "Plugins"),
+        lambda fullpath, name, ext: ext == ".py" and name.endswith("Plugin"),
+    )
+
+    return actions
 
 
 # ----------------------------------------------------------------------
@@ -65,7 +81,7 @@ def GetCustomScriptExtractors():
     that depend upon it.
 
     ****************************************************
-    Note that it is very rare to have the need to implement 
+    Note that it is very rare to have the need to implement
     this method. In most cases, it is safe to delete it.
     ****************************************************
 
@@ -74,7 +90,7 @@ def GetCustomScriptExtractors():
         - DirGenerator:             Method to enumerate sub-directories when searching for scripts in a
                                     repository's Scripts directory.
 
-                                        def Func(directory, version_sepcs) -> [ (subdir, should_recurse), ... ] 
+                                        def Func(directory, version_sepcs) -> [ (subdir, should_recurse), ... ]
                                                                               [ subdir, ... ]
                                                                               (subdir, should_recurse)
                                                                               subdir
@@ -84,7 +100,7 @@ def GetCustomScriptExtractors():
                                         def Func(script_filename) -> [ command, ...]
                                                                      command
                                                                      None           # Indicates not supported
-        
+
         - CreateDocumentation:      Method that extracts documentation from a script.
 
                                         def Func(script_filename) -> documentation string

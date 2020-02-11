@@ -73,7 +73,7 @@ def Resolve(root, plugin):
     Impl(root, _ResolveReference)
     Impl(root, _ResolveName)
     Impl(root, lambda item: _ResolveElementType(plugin, reference_states, item))
-    Impl(root, _ResolveArity)
+    Impl(root, lambda item: _ResolveArity(plugin, item))
     Impl(root, lambda item: _ResolveMetadata(plugin, config_metadata, item))
     Impl(root, lambda item: _ResolveReferenceType(reference_states, item))
     Impl(root, _ResolveMetadataDefaults)
@@ -356,17 +356,20 @@ def _ResolveElementType(plugin, reference_states, item):
 
 
 # ----------------------------------------------------------------------
-def _ResolveArity(item):
+def _ResolveArity(plugin, item):
     for sub_item in item.Enumerate(
         variant_includes_self=True,
     ):
         if sub_item.arity is not None:
             continue
 
-        if sub_item.element_type == Elements.ReferenceElement:
+        if (
+            sub_item.element_type == Elements.ReferenceElement
+            and not plugin.Flags & ParseFlag.MaintainReferenceArity
+        ):
             assert len(sub_item.references) == 1, sub_item.references
 
-            _ResolveArity(sub_item.references[0])
+            _ResolveArity(plugin, sub_item.references[0])
             sub_item.arity = sub_item.references[0].arity
         else:
             sub_item.arity = Arity(1, 1)

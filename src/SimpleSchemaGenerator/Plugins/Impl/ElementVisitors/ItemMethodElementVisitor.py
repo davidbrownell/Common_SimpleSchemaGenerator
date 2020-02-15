@@ -223,6 +223,9 @@ class ItemMethodElementVisitor(ElementVisitor):
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
     def _GenerateClass(self, element):
+        if getattr(element, "as_dictionary", False):
+            return self._GenerateDictionary(element)
+
         attributes = []
         statements = []
 
@@ -449,5 +452,75 @@ class ItemMethodElementVisitor(ElementVisitor):
                 attributes="" if not attributes else "{}\n\n    ".format(StringHelpers.LeftJustify("".join(attributes), 4).strip()),
                 statement=StringHelpers.LeftJustify(statement, 4).strip(),
                 attribute_names=", ".join(['"{}"'.format(attribute_name) for attribute_name in attribute_names]),
+            ),
+        )
+
+    # ----------------------------------------------------------------------
+    def _GenerateDictionary(self, element):
+        key_element = None
+        value_element = None
+
+        for child in element.Children:
+            if child.Name == element.key:
+                assert key_element is None, key_element
+                key_element = child.Resolve()
+
+            if child.Name == element.value:
+                assert value_element is None, value_element
+                value_element = child.Resolve()
+
+        assert key_element
+        assert value_element
+
+        # ----------------------------------------------------------------------
+        def ToExtraParams(element):
+            is_compound_like = isinstance(element.Resolve(), (Elements.CompoundElement, Elements.SimpleElement))
+
+            if is_compound_like:
+                return ", always_include_optional, process_additional_data"
+
+            return ""
+
+        # ----------------------------------------------------------------------
+
+        if value_element.TypeInfo.Arity.IsCollection:
+            if getattr(value_element, "as_dictionary", False):
+                default_value = "{}"
+            else:
+                default_value = "[]"
+        else:
+            default_value = None
+
+        self._output_stream.write(
+            textwrap.dedent(
+                """\
+                # ----------------------------------------------------------------------
+                @classmethod
+                def _{python_name}_Item(cls, item, always_include_optional, process_additional_data):
+                    result = OrderedDict()
+
+                    for key, value in six.iteritems(item or {{}}):
+                        try:
+                            this_result = cls.{value_python_name}(value{value_extra_params})
+                            if this_result is DoesNotExist:
+                                if always_include_optional:
+                                    this_result = {default_value}
+                                else:
+                                    continue
+
+                            result[cls.{key_python_name}(key{key_extra_params})] = this_result
+                        except:
+                            _DecorateActiveException("Key '{{}}'".format(key))
+
+                    return result
+
+                """,
+            ).format(
+                python_name=ToPythonName(element),
+                key_python_name=ToPythonName(key_element),
+                value_python_name=ToPythonName(value_element),
+                key_extra_params=ToExtraParams(key_element),
+                value_extra_params=ToExtraParams(value_element),
+                default_value=default_value,
             ),
         )

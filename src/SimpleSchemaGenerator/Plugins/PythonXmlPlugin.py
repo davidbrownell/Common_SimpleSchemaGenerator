@@ -469,6 +469,8 @@ class Plugin(PythonSerializationImpl):
     # |  Private Properties
     _SupportAttributes                      = Interface.DerivedProperty(True)
     _SupportAnyElements                     = Interface.DerivedProperty(True)
+    _SupportDictionaryElements              = Interface.DerivedProperty(False)
+
     _TypeInfoSerializationName              = Interface.DerivedProperty("XmlSerialization")
 
     _SourceStatementWriter                  = Interface.DerivedProperty(SourceStatementWriter)

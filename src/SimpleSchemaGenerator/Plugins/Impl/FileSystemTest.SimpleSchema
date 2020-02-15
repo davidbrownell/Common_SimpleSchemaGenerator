@@ -3,8 +3,8 @@
 
 (Directory process_additional_data=true):
     [name string]
-    <directories Directory unique_key="name" *>
-    <files File unique_key="name" *>
+    <directories Directory key="name" *>
+    <files File key="name" *>
 
 <root Directory ?>
-<roots Directory unique_key="name" +>
+<roots Directory key="name" +>

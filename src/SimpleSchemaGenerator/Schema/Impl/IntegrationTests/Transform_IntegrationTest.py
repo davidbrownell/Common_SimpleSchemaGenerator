@@ -83,6 +83,12 @@ SIMPLE_SCHEMA                               = textwrap.dedent(
     # Multi inheritance for simple
     <test_multi_simple (test_simple_derived, test_base2)>:
         pass
+
+    # Dictionaries
+    <dict1 as_dictionary=true key=key value=value *>:
+        <key string>
+        <value int>:
+            [a int]
     """,
 )
 
@@ -91,13 +97,25 @@ class InternalPlugin(Plugin):
     Name                                    = DerivedProperty("InternalPlugin")
     Description                             = DerivedProperty("")
     Flags                                   = DerivedProperty(
-        ParseFlag.SupportAttributes | ParseFlag.SupportIncludeStatements |                                                                                                                                           # ParseFlag.SupportConfigStatements |
-                                                                                                                                                                                                                     # ParseFlag.SupportExtensionsStatements |
-                                                                                                                                                                                                                     # ParseFlag.SupportUnnamedDeclarations |
-                                                                                                                                                                                                                     # ParseFlag.SupportUnnamedObjects |
-        ParseFlag.SupportNamedDeclarations | ParseFlag.SupportNamedObjects | ParseFlag.SupportRootDeclarations | ParseFlag.SupportRootObjects | ParseFlag.SupportChildDeclarations | ParseFlag.SupportChildObjects | # ParseFlag.SupportCustomElements |
-                                                                                                                                                                                                                     # ParseFlag.SupportAnyElements |
-        ParseFlag.SupportReferenceElements | ParseFlag.SupportListElements | ParseFlag.SupportSimpleObjectElements | ParseFlag.SupportVariantElements,
+        ParseFlag.SupportAttributes
+        | ParseFlag.SupportIncludeStatements
+        # | ParseFlag.SupportConfigStatements
+        # | ParseFlag.SupportExtensionsStatements
+        # | ParseFlag.SupportUnnamedDeclarations
+        # | ParseFlag.SupportUnnamedObjects
+        | ParseFlag.SupportNamedDeclarations
+        | ParseFlag.SupportNamedObjects
+        | ParseFlag.SupportRootDeclarations
+        | ParseFlag.SupportRootObjects
+        | ParseFlag.SupportChildDeclarations
+        | ParseFlag.SupportChildObjects
+        # | ParseFlag.SupportCustomElements
+        # | ParseFlag.SupportAnyElements
+        | ParseFlag.SupportReferenceElements
+        | ParseFlag.SupportListElements
+        | ParseFlag.SupportSimpleObjectElements
+        | ParseFlag.SupportVariantElements
+        | ParseFlag.SupportDictionaryElements
     )
 
     # ----------------------------------------------------------------------

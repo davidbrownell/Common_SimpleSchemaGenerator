@@ -115,7 +115,10 @@ class FundamentalAttributeInfo(AttributeInfo):
 UNIVERSAL_NAME_OVERRIDE_ATTRIBUTE_NAME      = "name"
 UNIVERSAL_DESCRIPTION_ATTRIBUTE_NAME        = "description"
 
-COLLECTION_UNIQUE_KEY_ATTRIBUTE_NAME        = "unique_key"
+COLLECTION_KEY_ATTRIBUTE_NAME               = "key"
+COLLECTION_VALUE_ATTRIBUTE_NAME             = "value"
+COLLECTION_AS_DICTIONARY_ATTRIBUTE_NAME     = "as_dictionary"
+
 COLLECTION_REFINES_ARITY_ATTRIBUTE_NAME     = "refines_arity"
 
 OPTIONAL_DEFAULT_ATTRIBUTE_NAME             = "default"
@@ -125,8 +128,16 @@ SIMPLE_FUNDAMENTAL_NAME_ATTRIBUTE_NAME      = "fundamental_name"
 CUSTOM_TYPE_ATTRIBUTE_NAME                  = "type"
 
 # ----------------------------------------------------------------------
-def _ValidateUniqueKey(plugin, element):
-    return __ValidateUniqueKey(plugin, element)
+def _ValidateKey(plugin, element):
+    return __ValidateKey(plugin, element)
+
+
+def _ValidateValue(plugin, element):
+    return __ValidateValue(plugin, element)
+
+
+def _ValidateAsDictionary(plugin, element):
+    return __ValidateAsDictionary(plugin, element)
 
 
 def _ValidateRefinesArity(plugin, element):
@@ -165,9 +176,22 @@ COLLECTION_ATTRIBUTE_INFO                   = AttributeInfo(
     optional_items=[
         # Name of child element whose value should be unique across all children
         Attribute(
-            COLLECTION_UNIQUE_KEY_ATTRIBUTE_NAME,
+            COLLECTION_KEY_ATTRIBUTE_NAME,
             StringTypeInfo(),
-            validate_func=_ValidateUniqueKey,
+            validate_func=_ValidateKey,
+            is_metadata=True,
+        ),
+        # Name of child element whose value should be considered the definition of a key/value dictionary
+        Attribute(
+            COLLECTION_VALUE_ATTRIBUTE_NAME,
+            StringTypeInfo(),
+            validate_func=_ValidateValue,
+            is_metadata=True,
+        ),
+        Attribute(
+            COLLECTION_AS_DICTIONARY_ATTRIBUTE_NAME,
+            BoolTypeInfo(),
+            validate_func=_ValidateAsDictionary,
             is_metadata=True,
         ),
         # Normally, a reference that is also a collection will break reference traversal and create a new dimension                                                # in a N-dimension array. However, sometimes we just want to refine the arity of a referenced collection.
@@ -442,33 +466,86 @@ del _InitializeFundamentalTypesVisitor
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
-def __ValidateUniqueKey(plugin, element):   # <Unused argument> pylint: disable = W0613
-    unique_key = element.unique_key
+def __ValidateKey(plugin, element):   # <Unused argument> pylint: disable = W0613
+    key = element.key
 
     # Special case when the unique key is the fundamental part of a
     # SimpleElement.
-    if isinstance(element, (Elements.SimpleElement, Elements.CompoundElement)) and getattr(element, SIMPLE_FUNDAMENTAL_NAME_ATTRIBUTE_NAME, None) == unique_key:
+    if isinstance(element, (Elements.SimpleElement, Elements.CompoundElement)) and getattr(element, SIMPLE_FUNDAMENTAL_NAME_ATTRIBUTE_NAME, None) == key:
         return None
 
     # Look for the key in all the children.
     unique_child = None
 
     for child in element.Children:
-        if child.Name == unique_key:
+        if child.Name == key:
             unique_child = child
             break
 
     if unique_child is None:
-        return "The unique child '{}' does not exist".format(unique_key)
+        return "The unique child '{}' does not exist".format(key)
 
     if not isinstance(unique_child, Elements.FundamentalElement):
-        return "The unique child '{}' is not a fundamental element".format(unique_key)
+        return "The unique child '{}' is not a fundamental element".format(key)
 
     if not unique_child.TypeInfo.Arity.IsSingle:
-        return "The unique child '{}' does not have an arity of 1".format(unique_key)
+        return "The unique child '{}' does not have an arity of 1".format(key)
 
     if unique_child.IsDefinitionOnly:
-        return "The unique child '{}' is a definition only"
+        return "The unique child '{}' must not be a definition"
+
+    return None
+
+
+# ----------------------------------------------------------------------
+def __ValidateValue(plugin, element):
+    value_name = element.value
+
+    value_element = None
+
+    for child in element.Children:
+        if child.Name == value_name:
+            value_element = child
+            break
+
+    if value_element is None:
+        return "The child '{}' does not exist".format(value_name)
+
+    if value_element.IsDefinitionOnly:
+        return "The child '{}' must not be a definition".format(value_name)
+
+    if getattr(value_element, "IsAttribute", False):
+        return "The child '{}' must not be an attribute".format(value_name)
+
+    return None
+
+
+# ----------------------------------------------------------------------
+def __ValidateAsDictionary(plugin, element):
+    if not element.as_dictionary:
+        return "'as_dictionary' should always be true when provided"
+
+    # Ensure that the plugin supports dictionaries
+    if not plugin.Flags & ParseFlag.SupportDictionaryElements:
+        return "Dictionary elements are not supported"
+
+    if getattr(element, "key", None) is None:
+        return "The 'key' attribute must be provided when defining dictionaries"
+
+    if getattr(element, "value", None) is None:
+        return "The 'value' attribute must be provided when defining dictionaries"
+
+    # Ensure that we only have 2 children
+    child_count = 0
+
+    for child in element.Children:
+        if child.IsDefinitionOnly:
+            continue
+
+        child_count += 1
+
+    if child_count != 2:
+        return "Only 2 child elements were expected (one for the key and one for the value); {} elements were found".format(child_count)
 
     return None
 

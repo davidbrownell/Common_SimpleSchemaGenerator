@@ -34,6 +34,13 @@ sys.path.insert(0, os.path.join(_script_dir, "Generated", "DefaultValues"))
 with CallOnExit(lambda: sys.path.pop(0)):
     import DefaultValues_PythonJsonSerialization as DefaultValuesJsonSerialization
 
+
+sys.path.insert(0, os.path.join(_script_dir, "Generated", "DictionaryTest"))
+with CallOnExit(lambda: sys.path.pop(0)):
+    import DictionaryTest_PythonJsonSerialization as DictionaryTestJsonSerialization
+    import DictionaryTest_PythonYamlSerialization as DictionaryTestYamlSerialization
+
+
 sys.path.insert(0, os.path.join(_script_dir, "Generated", "FileSystemTest"))
 with CallOnExit(lambda: sys.path.pop(0)):
     import FileSystemTest_PythonJsonSerialization as FileSystemJsonSerialization
@@ -48,6 +55,7 @@ with CallOnExit(lambda: sys.path.pop(0)):
 
 with InitRelativeImports():
     from .Impl.DefaultValuesUtils import DefaultValuesMixin
+    from .Impl.DictionaryTestUtils import DictionaryTestMixin
     from .Impl.FileSystemTestUtils import FileSystemUtilsMixin
     from .Impl.TestUtils import TestUtilsMixin
 
@@ -617,6 +625,42 @@ class DefaultValuesSuite(unittest.TestCase, DefaultValuesMixin):
 
         self.ValidateObject1(obj[0])
         self.ValidateObject2(obj[1])
+
+
+# ----------------------------------------------------------------------
+class DictionaryTestSuite(unittest.TestCase, DictionaryTestMixin):
+    # ----------------------------------------------------------------------
+    def setUp(self):
+        self.maxDiff = None
+
+        json_filename = os.path.join(_script_dir, "..", "Impl", "DictionaryTest.json")
+        assert os.path.isfile(json_filename), json_filename
+
+        self._json_filename                 = json_filename
+
+    # ----------------------------------------------------------------------
+    def test_SimpleDict(self):
+        json_obj = DictionaryTestJsonSerialization.Deserialize_simple_dict(self._json_filename)
+        self.ValidateSimpleDict(json_obj)
+
+        yaml_obj = DictionaryTestYamlSerialization.Serialize_simple_dict(json_obj)
+        self.ValidateSimpleDict(yaml_obj)
+
+    # ----------------------------------------------------------------------
+    def test_StandardDict(self):
+        json_obj = DictionaryTestJsonSerialization.Deserialize_standard_dict(self._json_filename)
+        self.ValidateStandardDict(json_obj)
+
+        yaml_obj = DictionaryTestYamlSerialization.Serialize_standard_dict(json_obj)
+        self.ValidateStandardDict(yaml_obj)
+
+    # ----------------------------------------------------------------------
+    def test_NestedDict(self):
+        json_obj = DictionaryTestJsonSerialization.Deserialize_nested_dict(self._json_filename)
+        self.ValidateNestedDict(json_obj)
+
+        yaml_obj = DictionaryTestYamlSerialization.Serialize_nested_dict(json_obj)
+        self.ValidateNestedDict(yaml_obj)
 
 
 # ----------------------------------------------------------------------

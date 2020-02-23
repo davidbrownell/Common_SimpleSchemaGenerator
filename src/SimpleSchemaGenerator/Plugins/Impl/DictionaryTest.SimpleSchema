@@ -1,0 +1,16 @@
+<simple_dict as_dictionary=true key=key value=value *>:
+    <key string>
+    <value int *>
+
+<standard_dict as_dictionary=true key=key value=name *>:
+    [key string]
+    <name>:
+        <first string>
+        <middle string ?>
+        <last string>
+
+<nested_dict as_dictionary=true key=key value=value {2}>:
+    [key string]
+    <value as_dictionary=true key=key value=value *>:
+        [key string]
+        <value string +>

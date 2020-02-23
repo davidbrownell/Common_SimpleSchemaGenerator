@@ -55,14 +55,15 @@ def Build(
         )
 
         schema_names = [
-            ("AllTypes.SimpleSchema", " /include=types"),
-            "FileSystemTest.SimpleSchema",
-            "ProcessAdditionalData.SimpleSchema",
-            "Test.SimpleSchema",
-            "DefaultValues.SimpleSchema",
+            ("AllTypes.SimpleSchema", [], " /include=types"),
+            ("FileSystemTest.SimpleSchema", [], None),
+            ("ProcessAdditionalData.SimpleSchema", [], None),
+            ("Test.SimpleSchema", [], None),
+            ("DefaultValues.SimpleSchema", [], None),
+            ("DictionaryTest.SimpleSchema", ["PythonJson", "PythonYaml"], None),
         ]
 
-        plugin_names = [
+        all_plugin_names = [
             "PythonJson",
             "PythonXml",
             "PythonYaml",
@@ -70,11 +71,9 @@ def Build(
             "XsdSchema",
         ]
 
-        for schema_name_index, schema_name in enumerate(schema_names):
-            schema_flags = ""
-
-            if isinstance(schema_name, tuple):
-                schema_name, schema_flags = schema_name
+        for schema_name_index, (schema_name, plugin_names, schema_flags) in enumerate(schema_names):
+            plugin_names = plugin_names or all_plugin_names
+            schema_flags = schema_flags or ""
 
             dm.stream.write("Processing '{}' ({} of {})...".format(schema_name, schema_name_index + 1, len(schema_names)))
             with dm.stream.DoneManager(

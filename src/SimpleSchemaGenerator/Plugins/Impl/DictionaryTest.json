@@ -1,0 +1,32 @@
+{
+    "simple_dict": {
+        "key1": [10, 20, 30],
+        "key2": [],
+        "key3": [100]
+    },
+    "standard_dict": {
+        "key1": {
+            "first": "first1",
+            "last": "last1"
+        },
+        "key2": {
+            "first": "first2",
+            "middle": "middle2",
+            "last": "last2"
+        },
+        "key3": {
+            "first": "first3",
+            "middle": null,
+            "last": "last3"
+        }
+    },
+    "nested_dict": {
+        "key1": {
+            "keyA": ["10", "20", "30"]
+        },
+        "key2": {
+            "keyC": ["1000"],
+            "keyD": ["100", "200"]
+        }
+    }
+}

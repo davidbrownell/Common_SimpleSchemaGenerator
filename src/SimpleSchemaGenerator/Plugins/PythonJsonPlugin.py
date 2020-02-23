@@ -127,6 +127,8 @@ class Plugin(PythonSerializationImpl):
     # |  Private Properties
     _SupportAttributes                      = Interface.DerivedProperty(False)
     _SupportAnyElements                     = Interface.DerivedProperty(True)
+    _SupportDictionaryElements              = Interface.DerivedProperty(True)
+
     _TypeInfoSerializationName              = Interface.DerivedProperty("JsonSerialization")
 
     _SourceStatementWriter                  = Interface.DerivedProperty(SourceStatementWriter)

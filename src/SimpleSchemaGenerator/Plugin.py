@@ -57,6 +57,7 @@ class ParseFlag(BitFlagEnum):
     SupportListElements                     = auto()
     SupportSimpleObjectElements             = auto()
     SupportVariantElements                  = auto()
+    SupportDictionaryElements               = auto()
 
     # Parse behavior
 

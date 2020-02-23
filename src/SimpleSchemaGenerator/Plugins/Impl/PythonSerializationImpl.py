@@ -69,16 +69,28 @@ class PythonSerializationImpl(PluginBase):
     @classmethod
     def __clsinit__(cls):
         cls.Flags = Interface.DerivedProperty(
-            (ParseFlag.SupportAttributes if cls._SupportAttributes else 0) | ParseFlag.SupportIncludeStatements                                                                                                          # | ParseFlag.SupportExtensionsStatements
-                                                                                                                                                                                                                         # | ParseFlag.SupportUnnamedDeclarations
+            0
+            | (ParseFlag.SupportAttributes if cls._SupportAttributes else 0)
+            | ParseFlag.SupportIncludeStatements
+            # | ParseFlag.SupportExtensionsStatements
+            # | ParseFlag.SupportUnnamedDeclarations
             # | ParseFlag.SupportUnnamedObjects
-            | ParseFlag.SupportNamedDeclarations | ParseFlag.SupportNamedObjects | ParseFlag.SupportRootDeclarations | ParseFlag.SupportRootObjects | ParseFlag.SupportChildDeclarations | ParseFlag.SupportChildObjects # | ParseFlag.SupportCustomElements
-            | (ParseFlag.SupportAnyElements if cls._SupportAnyElements else 0) | ParseFlag.SupportReferenceElements | ParseFlag.SupportListElements | (
-                ParseFlag.SupportSimpleObjectElements if cls._SupportAttributes else 0
-            ) | ParseFlag.SupportVariantElements,
+            | ParseFlag.SupportNamedDeclarations
+            | ParseFlag.SupportNamedObjects
+            | ParseFlag.SupportRootDeclarations
+            | ParseFlag.SupportRootObjects
+            | ParseFlag.SupportChildDeclarations
+            | ParseFlag.SupportChildObjects
+            # | ParseFlag.SupportCustomElements
+            | (ParseFlag.SupportAnyElements if cls._SupportAnyElements else 0)
+            | ParseFlag.SupportReferenceElements
+            | ParseFlag.SupportListElements
+            | (ParseFlag.SupportSimpleObjectElements if cls._SupportAttributes else 0)
+            | ParseFlag.SupportVariantElements
+            | (ParseFlag.SupportDictionaryElements if cls._SupportDictionaryElements else 0),
         )
 
-        cls._include_validate_unique_keys = False
+        cls._include_validate_keys = False
 
     # ----------------------------------------------------------------------
     @classmethod
@@ -229,7 +241,7 @@ class PythonSerializationImpl(PluginBase):
                                         self.__dict__ = copy.deepcopy(ex_or_string.__dict__)
 
 
-                            class UniqueKeySerializationException(SerializationException):              pass
+                            class KeySerializationException(SerializationException):                    pass
                             class SerializeException(SerializationException):                           pass
                             class DeserializeException(SerializationException):                         pass
 
@@ -336,25 +348,25 @@ class PythonSerializationImpl(PluginBase):
                         ),
                     )
 
-                    if cls._include_validate_unique_keys:
+                    if cls._include_validate_keys:
                         f.write(
                             textwrap.dedent(
                                 """\
 
                                 # ----------------------------------------------------------------------
-                                def _ValidateUniqueKeys(unique_key_attribute_name, items):
-                                    unique_keys = set()
+                                def _ValidateKeys(key_attribute_name, items):
+                                    keys = set()
 
                                     for item in items:
                                         if isinstance(item, dict):
-                                            unique_key = item.get(unique_key_attribute_name)
+                                            key = item.get(key_attribute_name)
                                         else:
-                                            unique_key = getattr(item, unique_key_attribute_name)
+                                            key = getattr(item, key_attribute_name)
 
-                                        if unique_key in unique_keys:
-                                            raise UniqueKeySerializationException("The unique key '{}' is not unique: '{}'".format(unique_key_attribute_name, unique_key))
+                                        if key in keys:
+                                            raise KeySerializationException("The key '{}' is not unique: '{}'".format(key_attribute_name, key))
 
-                                        unique_keys.add(unique_key)
+                                        keys.add(key)
                                 """,
                             ),
                         )
@@ -396,6 +408,12 @@ class PythonSerializationImpl(PluginBase):
     @Interface.abstractproperty
     def _SupportAnyElements(self):
         """Return True if the AnyElement type is supported"""
+        raise Exception("Abstract property")
+
+    # ----------------------------------------------------------------------
+    @Interface.abstractproperty
+    def _SupportDictionaryElements(self):
+        """Return True if dictionaries are supported"""
         raise Exception("Abstract property")
 
     # ----------------------------------------------------------------------
@@ -659,10 +677,11 @@ class PythonSerializationImpl(PluginBase):
                         """
 
                         if {var_name} is DoesNotExist:
-                            {var_name} = []
+                            {var_name} = {default_value}
                         """,
                     ).format(
                         var_name=var_name,
+                        default_value="{}" if getattr(element, "as_dictionary", False) else "[]",
                     )
             else:
                 var_name = "item"
@@ -892,7 +911,7 @@ class PythonSerializationImpl(PluginBase):
 
             resolved_element = element.Resolve()
 
-            if resolved_element.TypeInfo.Arity.IsCollection:
+            if resolved_element.TypeInfo.Arity.IsCollection and not getattr(resolved_element, "as_dictionary", False):
                 arg_name = "items"
                 item_name = "this_item"
                 result_name = "results"
@@ -901,11 +920,11 @@ class PythonSerializationImpl(PluginBase):
                 def ApplyContent(statement):
                     unique_statement = None
 
-                    if hasattr(resolved_element, "unique_key"):
-                        cls._include_validate_unique_keys = True
+                    if hasattr(resolved_element, "key"):
+                        cls._include_validate_keys = True
 
-                        unique_statement = '_ValidateUniqueKeys("{unique_key}", {arg_name})\n\n'.format(
-                            unique_key=resolved_element.unique_key,
+                        unique_statement = '_ValidateKeys("{key}", {arg_name})\n\n'.format(
+                            key=resolved_element.key,
                             arg_name=arg_name if is_serializer else result_name,
                         )
 
@@ -917,7 +936,7 @@ class PythonSerializationImpl(PluginBase):
                             """\
                             {result_name} = []
 
-                            for this_index, this_item in enumerate({arg_name} or []):
+                            for this_index, {item_name} in enumerate({arg_name} or []):
                                 try:
                                     {result_name}.append({statement})
                                 except:
@@ -926,6 +945,7 @@ class PythonSerializationImpl(PluginBase):
                         ).format(
                             result_name=result_name,
                             arg_name=arg_name,
+                            item_name=item_name,
                             statement=statement,
                         ),
                     )
@@ -935,6 +955,7 @@ class PythonSerializationImpl(PluginBase):
                         content_stream.write(unique_statement)
 
                 # ----------------------------------------------------------------------
+
             else:
                 arg_name = "item"
                 item_name = arg_name
@@ -955,7 +976,7 @@ class PythonSerializationImpl(PluginBase):
 
                 # ----------------------------------------------------------------------
 
-            is_compound_like = isinstance(resolved_element, (Elements.CompoundElement, Elements.SimpleElement))
+            is_compound_like = isinstance(element.Resolve(), (Elements.CompoundElement, Elements.SimpleElement))
 
             if is_compound_like:
                 extra_params = ", always_include_optional, process_additional_data"
@@ -997,7 +1018,10 @@ class PythonSerializationImpl(PluginBase):
             does_not_exist_items = ["DoesNotExist", "None"]
 
             if element.TypeInfo.Arity.IsCollection:
-                does_not_exist_items.append("[]")
+                if getattr(element, "as_dictionary", False):
+                    does_not_exist_items += ["{}", "OrderedDict"]
+                else:
+                    does_not_exist_items.append("[]")
 
             content_stream.write(
                 textwrap.dedent(
@@ -1015,13 +1039,25 @@ class PythonSerializationImpl(PluginBase):
             )
 
             if is_serializer:
-                content_stream.write(
-                    textwrap.dedent(
+                if is_compound_like:
+                    validate_arity_template = textwrap.dedent(
+                        """\
+                        if not process_additional_data:
+                            _{python_name}_TypeInfo.ValidateArity({arg_name})
+
+                        """,
+
+                    )
+                else:
+                    validate_arity_template = textwrap.dedent(
                         """\
                         _{python_name}_TypeInfo.ValidateArity({arg_name})
 
                         """,
-                    ).format(
+                    )
+
+                content_stream.write(
+                    validate_arity_template.format(
                         python_name=python_name,
                         arg_name=arg_name,
                     ),
@@ -1036,13 +1072,24 @@ class PythonSerializationImpl(PluginBase):
             )
 
             if not is_serializer:
-                content_stream.write(
-                    textwrap.dedent(
+                if is_compound_like:
+                    validate_arity_template = textwrap.dedent(
+                        """\
+
+                        if not process_additional_data:
+                            _{python_name}_TypeInfo.ValidateArity({result_name})
+                        """,
+                    )
+                else:
+                    validate_arity_template = textwrap.dedent(
                         """\
 
                         _{python_name}_TypeInfo.ValidateArity({result_name})
                         """,
-                    ).format(
+                    )
+
+                content_stream.write(
+                    validate_arity_template.format(
                         python_name=python_name,
                         result_name=result_name,
                     ),
@@ -1064,8 +1111,6 @@ class PythonSerializationImpl(PluginBase):
                     return_statement=return_statement,
                 ),
             )
-
-        # ----------------------------------------------------------------------
 
         cls._VisitElements(elements, OnElement)
 

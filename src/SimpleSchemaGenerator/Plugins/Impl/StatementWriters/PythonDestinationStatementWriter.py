@@ -30,6 +30,7 @@ _script_dir, _script_name                   = os.path.split(_script_fullpath)
 
 with InitRelativeImports():
     from ..StatementWriters import DestinationStatementWriter
+    from .PythonStatementWriterMixin import PythonStatementWriterMixin
 
 # ----------------------------------------------------------------------
 @Interface.staticderived
@@ -104,36 +105,4 @@ class PythonDestinationStatementWriter(DestinationStatementWriter):
     @classmethod
     @Interface.override
     def GetGlobalUtilityMethods(cls, source_writer):
-        return textwrap.dedent(
-            """\
-            # ----------------------------------------------------------------------
-            class Object(object):
-                def __init__(self):
-                    self.{additional_data} = set()
-
-                def __repr__(self):
-                    return CommonEnvironment.ObjectReprImpl(self)
-
-
-            # ----------------------------------------------------------------------
-            def _CreatePythonObject(
-                attributes=None,
-                **kwargs
-            ):
-                attributes = attributes or {{}}
-
-                result = Object()
-
-                for d in [attributes, kwargs]:
-                    for k, v in six.iteritems(d):
-                        setattr(result, k, v)
-
-                for k in six.iterkeys(attributes):
-                    result.{additional_data}.add(k)
-
-                return result
-
-            """,
-        ).format(
-            additional_data=cls.ATTRIBUTES_ATTRIBUTE_NAME,
-        )
+        return PythonStatementWriterMixin.GetGlobalUtilityMethods(cls.ATTRIBUTES_ATTRIBUTE_NAME)

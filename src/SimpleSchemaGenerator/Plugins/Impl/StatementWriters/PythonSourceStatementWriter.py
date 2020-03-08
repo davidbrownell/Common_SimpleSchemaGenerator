@@ -31,6 +31,7 @@ _script_dir, _script_name                   = os.path.split(_script_fullpath)
 
 with InitRelativeImports():
     from ..StatementWriters import SourceStatementWriter
+    from .PythonStatementWriterMixin import PythonStatementWriterMixin
 
 # ----------------------------------------------------------------------
 @Interface.staticderived
@@ -177,6 +178,12 @@ class PythonSourceStatementWriter(SourceStatementWriter):
             ).strip(),
             append_child=StringHelpers.LeftJustify(dest_writer.AppendChild(cls.CreateTemporaryElement("k", "1"), "result", "new_item"), 8).strip(),
         )
+
+    # ----------------------------------------------------------------------
+    @classmethod
+    @Interface.override
+    def GetGlobalUtilityMethods(cls, dest_writer):
+        return PythonStatementWriterMixin.GetGlobalUtilityMethods(cls.ATTRIBUTES_ATTRIBUTE_NAME)
 
     # ----------------------------------------------------------------------
     @classmethod

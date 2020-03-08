@@ -791,6 +791,26 @@ class _ApplyTypeInfoVisitor(ItemVisitor):
             arity=metadata_item.arity,
         )
 
+        # ----------------------------------------------------------------------
+        def ApplyTypeInfo():
+            # Update this element's TypeInfo to include the TypeInfos of all possible values
+            new_type_infos = []
+
+            for child in element.Resolve().Children:
+                child = child.Resolve()
+
+                new_type_infos.append(child.TypeInfo)
+
+            assert isinstance(element.TypeInfo, AnyOfTypeInfo), element.TypeInfo
+            assert len(element.TypeInfo.ElementTypeInfos) == 1, element.TypeInfo.ElementTypeInfos
+            assert isinstance(element.TypeInfo.ElementTypeInfos[0], cls._PlaceholderTypeInfo), element.TypeInfo.ElementTypeInfos
+
+            element.TypeInfo.ElementTypeInfos[:] = new_type_infos
+
+        # ----------------------------------------------------------------------
+
+        delayed_instruction_queue.append(ApplyTypeInfo)
+
     # ----------------------------------------------------------------------
     @classmethod
     @override

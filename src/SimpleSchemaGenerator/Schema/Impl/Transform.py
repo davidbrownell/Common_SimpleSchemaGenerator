@@ -896,16 +896,16 @@ class _ApplyTypeInfoVisitor(ItemVisitor):
         arity_override=None,
     ):
         assert len(resolved_item.references) == 1, resolved_item.references
-        reference = resolved_item.references[0]
+        fundamental_attribute_info = resolved_item.references[0]
 
         kwargs = {"arity": arity_override or item.arity}
 
-        for md in itertools.chain(reference.RequiredItems, reference.OptionalItems):
+        for md in itertools.chain(fundamental_attribute_info.RequiredItems, fundamental_attribute_info.OptionalItems):
             if md.Name in item.metadata.Values:
                 kwargs[md.Name] = item.metadata.Values[md.Name].Value
                 del item.metadata.Values[md.Name]
 
-        return reference.TypeInfoClass(**kwargs)
+        return fundamental_attribute_info.TypeInfoClass(**kwargs)
 
     # ----------------------------------------------------------------------
     @classmethod

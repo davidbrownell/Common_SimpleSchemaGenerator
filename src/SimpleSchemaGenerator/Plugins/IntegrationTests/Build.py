@@ -56,11 +56,11 @@ def Build(
 
         schema_names = [
             ("AllTypes.SimpleSchema", [], " /include=types"),
+            ("DefaultValues.SimpleSchema", [], None),
+            ("DictionaryTest.SimpleSchema", ["PythonJson", "PythonYaml"], None),
             ("FileSystemTest.SimpleSchema", [], None),
             ("ProcessAdditionalData.SimpleSchema", [], None),
             ("Test.SimpleSchema", [], None),
-            ("DefaultValues.SimpleSchema", [], None),
-            ("DictionaryTest.SimpleSchema", ["PythonJson", "PythonYaml"], None),
         ]
 
         all_plugin_names = [

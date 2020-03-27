@@ -4,6 +4,14 @@
 <test_base test_base_impl *>
 
 <test_derived test_base>:
+    [standard_attribute int ?]
+
+    # XmlSchema doesn't support variant attributes, so we can't use
+    # it in all cases.
+    # [variant_attribute (int|number|string) ?]
+    #
+    [variant_attribute string ?]
+
     (SubItem):
         <v string>
 

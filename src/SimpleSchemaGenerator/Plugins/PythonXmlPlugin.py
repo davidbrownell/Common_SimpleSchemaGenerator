@@ -147,9 +147,7 @@ class Plugin(PythonSerializationImpl):
             if getattr(child_element, "IsAttribute", False):
                 return var_name
 
-            return '{var_name}.text if {var_name}.text is not None and {var_name}.text.strip() else ""'.format(
-                var_name=var_name,
-            )
+            return "cls.GetText({})".format(var_name)
 
         # ----------------------------------------------------------------------
         @classmethod
@@ -234,6 +232,18 @@ class Plugin(PythonSerializationImpl):
                     return value
 
                 # ----------------------------------------------------------------------
+                @staticmethod
+                def GetText(item):
+                    if item is None:
+                        item = ""
+
+                    if hasattr(item, "text"):
+                        item = item.text
+
+                    return item.strip()
+
+                # ----------------------------------------------------------------------
+                @staticmethod
                 def _GenerateAdditionalDataChildren(element, exclude_names):
                     children = OrderedDict()
 

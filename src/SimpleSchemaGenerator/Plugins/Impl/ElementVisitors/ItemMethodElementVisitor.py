@@ -246,7 +246,6 @@ class ItemMethodElementVisitor(ElementVisitor):
             if getattr(child, "IsAttribute", False):
                 is_attribute = True
 
-                assert isinstance(child.Resolve(), Elements.FundamentalElement)
                 assert not child.TypeInfo.Arity.IsCollection
 
                 if child.TypeInfo.Arity.IsOptional:

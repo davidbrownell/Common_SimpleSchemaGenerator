@@ -34,6 +34,9 @@ class TestUtilsMixin(object):
 
     # ----------------------------------------------------------------------
     def ValidateTestDerived(self, obj):
+        self.assertEqual(obj.standard_attribute, 10)
+        self.assertEqual(obj.variant_attribute, "thirty")
+
         self.assertEqual(obj.b, False)
         self.assertEqual(obj.d, -100.1)
         self.assertEqual(obj.ref, -200.2)

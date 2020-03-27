@@ -58,6 +58,12 @@
       </item>
     </v3>
 
+    <special_variants>
+      <item>10.0</item>
+      <item>20</item>
+      <item>thirty</item>
+    </special_variants>
+
     <any_>
       <one>
         <two>

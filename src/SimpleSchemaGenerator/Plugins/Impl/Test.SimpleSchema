@@ -22,6 +22,8 @@
     <v2 (bool|v1)>
     <v3 (v2|filename|string|test_base_impl) +>
 
+    <special_variants (int|number|string) +>
+
     <any_ any>
 
     <sub_item SubItem>

@@ -58,6 +58,8 @@ class TestUtilsMixin(object):
         )
         self.assertEqual(obj.v3[-1].a, ["one", "two"])
 
+        self.assertEqual(obj.special_variants, [10.0, 20, "thirty"])
+
         self.assertEqual(obj.any_.one.two.three.a, "a")
         self.assertEqual(obj.any_.one.two.three.b, "b")
         self.assertEqual(obj.any_.one.two.three.simple_value, "value 3")

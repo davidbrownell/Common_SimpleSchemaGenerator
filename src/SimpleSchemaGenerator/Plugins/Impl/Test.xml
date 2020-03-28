@@ -13,7 +13,10 @@
     </item>
   </test_base>
 
-  <test_derived>
+  <test_derived
+    standard_attribute="10"
+    variant_attribute="thirty"
+  >
     <b>false</b>
     <d>-100.1</d>
 
@@ -57,6 +60,12 @@
         </a>
       </item>
     </v3>
+
+    <special_variants>
+      <item>10.0</item>
+      <item>20</item>
+      <item>thirty</item>
+    </special_variants>
 
     <any_>
       <one>

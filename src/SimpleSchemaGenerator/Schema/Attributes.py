@@ -477,7 +477,7 @@ def __ValidateKey(plugin, element):   # <Unused argument> pylint: disable = W061
     # Look for the key in all the children.
     unique_child = None
 
-    for child in element.Children:
+    for child in element.Resolve().Children:
         if child.Name == key:
             unique_child = child
             break

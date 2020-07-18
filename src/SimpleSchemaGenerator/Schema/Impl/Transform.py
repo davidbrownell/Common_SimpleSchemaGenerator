@@ -431,7 +431,10 @@ class _CreateElementVisitor(ItemVisitor):
                 assert base_element
 
                 for child in base_element.Children:
-                    element.Children.append(copy.deepcopy(child))
+                    new_child = copy.deepcopy(child)
+                    new_child.Parent = element
+
+                    element.Children.append(new_child)
 
             # ----------------------------------------------------------------------
 

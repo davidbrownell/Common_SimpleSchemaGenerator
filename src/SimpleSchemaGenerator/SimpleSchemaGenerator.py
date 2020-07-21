@@ -103,7 +103,7 @@ CodeGenerator                               = GeneratorFactory.CodeGeneratorFact
     ),
     plugin_arg=CommandLine.DictTypeInfo(
         require_exact_match=False,
-        arity="?",
+        arity="*",
     ),
     output_stream=None,
 )

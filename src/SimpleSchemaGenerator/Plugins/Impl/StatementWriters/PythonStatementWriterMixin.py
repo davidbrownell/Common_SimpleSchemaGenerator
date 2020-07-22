@@ -28,9 +28,18 @@ _script_dir, _script_name                   = os.path.split(_script_fullpath)
 
 # ----------------------------------------------------------------------
 class PythonStatementWriterMixin(object):
+    _generated_global_utility_methods       = False
+
     # ----------------------------------------------------------------------
-    @staticmethod
-    def GetGlobalUtilityMethods(attributes_attribute_name):
+    @classmethod
+    def GetGlobalUtilityMethods(cls, attributes_attribute_name):
+        # This method is potentially invoked by both source and dest statement writers,
+        # so we need to make sure that we only generate this content once.
+        if cls._generated_global_utility_methods:
+            return
+
+        cls._generated_global_utility_methods = True
+
         return textwrap.dedent(
             """\
             # ----------------------------------------------------------------------

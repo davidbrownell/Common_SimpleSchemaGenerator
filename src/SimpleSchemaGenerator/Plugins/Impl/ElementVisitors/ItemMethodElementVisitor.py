@@ -352,7 +352,6 @@ class ItemMethodElementVisitor(ElementVisitor):
         if isinstance(element, Elements.SimpleElement):
             attribute_names.append(element.FundamentalAttributeName)
 
-            assert not statements
             statement = textwrap.dedent(
                 """\
                 # <fundamental value>
@@ -363,6 +362,7 @@ class ItemMethodElementVisitor(ElementVisitor):
 
                 result = {}
 
+                {}
                 """,
             ).format(
                 StringHelpers.LeftJustify(
@@ -380,6 +380,7 @@ class ItemMethodElementVisitor(ElementVisitor):
                     4,
                 ),
                 self._dest_writer.CreateSimpleElement(element, "attributes" if attributes else None, "fundamental_value"),
+                "".join(statements).strip(),
             )
 
         else:

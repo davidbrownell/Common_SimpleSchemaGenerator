@@ -24,9 +24,10 @@ import six
 
 import CommonEnvironment
 from CommonEnvironment import Interface
+from CommonEnvironment import RegularExpression
 from CommonEnvironment.TypeInfo.FundamentalTypes.BoolTypeInfo import BoolTypeInfo
-from CommonEnvironment.TypeInfo.FundamentalTypes.Serialization.JsonSchemaVisitor import JsonSchemaVisitor
-from CommonEnvironment.TypeInfo.FundamentalTypes.Serialization.StringSerialization import StringSerialization
+from CommonEnvironment.TypeInfo.FundamentalTypes.Serialization.StringSerialization import RegularExpressionVisitor, StringSerialization
+from CommonEnvironment.TypeInfo.FundamentalTypes.Visitor import Visitor as FundamentalTypeInfoVisitor
 
 from CommonEnvironmentEx.Package import InitRelativeImports
 
@@ -140,14 +141,13 @@ class Plugin(PluginBase):
                 @staticmethod
                 @Interface.override
                 def OnExitingElement(element):
-                    if not isinstance(element, Elements.ReferenceElement):
-                        definitions_schema["_{}".format(element.DottedName)] = cls._Collectionize(element, {"$ref": "#/definitions/_{}_Item".format(element.DottedName)})
+                    definitions_schema["_{}".format(element.DottedName)] = cls._Collectionize(element, {"$ref": "#/definitions/_{}_Item".format(element.DottedName)})
 
                 # ----------------------------------------------------------------------
                 @staticmethod
                 @Interface.override
                 def OnFundamental(element):
-                    definitions_schema["_{}_Item".format(element.DottedName)] = JsonSchemaVisitor.Accept(element.TypeInfo)
+                    definitions_schema["_{}_Item".format(element.DottedName)] = _FundamentalTypeInfoVisitor.Accept(element.TypeInfo)
 
                 # ----------------------------------------------------------------------
                 @staticmethod
@@ -169,7 +169,7 @@ class Plugin(PluginBase):
                         properties[element.FundamentalAttributeName] = {"$ref": "#/definitions/_{}.{}".format(element.DottedName, element.FundamentalAttributeName)}
                         required.append(element.FundamentalAttributeName)
 
-                        definitions_schema["_{}.{}".format(element.DottedName, element.FundamentalAttributeName)] = JsonSchemaVisitor.Accept(
+                        definitions_schema["_{}.{}".format(element.DottedName, element.FundamentalAttributeName)] = _FundamentalTypeInfoVisitor.Accept(
                             element.TypeInfo.Items[element.FundamentalAttributeName],
                         )
 
@@ -205,7 +205,7 @@ class Plugin(PluginBase):
 
                         if not isinstance(variation, Elements.ReferenceElement):
                             assert isinstance(variation, Elements.FundamentalElement), variation
-                            definitions_schema["_{}_Item".format(variation.DottedName)] = JsonSchemaVisitor.Accept(variation.TypeInfo)
+                            definitions_schema["_{}_Item".format(variation.DottedName)] = _FundamentalTypeInfoVisitor.Accept(variation.TypeInfo)
 
                         any_of_options.append({"$ref": "#/definitions/_{}_Item".format(variation.Resolve().DottedName)})
 
@@ -263,7 +263,7 @@ class Plugin(PluginBase):
         # ----------------------------------------------------------------------
 
         status_stream.write("Creating '{}'...".format(output_filename))
-        with status_stream.DoneManager():
+        with status_stream.DoneManager() as dm:
             schema = {"$schema": schema_version, "type": "object", "definitions": CreateDefinitions()}
 
             if len(top_level_elements) > 1:
@@ -321,3 +321,119 @@ class Plugin(PluginBase):
             schema["maxItems"] = arity.Max
 
         return schema
+
+
+# ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
+@Interface.staticderived
+class _FundamentalTypeInfoVisitor(FundamentalTypeInfoVisitor):
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @Interface.override
+    def OnBool(type_info):
+        return {"type": "boolean"}
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @Interface.override
+    def OnDateTime(type_info):
+        return {"type": "string", "format": "date-time"}
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @Interface.override
+    def OnDate(type_info):
+        return {"type": "string", "pattern": "^{}$".format(RegularExpression.PythonToJavaScript(RegularExpressionVisitor().Accept(type_info)[0]))}
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @Interface.override
+    def OnDirectory(type_info):
+        return {"type": "string", "minLength": 1}
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @Interface.override
+    def OnDuration(type_info):
+        return {"type": "string", "pattern": "^{}$".format(RegularExpression.PythonToJavaScript(RegularExpressionVisitor().Accept(type_info)[0]))}
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @Interface.override
+    def OnEnum(type_info):
+        return {"enum": type_info.Values}
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @Interface.override
+    def OnFilename(type_info):
+        return {"type": "string", "minLength": 1}
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @Interface.override
+    def OnFloat(type_info):
+        result = {"type": "number"}
+
+        for attribute, json_schema_key in [("Min", "minimum"), ("Max", "maximum")]:
+            value = getattr(type_info, attribute)
+            if value is not None:
+                result[json_schema_key] = value
+
+        return result
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @Interface.override
+    def OnGuid(type_info):
+        return {"type": "string", "pattern": "^{}$".format(RegularExpression.PythonToJavaScript(RegularExpressionVisitor().Accept(type_info)[0]))}
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @Interface.override
+    def OnInt(type_info):
+        result = {"type": "integer"}
+
+        for attribute, json_schema_key in [("Min", "minimum"), ("Max", "maximum")]:
+            value = getattr(type_info, attribute)
+            if value is not None:
+                result[json_schema_key] = value
+
+        return result
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @Interface.override
+    def OnString(type_info):
+        result = {"type": "string"}
+
+        if type_info.ValidationExpression is not None:
+            validation = RegularExpression.PythonToJavaScript(type_info.ValidationExpression)
+
+            if validation[0] != "^":
+                validation = "^{}".format(validation)
+            if validation[-1] != "$":
+                validation = "{}$".format(validation)
+
+            result["pattern"] = validation
+
+        else:
+            if type_info.MinLength not in [0, None]:
+                result["minLength"] = type_info.MinLength
+            if type_info.MaxLength:
+                result["maxLength"] = type_info.MaxLength
+
+        return result
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @Interface.override
+    def OnTime(type_info):
+        return {"type": "string", "pattern": "^{}$".format(RegularExpression.PythonToJavaScript(RegularExpressionVisitor().Accept(type_info)[0]))}
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @Interface.override
+    def OnUri(type_info):
+        return {"type": "string", "pattern": "^{}$".format(RegularExpression.PythonToJavaScript(RegularExpressionVisitor().Accept(type_info)[0]))}

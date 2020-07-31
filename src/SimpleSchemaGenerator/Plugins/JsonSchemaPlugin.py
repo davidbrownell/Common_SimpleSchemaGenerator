@@ -141,7 +141,8 @@ class Plugin(PluginBase):
                 @staticmethod
                 @Interface.override
                 def OnExitingElement(element):
-                    definitions_schema["_{}".format(element.DottedName)] = cls._Collectionize(element, {"$ref": "#/definitions/_{}_Item".format(element.DottedName)})
+                    if not isinstance(element, Elements.ReferenceElement):
+                        definitions_schema["_{}".format(element.DottedName)] = cls._Collectionize(element, {"$ref": "#/definitions/_{}_Item".format(element.DottedName)})
 
                 # ----------------------------------------------------------------------
                 @staticmethod

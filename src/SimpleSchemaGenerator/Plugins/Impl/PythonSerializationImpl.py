@@ -605,10 +605,10 @@ class PythonSerializationImpl(PluginBase):
                 ''',
             ).format(
                 method_name_lower=method_name.lower(),
-                convenience=StringHelpers.LeftJustify(source_writer.ConvenienceConversions("root", None) or "# No convenience conversions", 4).strip(),
-                create_compound=StringHelpers.LeftJustify(dest_writer.CreateCompoundElement(dest_writer.CreateTemporaryElement('"_"', "1"), None).rstrip(), 4),
+                convenience=(source_writer.ConvenienceConversions("root", None) or "# No convenience conversions").strip(),
+                create_compound=dest_writer.CreateCompoundElement(dest_writer.CreateTemporaryElement('"_"', "1"), None).rstrip(),
                 statements="".join(statements).strip(),
-                suffix="{}\n\n".format(StringHelpers.LeftJustify(suffix, 4).rstrip()) if suffix else "",
+                suffix="{}\n\n".format(suffix.rstrip()) if suffix else "",
             )
 
         if has_compound:

@@ -72,7 +72,7 @@ class TypeInfoElementVisitor(ElementVisitor):
     # ----------------------------------------------------------------------
     @Interface.override
     def OnList(self, element):
-        return "ListTypeInfo(_{}_TypeInfo{})".format(ToPythonName(element.Reference), self._ToArityString(element.TypeInfo.Arity))
+        return "ListTypeInfo({}_TypeInfo{})".format(ToPythonName(element.Reference), self._ToArityString(element.TypeInfo.Arity))
 
     # ----------------------------------------------------------------------
     @Interface.override

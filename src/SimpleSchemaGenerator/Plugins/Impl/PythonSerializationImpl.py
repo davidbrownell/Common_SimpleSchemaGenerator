@@ -776,21 +776,10 @@ class PythonSerializationImpl(PluginBase):
             ),
         )
 
-        type_info_template = "{0:<75} = {1}\n"
-
-        # Write the top-level type infos
         python_code_visitor = PythonCodeVisitor()
 
-        # ----------------------------------------------------------------------
-        def OnElement(element):
-            output_stream.write(type_info_template.format("{}_TypeInfo".format(ToPythonName(element)), python_code_visitor.Accept(element.TypeInfo)))
+        type_info_template = "{0:<75} = {1}\n"
 
-        # ----------------------------------------------------------------------
-
-        cls._VisitElements(top_level_elements, OnElement)
-        output_stream.write("\n")
-
-        # Write all type infos
         type_infos = OrderedDict()
         cached_children_statements = OrderedDict()
 
@@ -802,10 +791,10 @@ class PythonSerializationImpl(PluginBase):
             if type_info_value is not None:
                 python_name = ToPythonName(element)
 
-                type_infos["_{}_TypeInfo".format(python_name)] = type_info_value
+                type_infos["{}_TypeInfo".format(python_name)] = type_info_value
 
                 if isinstance(element, Elements.SimpleElement):
-                    type_infos["_{}__value__TypeInfo".format(python_name)] = python_code_visitor.Accept(element.TypeInfo.Items[element.FundamentalAttributeName])
+                    type_infos["{}__value__TypeInfo".format(python_name)] = python_code_visitor.Accept(element.TypeInfo.Items[element.FundamentalAttributeName])
 
             if isinstance(element, Elements.VariantElement):
                 for variation in element.Variations:
@@ -816,7 +805,7 @@ class PythonSerializationImpl(PluginBase):
                     type_info_value = type_info_visitor.Accept(variation)
 
                     if type_info_value is not None:
-                        type_infos["_{}_TypeInfo".format(ToPythonName(variation))] = type_info_value
+                        type_infos["{}_TypeInfo".format(ToPythonName(variation))] = type_info_value
 
         # ----------------------------------------------------------------------
 
@@ -1027,7 +1016,7 @@ class PythonSerializationImpl(PluginBase):
                 textwrap.dedent(
                     """\
                     if {arg_name} in [{does_not_exist_items}]:
-                        _{python_name}_TypeInfo.ValidateArity(None)
+                        {python_name}_TypeInfo.ValidateArity(None)
                         return DoesNotExist
 
                     """,
@@ -1043,7 +1032,7 @@ class PythonSerializationImpl(PluginBase):
                     validate_arity_template = textwrap.dedent(
                         """\
                         if not process_additional_data:
-                            _{python_name}_TypeInfo.ValidateArity({arg_name})
+                            {python_name}_TypeInfo.ValidateArity({arg_name})
 
                         """,
 
@@ -1051,7 +1040,7 @@ class PythonSerializationImpl(PluginBase):
                 else:
                     validate_arity_template = textwrap.dedent(
                         """\
-                        _{python_name}_TypeInfo.ValidateArity({arg_name})
+                        {python_name}_TypeInfo.ValidateArity({arg_name})
 
                         """,
                     )
@@ -1077,14 +1066,14 @@ class PythonSerializationImpl(PluginBase):
                         """\
 
                         if not process_additional_data:
-                            _{python_name}_TypeInfo.ValidateArity({result_name})
+                            {python_name}_TypeInfo.ValidateArity({result_name})
                         """,
                     )
                 else:
                     validate_arity_template = textwrap.dedent(
                         """\
 
-                        _{python_name}_TypeInfo.ValidateArity({result_name})
+                        {python_name}_TypeInfo.ValidateArity({result_name})
                         """,
                     )
 

@@ -68,7 +68,7 @@ class ItemMethodElementVisitor(ElementVisitor):
     def OnFundamental(self, element):
         python_name = ToPythonName(element)
 
-        statement = "{type_info}.{method_prefix}Item(_{python_name}_TypeInfo, {item_statement}, **{serialize_args})".format(
+        statement = "{type_info}.{method_prefix}Item({python_name}_TypeInfo, {item_statement}, **{serialize_args})".format(
             type_info=self._type_info_serialization_name,
             method_prefix=self._method_prefix,
             python_name=python_name,
@@ -250,7 +250,7 @@ class ItemMethodElementVisitor(ElementVisitor):
 
                 if child.TypeInfo.Arity.IsOptional:
                     if hasattr(child, "default"):
-                        default_value = ', default_value_func=lambda: StringSerialization.DeserializeItem(_{}_TypeInfo, "{}")'.format(resolved_child_python_name, child.default)
+                        default_value = ', default_value_func=lambda: StringSerialization.DeserializeItem({}_TypeInfo, "{}")'.format(resolved_child_python_name, child.default)
                     else:
                         default_value = ""
 
@@ -285,7 +285,7 @@ class ItemMethodElementVisitor(ElementVisitor):
                         function_name = "_ApplyOptionalChild"
 
                         if hasattr(child, "default"):
-                            default_value = ', default_value_func=lambda: StringSerialization.DeserializeItem(_{}_TypeInfo, "{}")'.format(resolved_child_python_name, child.default)
+                            default_value = ', default_value_func=lambda: StringSerialization.DeserializeItem({}_TypeInfo, "{}")'.format(resolved_child_python_name, child.default)
                         else:
                             default_value = ""
                     else:
@@ -366,7 +366,7 @@ class ItemMethodElementVisitor(ElementVisitor):
                 """,
             ).format(
                 StringHelpers.LeftJustify(
-                    "{type_info}.{method_prefix}Item(_{python_name}__value__TypeInfo, {value}, **{serialize_args})".format(
+                    "{type_info}.{method_prefix}Item({python_name}__value__TypeInfo, {value}, **{serialize_args})".format(
                         type_info=self._type_info_serialization_name,
                         method_prefix=self._method_prefix,
                         python_name=ToPythonName(element),
@@ -396,7 +396,7 @@ class ItemMethodElementVisitor(ElementVisitor):
 
         validation_statement_template = textwrap.dedent(
             """\
-            _{}_TypeInfo.ValidateItem(
+            {}_TypeInfo.ValidateItem(
                 {{}},
                 recurse=False,
                 require_exact_match=not process_additional_data,

@@ -60,7 +60,7 @@ class Attribute(object):
                                             #   def Func(plugin, element) -> string if error
         is_metadata=False,                  # In generic terms, this value should be true if the attribute should be considered metadata and
                                             # does not change the type information of the corresponding element. This is a general statement,
-                                            # is often something that is detemined by different plugins.
+                                            # is often something that is determined by different plugins.
     ):
         self.Name                           = name
         self.TypeInfo                       = type_info

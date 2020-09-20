@@ -20,6 +20,7 @@ import sys
 import unittest
 
 import CommonEnvironment
+from CommonEnvironment.TypeInfo import Arity
 from CommonEnvironment.TypeInfo.FundamentalTypes.All import *
 
 from CommonSimpleSchemaGenerator.TypeInfo.FundamentalTypes.Serialization.SimpleSchemaVisitor import *
@@ -41,6 +42,14 @@ class Standard(unittest.TestCase):
     def test_EmptyName(self):
         self.assertEqual(SimpleSchemaVisitor.Accept(IntTypeInfo(), None), "<int>")
         self.assertEqual(SimpleSchemaVisitor.Accept(IntTypeInfo(min=20), None), "<int min=20 unsigned=True>")
+
+    # ----------------------------------------------------------------------
+    def test_Arity(self):
+        self.assertEqual(SimpleSchemaVisitor.Accept(IntTypeInfo(arity=Arity.FromString("*")), None), "<int *>")
+        self.assertEqual(SimpleSchemaVisitor.Accept(IntTypeInfo(arity=Arity.FromString("+")), None), "<int +>")
+        self.assertEqual(SimpleSchemaVisitor.Accept(IntTypeInfo(arity=Arity.FromString("?")), None), "<int ?>")
+        self.assertEqual(SimpleSchemaVisitor.Accept(IntTypeInfo(arity=Arity(1, 2)), None), "<int {1,2}>")
+        self.assertEqual(SimpleSchemaVisitor.Accept(IntTypeInfo(arity=Arity(2, 2)), None), "<int {2}>")
 
     # ----------------------------------------------------------------------
     def test_Bool(self):

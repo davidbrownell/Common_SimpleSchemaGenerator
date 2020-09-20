@@ -52,7 +52,7 @@ class SimpleSchemaVisitor(VisitorBase):
         name,
         simple_schema_type=SimpleSchemaType.Standard,
     ):
-        return cls._Impl("bool", name, {}, simple_schema_type)
+        return cls._Impl("bool", name, {}, type_info.Arity, simple_schema_type)
 
     # ----------------------------------------------------------------------
     @classmethod
@@ -63,7 +63,7 @@ class SimpleSchemaVisitor(VisitorBase):
         name,
         simple_schema_type=SimpleSchemaType.Standard,
     ):
-        return cls._Impl("datetime", name, {}, simple_schema_type)
+        return cls._Impl("datetime", name, {}, type_info.Arity, simple_schema_type)
 
     # ----------------------------------------------------------------------
     @classmethod
@@ -74,7 +74,7 @@ class SimpleSchemaVisitor(VisitorBase):
         name,
         simple_schema_type=SimpleSchemaType.Standard,
     ):
-        return cls._Impl("date", name, {}, simple_schema_type)
+        return cls._Impl("date", name, {}, type_info.Arity, simple_schema_type)
 
     # ----------------------------------------------------------------------
     @classmethod
@@ -92,7 +92,7 @@ class SimpleSchemaVisitor(VisitorBase):
         if type_info.ValidationExpression is not None:
             args["validation_expression"] = '"{}"'.format(type_info.ValidationExpression)
 
-        return cls._Impl("directory", name, args, simple_schema_type)
+        return cls._Impl("directory", name, args, type_info.Arity, simple_schema_type)
 
     # ----------------------------------------------------------------------
     @classmethod
@@ -103,7 +103,7 @@ class SimpleSchemaVisitor(VisitorBase):
         name,
         simple_schema_type=SimpleSchemaType.Standard,
     ):
-        return cls._Impl("duration", name, {}, simple_schema_type)
+        return cls._Impl("duration", name, {}, type_info.Arity, simple_schema_type)
 
     # ----------------------------------------------------------------------
     @classmethod
@@ -127,7 +127,7 @@ class SimpleSchemaVisitor(VisitorBase):
         if type_info.FriendlyValues:
             args["friendly_values"] = ToListString(type_info.FriendlyValues)
 
-        return cls._Impl("enum", name, args, simple_schema_type)
+        return cls._Impl("enum", name, args, type_info.Arity, simple_schema_type)
 
     # ----------------------------------------------------------------------
     @classmethod
@@ -147,7 +147,7 @@ class SimpleSchemaVisitor(VisitorBase):
         if type_info.ValidationExpression:
             args["validation_expression"] = '"{}"'.format(type_info.ValidationExpression)
 
-        return cls._Impl("filename", name, args, simple_schema_type)
+        return cls._Impl("filename", name, args, type_info.Arity, simple_schema_type)
 
     # ----------------------------------------------------------------------
     @classmethod
@@ -165,7 +165,7 @@ class SimpleSchemaVisitor(VisitorBase):
         if type_info.Max is not None:
             args["max"] = type_info.Max
 
-        return cls._Impl("number", name, args, simple_schema_type)
+        return cls._Impl("number", name, args, type_info.Arity, simple_schema_type)
 
     # ----------------------------------------------------------------------
     @classmethod
@@ -176,7 +176,7 @@ class SimpleSchemaVisitor(VisitorBase):
         name,
         simple_schema_type=SimpleSchemaType.Standard,
     ):
-        return cls._Impl("guid", name, {}, simple_schema_type)
+        return cls._Impl("guid", name, {}, type_info.Arity, simple_schema_type)
 
     # ----------------------------------------------------------------------
     @classmethod
@@ -198,7 +198,7 @@ class SimpleSchemaVisitor(VisitorBase):
         if type_info.Unsigned:
             args["unsigned"] = True
 
-        return cls._Impl("int", name, args, simple_schema_type)
+        return cls._Impl("int", name, args, type_info.Arity, simple_schema_type)
 
     # ----------------------------------------------------------------------
     @classmethod
@@ -218,7 +218,7 @@ class SimpleSchemaVisitor(VisitorBase):
         if type_info.MaxLength is not None:
             args["max_length"] = type_info.MaxLength
 
-        return cls._Impl("string", name, args, simple_schema_type)
+        return cls._Impl("string", name, args, type_info.Arity, simple_schema_type)
 
     # ----------------------------------------------------------------------
     @classmethod
@@ -229,7 +229,7 @@ class SimpleSchemaVisitor(VisitorBase):
         name,
         simple_schema_type=SimpleSchemaType.Standard,
     ):
-        return cls._Impl("time", name, {}, simple_schema_type)
+        return cls._Impl("time", name, {}, type_info.Arity, simple_schema_type)
 
     # ----------------------------------------------------------------------
     @classmethod
@@ -240,13 +240,13 @@ class SimpleSchemaVisitor(VisitorBase):
         name,
         simple_schema_type=SimpleSchemaType.Standard,
     ):
-        return cls._Impl("uri", name, {}, simple_schema_type)
+        return cls._Impl("uri", name, {}, type_info.Arity, simple_schema_type)
 
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
     @staticmethod
-    def _Impl(typ, name, args, simple_schema_type):
+    def _Impl(typ, name, args, arity, simple_schema_type):
         if simple_schema_type == SimpleSchemaType.Standard:
             delimiters = ["<", ">"]
         elif simple_schema_type == SimpleSchemaType.Attribute:
@@ -256,10 +256,13 @@ class SimpleSchemaVisitor(VisitorBase):
         else:
             assert False, simple_schema_type
 
-        return "{open}{name}{type}{args}{close}".format(
+        arity = arity.ToString()
+
+        return "{open}{name}{type}{args}{arity}{close}".format(
             open=delimiters[0],
             name="{} ".format(name) if name else "",
             type=typ,
             args=" {}".format(" ".join(["{}={}".format(k, v) for k, v in six.iteritems(args)])) if args else "",
+            arity=" {}".format(arity) if arity else "",
             close=delimiters[1],
         )

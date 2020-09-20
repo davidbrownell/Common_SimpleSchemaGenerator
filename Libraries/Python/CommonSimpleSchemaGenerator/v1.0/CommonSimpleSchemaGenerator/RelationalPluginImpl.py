@@ -481,43 +481,7 @@ class RelationalPluginImpl(PluginBase):
     @staticmethod
     @Interface.override
     def GetOptionalMetadataItems(item):
-        if (
-            item.element_type == CompoundElement
-            and item.ItemType == type(item).ItemType.Standard
-        ):
-            return [
-                Attribute(
-                    "operations",
-                    EnumTypeInfo(
-                        [
-                            # C - Create
-                            # R - Read
-                            # U - Update
-                            # D - Delete
-                            # E - Enumerate
-                            "CRUDE",
-                            "CRUD",
-                            "CRU",
-                            "CR",
-                            "C",
-                            "RUDE",
-                            "RUD",
-                            "RU",
-                            "R",
-                            "UDE",
-                            "UD",
-                            "U",
-                            "DE",
-                            "D",
-                            "E",
-                        ],
-                    ),
-                    default_value="CRUDE",
-                    is_metadata=True,
-                ),
-            ]
-
-        elif item.element_type == FundamentalElement:
+        if item.element_type == FundamentalElement:
             return [
                 Attribute(
                     "mutable",

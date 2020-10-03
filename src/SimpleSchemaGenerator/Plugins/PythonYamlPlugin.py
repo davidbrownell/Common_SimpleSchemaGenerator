@@ -99,46 +99,8 @@ class Plugin(PythonSerializationImpl):
         @staticmethod
         @Interface.override
         def SerializeToString(var_name):
-            return "_YamlToString({var_name})".format(
+            return "rtyaml.dump({var_name})".format(
                 var_name=var_name,
-            )
-
-        # ----------------------------------------------------------------------
-        @staticmethod
-        @Interface.override
-        def GetGlobalUtilityMethods(source_writer):
-            return textwrap.dedent(
-                """\
-                _to_string_workaround = False
-
-                try:
-                    if rtyaml.Dumper is yaml.cyaml.CDumper:
-                        _to_string_workaround = True
-                except AttributeError:
-                    pass
-
-                if _to_string_workaround:
-                    # ----------------------------------------------------------------------
-                    def _YamlToString(obj):
-                        return yaml.dump(obj)
-
-                    # ----------------------------------------------------------------------
-                else:
-                    # ----------------------------------------------------------------------
-                    def _YamlToString(obj):
-                        previous_tag_emitter = yaml.emitter.Emitter.process_tag
-
-                        # ----------------------------------------------------------------------
-                        def RestoreTagEmitter():
-                            yaml.emitter.Emitter.process_tag = previous_tag_emitter
-
-                        # ----------------------------------------------------------------------
-
-                        yaml.emitter.Emitter.process_tag = (lambda *args, **kwargs: None)
-                        with CallOnExit(RestoreTagEmitter):
-                            return rtyaml.dump(obj)
-
-                """,
             )
 
     # ----------------------------------------------------------------------
@@ -161,7 +123,6 @@ class Plugin(PythonSerializationImpl):
             textwrap.dedent(
                 """\
                 import rtyaml
-                import yaml
 
                 from CommonEnvironment.CallOnExit import CallOnExit
                 from CommonEnvironment import FileSystem
@@ -191,7 +152,7 @@ class Plugin(PythonSerializationImpl):
                     return dumper.represent_dict(d)
 
 
-                yaml.add_representer(Object, _ObjectToYaml)
+                rtyaml.Dumper.add_representer(Object, _ObjectToYaml)
                 """,
             ),
         )

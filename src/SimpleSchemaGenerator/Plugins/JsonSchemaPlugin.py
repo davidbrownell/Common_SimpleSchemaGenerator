@@ -52,12 +52,22 @@ class Plugin(PluginBase):
     Description                             = Interface.DerivedProperty("Generates a JSON Schema file (https://json-schema.org/)")
     Flags                                   = Interface.DerivedProperty(
         # ParseFlag.SupportAttributes
-        ParseFlag.SupportIncludeStatements                                                                                                                                                                           # | ParseFlag.SupportConfigStatements
-                                                                                                                                                                                                                     # | ParseFlag.SupportExtensionsStatements
-                                                                                                                                                                                                                     # | ParseFlag.SupportUnnamedDeclarations
+        ParseFlag.SupportIncludeStatements
+        # | ParseFlag.SupportConfigStatements
+        # | ParseFlag.SupportExtensionsStatements
+        # | ParseFlag.SupportUnnamedDeclarations
         # | ParseFlag.SupportUnnamedObjects
-        | ParseFlag.SupportNamedDeclarations | ParseFlag.SupportNamedObjects | ParseFlag.SupportRootDeclarations | ParseFlag.SupportRootObjects | ParseFlag.SupportChildDeclarations | ParseFlag.SupportChildObjects # | ParseFlag.SupportCustomElements
-        | ParseFlag.SupportAnyElements | ParseFlag.SupportReferenceElements | ParseFlag.SupportListElements                                                                                                          # | ParseFlag.SupportSimpleObjectElements
+        | ParseFlag.SupportNamedDeclarations
+        | ParseFlag.SupportNamedObjects
+        | ParseFlag.SupportRootDeclarations
+        | ParseFlag.SupportRootObjects
+        | ParseFlag.SupportChildDeclarations
+        | ParseFlag.SupportChildObjects
+        # | ParseFlag.SupportCustomElements
+        | ParseFlag.SupportAnyElements
+        | ParseFlag.SupportReferenceElements
+        | ParseFlag.SupportListElements
+        # | ParseFlag.SupportSimpleObjectElements
         | ParseFlag.SupportVariantElements,
     )
 

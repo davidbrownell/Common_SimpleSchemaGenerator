@@ -293,7 +293,7 @@ class Plugin(PluginBase):
                 if not process_additional_data:
                     schema["additionalProperties"] = False
 
-            else:
+            elif top_level_elements:
                 schema["$ref"] = "#/definitions/_{}".format(top_level_elements[0].DottedName)
 
             if id:

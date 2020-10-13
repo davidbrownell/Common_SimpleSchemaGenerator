@@ -208,6 +208,7 @@ class Plugin(PluginBase):
         Referenced                          = auto()    # The element was included because something that referenced it was included
         Parent                              = auto()    # The element was included because it is an ancestor of an element that was explicitly included
 
+    # ----------------------------------------------------------------------
     class IncludeMapValue(object):
 
         # ----------------------------------------------------------------------
@@ -241,7 +242,7 @@ class Plugin(PluginBase):
             dn = element.DottedName
 
             include_map_value = include_map.get(dn, None)
-            if include_map_value is not None and include_map_value.Type == cls.IncludeMapType.Standard:
+            if include_map_value is not None and include_map_value.Type.value <= include_map_type.value:
                 return
 
             include_map[dn] = cls.IncludeMapValue(element, include_map_type)

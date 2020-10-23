@@ -193,7 +193,7 @@ class AllTypesSuite(unittest.TestCase, AllTypesUtilsMixin):
 
         CaseInsensitiveException(
             AllTypesYaml.DeserializeException,
-            "'{}' is not a valid directory".format(os.path.join(os.getcwd(), "Does Not Exist")),
+            "'{}' is not a valid directory [directory_]".format(os.path.join(os.getcwd(), "Does Not Exist")),
             lambda: AllTypesYaml.Deserialize_directory_("Does Not Exist"),
         )
 
@@ -211,7 +211,7 @@ class AllTypesSuite(unittest.TestCase, AllTypesUtilsMixin):
 
         CaseInsensitiveException(
             AllTypesYaml.DeserializeException,
-            "'{}' is not a valid file".format(os.path.join(os.getcwd(), "Does Not Exist")),
+            "'{}' is not a valid file [filename_]".format(os.path.join(os.getcwd(), "Does Not Exist")),
             lambda: AllTypesYaml.Deserialize_filename_("Does Not Exist"),
         )
 

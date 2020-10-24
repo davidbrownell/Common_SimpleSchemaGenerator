@@ -112,20 +112,20 @@ class FundamentalAttributeInfo(AttributeInfo):
 # |  Public Data
 # |
 # ----------------------------------------------------------------------
-UNIVERSAL_NAME_OVERRIDE_ATTRIBUTE_NAME      = "name"
-UNIVERSAL_DESCRIPTION_ATTRIBUTE_NAME        = "description"
+UNIVERSAL_NAME_OVERRIDE_ATTRIBUTE_NAME                  = "name"
+UNIVERSAL_DESCRIPTION_ATTRIBUTE_NAME                    = "description"
 
-COLLECTION_KEY_ATTRIBUTE_NAME               = "key"
-COLLECTION_VALUE_ATTRIBUTE_NAME             = "value"
-COLLECTION_AS_DICTIONARY_ATTRIBUTE_NAME     = "as_dictionary"
+COLLECTION_KEY_ATTRIBUTE_NAME                           = "key"
+COLLECTION_VALUE_ATTRIBUTE_NAME                         = "value"
+COLLECTION_AS_DICTIONARY_ATTRIBUTE_NAME                 = "as_dictionary"
 
-COLLECTION_REFINES_ARITY_ATTRIBUTE_NAME     = "refines_arity"
+COLLECTION_REFINES_ARITY_ATTRIBUTE_NAME                 = "refines_arity"
 
-OPTIONAL_DEFAULT_ATTRIBUTE_NAME             = "default"
+OPTIONAL_DEFAULT_ATTRIBUTE_NAME                         = "default"
 
-SIMPLE_FUNDAMENTAL_NAME_ATTRIBUTE_NAME      = "fundamental_name"
+SIMPLE_FUNDAMENTAL_NAME_ATTRIBUTE_NAME                  = "fundamental_name"
 
-CUSTOM_TYPE_ATTRIBUTE_NAME                  = "type"
+CUSTOM_TYPE_ATTRIBUTE_NAME                              = "type"
 
 # ----------------------------------------------------------------------
 def _ValidateKey(plugin, element):
@@ -188,13 +188,15 @@ COLLECTION_ATTRIBUTE_INFO                   = AttributeInfo(
             validate_func=_ValidateValue,
             is_metadata=True,
         ),
+        # Flag to indicate if the content should be treated as a dictionary
         Attribute(
             COLLECTION_AS_DICTIONARY_ATTRIBUTE_NAME,
             BoolTypeInfo(),
             validate_func=_ValidateAsDictionary,
             is_metadata=True,
         ),
-        # Normally, a reference that is also a collection will break reference traversal and create a new dimension                                                # in a N-dimension array. However, sometimes we just want to refine the arity of a referenced collection.
+        # Normally, a reference that is also a collection will break reference traversal and create a new dimension
+        # in a N-dimension array. However, sometimes we just want to refine the arity of a referenced collection.
         Attribute(
             COLLECTION_REFINES_ARITY_ATTRIBUTE_NAME,
             BoolTypeInfo(),
@@ -523,17 +525,17 @@ def __ValidateValue(plugin, element):
 # ----------------------------------------------------------------------
 def __ValidateAsDictionary(plugin, element):
     if not element.as_dictionary:
-        return "'as_dictionary' should always be true when provided"
+        return "'{}' should always be true when provided".format(COLLECTION_AS_DICTIONARY_ATTRIBUTE_NAME)
 
     # Ensure that the plugin supports dictionaries
     if not plugin.Flags & ParseFlag.SupportDictionaryElements:
         return "Dictionary elements are not supported"
 
-    if getattr(element, "key", None) is None:
-        return "The 'key' attribute must be provided when defining dictionaries"
+    if getattr(element, COLLECTION_KEY_ATTRIBUTE_NAME, None) is None:
+        return "The '{}' attribute must be provided when defining dictionaries".format(COLLECTION_KEY_ATTRIBUTE_NAME)
 
-    if getattr(element, "value", None) is None:
-        return "The 'value' attribute must be provided when defining dictionaries"
+    if getattr(element, COLLECTION_VALUE_ATTRIBUTE_NAME, None) is None:
+        return "The '{}' attribute must be provided when defining dictionaries".format(COLLECTION_VALUE_ATTRIBUTE_NAME)
 
     # Ensure that we only have 2 children
     child_count = 0

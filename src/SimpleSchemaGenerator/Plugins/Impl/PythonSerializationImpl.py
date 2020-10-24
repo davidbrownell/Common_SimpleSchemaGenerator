@@ -232,6 +232,7 @@ class PythonSerializationImpl(PluginBase):
 
                             # ----------------------------------------------------------------------
                             class SerializationException(Exception):
+                                # ----------------------------------------------------------------------
                                 def __init__(self, ex_or_string):
                                     if isinstance(ex_or_string, six.string_types):
                                         super(SerializationException, self).__init__(ex_or_string)
@@ -239,6 +240,19 @@ class PythonSerializationImpl(PluginBase):
                                         super(SerializationException, self).__init__(str(ex_or_string))
 
                                         self.__dict__ = copy.deepcopy(ex_or_string.__dict__)
+
+                                # ----------------------------------------------------------------------
+                                def __str__(self):
+                                    result = super(SerializationException, self).__str__()
+
+                                    if hasattr(self, "stack"):
+                                        result += " [{}]".format(" -> ".join(self.stack))
+
+                                    return result
+
+                                # ----------------------------------------------------------------------
+                                def __repr__(self):
+                                    return CommonEnvironment.ObjectReprImpl(self)
 
 
                             class KeySerializationException(SerializationException):                    pass

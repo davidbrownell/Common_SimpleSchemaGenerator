@@ -532,20 +532,75 @@ Most of the examples so far have shown how to define elements that correspond to
 | {N}       | N values            | `<three_values string {3}>`           |
 | {min,max} | min <= N <= max     | `<three_to_five_values string {3,5}>` |
 
-BugBug: List of lists
+It is possible to create collections of collections. For more information, see [Reference Elements](#reference-elements).
+
+Attributes valid for collections:
+| Name            | Description                                                                                                                                         | Collection Type | Type            | Default Value |
+|-----------------|-----------------------------------------------------------------------------------------------------------------------------------------------------|-----------------|-----------------|---------------|
+| `key`           | Code generators should use this child element name to ensure uniqueness within the collection.                                                      | N > 1           | `string`        | (None)        |
+| `as_dictionary` | If `true`, treat this collection as a dictionary. The collection must have 2 children where the names of the `key` and `value` items are specified. | N > 1           | `bool`          | `False`       |
+| `value`         | Name of the child element used as the value when the collection is interpreted as a dictionary.                                                     | N > 1           | `string`        | (None)        |
+| `default`       | Default value if none is provided                                                                                                                   | N = {0,1}       | Depends on type | (None)        |
 
 Reference Elements
 ==================
 [Return to Top](#SimpleSchema)
 
-BugBug
+An element may reference a [Definition](#delimiters) element or a [Standard/Attribute](#delimiters) element.
+
+Definition References
+---------------------
+Generally speaking, when a code generator encounters a reference to a definition, it will use the definition's contents directly inline for the current statement. All attributes in the referenced element will be replaced by attributes in the referencing element.
+
+```
+# Syntatically, this is the same...
+(referenced string min_length=10 description="Referenced text")
+<referencing referenced description="Referencing text">
+
+# ...as...
+<referencing string min_length=10 description="Referencing text">
+```
+
+Element References
+------------------
+While the code generator behavior for Definition References is standard, the behavior for element references is different from code generator to code generator. For example, a SQL-like code generator might interpret an element reference as a foreign key, a C++-like code generator might interpret this as an actual reference. Please consult the documentation of each code generator for information on how Element References are interpreted.
+
+```
+<object1>:
+    <value string>
+
+<object2>:
+    <obj1 object1>      # The meaning of this statement dependens on the code generator processing it
+```
+
+Collection of Collections
+-------------------------
+Providing an `arity` value for a reference creates a new type. For example:
+
+```
+<value string>      # A single string
+<value_ref value>   # A single string
+<values value *>    # A collection of strings
+
+<values_collection values +>                        # A collection of collections
+<values_collection_collection values_collection *>  # A collection of collections of collections
+```
+
+However sometimes, we want to override the `arity` of a collection and not provide a collection of collections (as is the default behavior). The attribute `refines_arity` can be used in these situations.
+
+```
+<value string>      # A single string
+<values value *>    # A collection of 0 or more strings
+
+<required_values values refines_arity=true +>       # A collection of 1 or more strings
+<values_collection values +>                        # A collection of collections of 0 or more strings
+```
 
 Miscellaneous Elements
 ==================
 [Return to Top](#SimpleSchema)
 
 BugBug: Variant
-BugBug: List
 BugBug: Any
 BugBug: Custom
 BugBug: Extension
@@ -554,7 +609,8 @@ Miscellaneous Statements
 ========================
 [Return to Top](#SimpleSchema)
 
-BugBug
+BugBug: include
+BugBug: custom extensions
 
 Examples
 ========

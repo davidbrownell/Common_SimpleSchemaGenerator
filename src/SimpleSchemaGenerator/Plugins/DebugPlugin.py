@@ -15,7 +15,6 @@
 """Contains the Plugin object"""
 
 import os
-import sys
 
 import CommonEnvironment
 from CommonEnvironment.Interface import staticderived, override, DerivedProperty
@@ -28,7 +27,7 @@ _script_dir, _script_name                   = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
 with InitRelativeImports():
-    from ..Plugin import Plugin as PluginBase, ParseFlag, Extension
+    from ..Plugin import Plugin as PluginBase, ParseFlag
 
 # ----------------------------------------------------------------------
 @staticderived

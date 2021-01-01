@@ -7,7 +7,7 @@
 # |
 # ----------------------------------------------------------------------
 # |
-# |  Copyright David Brownell 2018-20.
+# |  Copyright David Brownell 2018-21.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 # |
@@ -122,6 +122,18 @@ COLLECTION_AS_DICTIONARY_ATTRIBUTE_NAME                 = "as_dictionary"
 COLLECTION_REFINES_ARITY_ATTRIBUTE_NAME                 = "refines_arity"
 
 OPTIONAL_DEFAULT_ATTRIBUTE_NAME                         = "default"
+
+# TODO: Should introduce the concept of refinement, where a derived type can replace the value with
+#       the same name if certain conditions hold true?
+#
+#           - enum can refine string
+#           - enum can refine enum if derived values are a subset of base values
+#           - base has arity of 1, derived is optional with default value and the default value is valid
+#           - <Likely more here>
+#
+#       Open Question:
+#           - Should these concepts be introduced in TypeInfo? If so, how complicated should TypeInfo
+#             be allowed to become?
 
 SIMPLE_FUNDAMENTAL_NAME_ATTRIBUTE_NAME                  = "fundamental_name"
 

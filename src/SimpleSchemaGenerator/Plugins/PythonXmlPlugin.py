@@ -7,7 +7,7 @@
 # |
 # ----------------------------------------------------------------------
 # |
-# |  Copyright David Brownell 2019-20
+# |  Copyright David Brownell 2019-21
 # |  Distributed under the Boost Software License, Version 1.0. See
 # |  accompanying file LICENSE_1_0.txt or copy at
 # |  http://www.boost.org/LICENSE_1_0.txt.
@@ -183,7 +183,7 @@ class Plugin(PythonSerializationImpl):
 
                             for index, child in enumerate(child_or_children):
                                 try:
-                                    new_items.append(cls._CreateAdditionalDataItem("{item_name}", child))
+                                    new_items.append(cls._CreateAdditionalDataItem("{collection_item_name}", child))
                                 except:
                                     _DecorateActiveException("Index {{}}".format(index))
 
@@ -205,7 +205,7 @@ class Plugin(PythonSerializationImpl):
                 """,
             ).format(
                 source_var_name=source_var_name,
-                item_name=Plugin.COLLECTION_ITEM_NAME,
+                collection_item_name=Plugin.COLLECTION_ITEM_NAME,
                 compound_statement=dest_writer.CreateCompoundElement(temporary_element, "attributes").strip(),
                 simple_element=StringHelpers.LeftJustify(dest_writer.CreateSimpleElement(temporary_element, "attributes", "{}.text".format(source_var_name)), 4).strip(),
                 append_children=StringHelpers.LeftJustify(dest_writer.AppendChild(cls.CreateTemporaryElement("child_name", "+"), "result", "new_items"), 12).strip(),
@@ -253,7 +253,7 @@ class Plugin(PythonSerializationImpl):
 
                         children.setdefault(child.tag, []).append(child)
 
-                    if len(children) == 1 and next(six.iterkeys(children)) == "{item_name}":
+                    if len(children) == 1 and next(six.iterkeys(children)) == "{collection_item_name}":
                         value = next(six.itervalues(children))
 
                         if not isinstance(value, list):
@@ -270,7 +270,7 @@ class Plugin(PythonSerializationImpl):
 
                 """,
             ).format(
-                item_name=Plugin.COLLECTION_ITEM_NAME,
+                collection_item_name=Plugin.COLLECTION_ITEM_NAME,
             )
 
         # ----------------------------------------------------------------------
@@ -415,14 +415,14 @@ class Plugin(PythonSerializationImpl):
                     result = _CreateXmlElement(element_name)
 
                     for item in (items_or_none or []):
-                        item.tag = "{item_name}"
+                        item.tag = "{collection_item_name}"
                         result.append(item)
 
                     return result
 
                 """,
             ).format(
-                item_name=Plugin.COLLECTION_ITEM_NAME,
+                collection_item_name=Plugin.COLLECTION_ITEM_NAME,
             )
 
         # ----------------------------------------------------------------------
